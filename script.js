@@ -1,97 +1,109 @@
-class TCGGame {
+class SpellCasterGame {
     constructor() {
         this.playerHand = [];
         this.currentMana = 3;
         this.maxMana = 10;
+        this.playerHealth = 30;
+        this.currentWave = 1;
+        this.enemies = [];
+        this.enemyIdCounter = 1;
         
         this.initializeGame();
     }
 
     initializeGame() {
-        this.createSampleCards();
+        this.createSpellCards();
         this.renderPlayerHand();
         this.bindEvents();
+        this.updateUI();
     }
 
-    createSampleCards() {
-        // Sample card data inspired by Hearthstone
-        const sampleCards = [
+    createSpellCards() {
+        // Only spell cards for our wave defense game
+        const spellCards = [
             {
                 id: 1,
                 name: "Fire Bolt",
                 type: "spell",
                 mana: 1,
                 rarity: "common",
-                text: "Deal 3 damage to any target.",
-                art: "🔥"
+                text: "Deal 3 damage to target enemy.",
+                art: "🔥",
+                damage: 3,
+                targetType: "single"
             },
             {
                 id: 2,
-                name: "Goblin Warrior",
-                type: "minion",
-                mana: 2,
-                attack: 2,
-                health: 1,
-                rarity: "common",
-                text: "A fierce little warrior.",
-                art: "👹"
-            },
-            {
-                id: 3,
                 name: "Lightning Storm",
                 type: "spell",
                 mana: 3,
                 rarity: "rare",
-                text: "Deal 2-3 damage to all enemy minions.",
-                art: "⚡"
+                text: "Deal 2 damage to all enemies.",
+                art: "⚡",
+                damage: 2,
+                targetType: "all"
+            },
+            {
+                id: 3,
+                name: "Healing Light",
+                type: "spell",
+                mana: 2,
+                rarity: "common",
+                text: "Restore 5 health to yourself.",
+                art: "✨",
+                healing: 5,
+                targetType: "self"
             },
             {
                 id: 4,
-                name: "Ancient Guardian",
-                type: "minion",
-                mana: 4,
-                attack: 3,
-                health: 6,
+                name: "Meteor",
+                type: "spell",
+                mana: 5,
                 rarity: "epic",
-                text: "Taunt. Can't attack heroes.",
-                art: "🗿"
+                text: "Deal 8 damage to target enemy.",
+                art: "☄️",
+                damage: 8,
+                targetType: "single"
             },
             {
                 id: 5,
-                name: "Dragon Lord",
-                type: "minion",
-                mana: 8,
-                attack: 8,
-                health: 8,
-                rarity: "legendary",
-                text: "Battlecry: Deal 4 damage to all enemies.",
-                art: "🐉"
+                name: "Frost Nova",
+                type: "spell",
+                mana: 2,
+                rarity: "rare",
+                text: "Deal 1 damage to all enemies.",
+                art: "❄️",
+                damage: 1,
+                targetType: "all"
             },
             {
                 id: 6,
-                name: "Healing Potion",
+                name: "Arcane Missiles",
                 type: "spell",
                 mana: 1,
                 rarity: "common",
-                text: "Restore 5 health to your hero.",
-                art: "🧪"
+                text: "Deal 1 damage 3 times randomly.",
+                art: "🌟",
+                damage: 1,
+                targetType: "random",
+                hits: 3
             },
             {
                 id: 7,
-                name: "Knight Champion",
-                type: "minion",
-                mana: 5,
-                attack: 4,
-                health: 5,
-                rarity: "rare",
-                text: "Divine Shield, Charge",
-                art: "⚔️"
+                name: "Divine Wrath",
+                type: "spell",
+                mana: 6,
+                rarity: "legendary",
+                text: "Deal 5 damage to all enemies.",
+                art: "⚡",
+                damage: 5,
+                targetType: "all"
             }
         ];
 
-        // Add 5 random cards to player's hand
+        // Add 5 random spell cards to player's hand
         for (let i = 0; i < 5; i++) {
-            const randomCard = sampleCards[Math.floor(Math.random() * sampleCards.length)];
+            const randomCard = spellCards[Math.floor(Math.random() * spellCards.length)];
             this.playerHand.push({...randomCard, handIndex: i});
         }
     }
@@ -111,6 +123,12 @@ class TCGGame {
         cardDiv.className = `card ${card.type} ${card.rarity}`;
         cardDiv.dataset.cardId = card.id;
         cardDiv.dataset.handIndex = index;
+
+        // Check if card is playable
+        if (card.mana > this.currentMana) {
+            cardDiv.style.opacity = '0.5';
+            cardDiv.style.cursor = 'not-allowed';
+        }
 
         // Mana cost
         const manaDiv = document.createElement('div');
@@ -138,25 +156,78 @@ class TCGGame {
         cardDiv.appendChild(nameDiv);
         cardDiv.appendChild(textDiv);
 
-        // Add stats for minions
-        if (card.type === 'minion') {
-            const statsDiv = document.createElement('div');
-            statsDiv.className = 'card-stats';
+        return cardDiv;
+    }
 
-            const attackDiv = document.createElement('div');
-            attackDiv.className = 'card-attack';
-            attackDiv.textContent = card.attack;
+    createEnemyElement(enemy) {
+        const enemyDiv = document.createElement('div');
+        enemyDiv.className = 'enemy';
+        enemyDiv.dataset.enemyId = enemy.id;
 
-            const healthDiv = document.createElement('div');
-            healthDiv.className = 'card-health';
-            healthDiv.textContent = card.health;
+        const artDiv = document.createElement('div');
+        artDiv.className = 'enemy-art';
+        artDiv.textContent = enemy.art;
 
-            statsDiv.appendChild(attackDiv);
-            statsDiv.appendChild(healthDiv);
-            cardDiv.appendChild(statsDiv);
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'enemy-name';
+        nameDiv.textContent = enemy.name;
+
+        const healthDiv = document.createElement('div');
+        healthDiv.className = 'enemy-health';
+        healthDiv.textContent = enemy.health;
+
+        enemyDiv.appendChild(artDiv);
+        enemyDiv.appendChild(nameDiv);
+        enemyDiv.appendChild(healthDiv);
+
+        return enemyDiv;
+    }
+
+    spawnWave() {
+        const waveEnemies = this.generateWaveEnemies(this.currentWave);
+        this.enemies = [...this.enemies, ...waveEnemies];
+        this.renderEnemies();
+        this.updateUI();
+        
+        // Disable next wave button during wave
+        document.getElementById('next-wave').disabled = true;
+    }
+
+    generateWaveEnemies(waveNumber) {
+        const enemyTypes = [
+            { name: "Goblin", art: "👹", baseHealth: 2 },
+            { name: "Orc", art: "🧌", baseHealth: 4 },
+            { name: "Troll", art: "👺", baseHealth: 6 },
+            { name: "Dragon", art: "🐉", baseHealth: 10 }
+        ];
+
+        const enemies = [];
+        const enemyCount = Math.min(2 + waveNumber, 8); // Max 8 enemies
+
+        for (let i = 0; i < enemyCount; i++) {
+            const enemyType = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+            const scaledHealth = enemyType.baseHealth + Math.floor(waveNumber / 2);
+            
+            enemies.push({
+                id: this.enemyIdCounter++,
+                name: enemyType.name,
+                art: enemyType.art,
+                health: scaledHealth,
+                maxHealth: scaledHealth
+            });
         }
 
-        return cardDiv;
+        return enemies;
+    }
+
+    renderEnemies() {
+        const battlefield = document.getElementById('enemy-battlefield');
+        battlefield.innerHTML = '';
+
+        this.enemies.forEach(enemy => {
+            const enemyElement = this.createEnemyElement(enemy);
+            battlefield.appendChild(enemyElement);
+        });
     }
 
     bindEvents() {
@@ -166,11 +237,16 @@ class TCGGame {
                 const card = e.target.closest('.card');
                 this.handleCardClick(card);
             }
+            
+            if (e.target.closest('.enemy')) {
+                const enemy = e.target.closest('.enemy');
+                this.handleEnemyClick(enemy);
+            }
         });
 
-        // End turn button
-        document.getElementById('end-turn').addEventListener('click', () => {
-            this.endTurn();
+        // Next wave button
+        document.getElementById('next-wave').addEventListener('click', () => {
+            this.nextWave();
         });
 
         // Card hover effects
@@ -186,60 +262,161 @@ class TCGGame {
         const card = this.playerHand[handIndex];
 
         if (card.mana <= this.currentMana) {
-            this.playCard(handIndex);
+            this.selectedCard = card;
+            this.selectedCardIndex = handIndex;
+            
+            // Highlight card selection
+            document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+            cardElement.classList.add('selected');
+            
+            if (card.targetType === 'self' || card.targetType === 'all' || card.targetType === 'random') {
+                // Auto-cast spells that don't need targeting
+                this.castSpell(card, handIndex);
+            } else {
+                this.showMessage("Select a target enemy!");
+            }
         } else {
             this.showMessage(`Not enough mana! Need ${card.mana}, have ${this.currentMana}`);
         }
     }
 
-    playCard(handIndex) {
-        const card = this.playerHand[handIndex];
-        
-        // Deduct mana
-        this.currentMana -= card.mana;
-        this.updateManaDisplay();
-
-        // Remove card from hand
-        this.playerHand.splice(handIndex, 1);
-
-        // Show play effect
-        this.showMessage(`Played ${card.name}!`);
-
-        // Re-render hand
-        this.renderPlayerHand();
-
-        // Add card effect logic here (for now just a message)
-        setTimeout(() => {
-            this.applyCardEffect(card);
-        }, 500);
+    handleEnemyClick(enemyElement) {
+        if (this.selectedCard && (this.selectedCard.targetType === 'single')) {
+            const enemyId = parseInt(enemyElement.dataset.enemyId);
+            this.castSpell(this.selectedCard, this.selectedCardIndex, enemyId);
+        }
     }
 
-    applyCardEffect(card) {
-        // Placeholder for card effects
-        switch(card.type) {
-            case 'spell':
-                this.showMessage(`${card.name} spell effect activated!`);
+    castSpell(card, handIndex, targetEnemyId = null) {
+        // Deduct mana
+        this.currentMana -= card.mana;
+        
+        // Remove card from hand
+        this.playerHand.splice(handIndex, 1);
+        
+        // Clear selection
+        this.selectedCard = null;
+        this.selectedCardIndex = null;
+        document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+
+        // Apply spell effect
+        this.applySpellEffect(card, targetEnemyId);
+        
+        // Re-render hand and update UI
+        this.renderPlayerHand();
+        this.updateUI();
+        
+        // Check if wave is complete
+        setTimeout(() => {
+            this.checkWaveComplete();
+        }, 1000);
+    }
+
+    applySpellEffect(card, targetEnemyId) {
+        switch(card.targetType) {
+            case 'single':
+                if (targetEnemyId) {
+                    this.damageEnemy(targetEnemyId, card.damage);
+                    this.showMessage(`${card.name} deals ${card.damage} damage!`);
+                }
                 break;
-            case 'minion':
-                this.showMessage(`${card.name} summoned to the battlefield!`);
+                
+            case 'all':
+                this.enemies.forEach(enemy => {
+                    this.damageEnemy(enemy.id, card.damage);
+                });
+                this.showMessage(`${card.name} deals ${card.damage} damage to all enemies!`);
+                break;
+                
+            case 'random':
+                for (let i = 0; i < card.hits; i++) {
+                    if (this.enemies.length > 0) {
+                        const randomEnemy = this.enemies[Math.floor(Math.random() * this.enemies.length)];
+                        this.damageEnemy(randomEnemy.id, card.damage);
+                    }
+                }
+                this.showMessage(`${card.name} hits ${card.hits} times!`);
+                break;
+                
+            case 'self':
+                this.playerHealth = Math.min(30, this.playerHealth + card.healing);
+                this.showMessage(`${card.name} heals you for ${card.healing}!`);
                 break;
         }
     }
 
+    damageEnemy(enemyId, damage) {
+        const enemy = this.enemies.find(e => e.id === enemyId);
+        if (enemy) {
+            enemy.health -= damage;
+            
+            if (enemy.health <= 0) {
+                // Remove dead enemy
+                this.enemies = this.enemies.filter(e => e.id !== enemyId);
+            }
+            
+            this.renderEnemies();
+        }
+    }
+
+    checkWaveComplete() {
+        if (this.enemies.length === 0) {
+            this.showMessage(`Wave ${this.currentWave} complete! Prepare for the next wave.`);
+            document.getElementById('next-wave').disabled = false;
+            
+            // Restore some mana
+            this.currentMana = Math.min(this.maxMana, this.currentMana + 2);
+            this.updateUI();
+        }
+    }
+
+    nextWave() {
+        this.currentWave++;
+        this.spawnWave();
+        this.drawCard();
+    }
+
+    drawCard() {
+        // Draw a new random spell card
+        const newSpells = [
+            {
+                id: Date.now(),
+                name: "Magic Missile",
+                type: "spell",
+                mana: Math.floor(Math.random() * 4) + 1,
+                rarity: "common",
+                text: "A basic spell attack.",
+                art: "✨",
+                damage: 2,
+                targetType: "single"
+            }
+        ];
+
+        if (this.playerHand.length < 10) {
+            this.playerHand.push(newSpells[0]);
+            this.renderPlayerHand();
+        }
+    }
+
+    updateUI() {
+        document.getElementById('current-mana').textContent = this.currentMana;
+        document.getElementById('player-health').textContent = this.playerHealth;
+        document.getElementById('wave-number').textContent = this.currentWave;
+        document.getElementById('enemies-count').textContent = this.enemies.length;
+    }
+
     showCardDetails(cardElement) {
-        // Add visual feedback for card inspection
         cardElement.style.zIndex = '100';
     }
 
     showMessage(message) {
-        // Create temporary message display
         const messageDiv = document.createElement('div');
         messageDiv.style.cssText = `
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.9);
             color: white;
             padding: 20px;
             border-radius: 10px;
@@ -247,52 +424,37 @@ class TCGGame {
             font-weight: bold;
             z-index: 1000;
             text-align: center;
+            border: 2px solid #FFD700;
         `;
         messageDiv.textContent = message;
         document.body.appendChild(messageDiv);
 
         setTimeout(() => {
-            document.body.removeChild(messageDiv);
-        }, 2000);
-    }
-
-    updateManaDisplay() {
-        document.getElementById('current-mana').textContent = this.currentMana;
-    }
-
-    endTurn() {
-        // Reset mana (simplified)
-        this.currentMana = Math.min(this.maxMana, this.currentMana + 1);
-        this.updateManaDisplay();
-        
-        // Draw a card (simplified)
-        this.drawCard();
-        
-        this.showMessage("Turn ended! Drew a card.");
-    }
-
-    drawCard() {
-        // Simple card draw - add a random card
-        const newCards = [
-            {
-                id: Date.now(),
-                name: "Mystery Card",
-                type: "spell",
-                mana: Math.floor(Math.random() * 5) + 1,
-                rarity: "common",
-                text: "A mysterious new card!",
-                art: "❓"
+            if (document.body.contains(messageDiv)) {
+                document.body.removeChild(messageDiv);
             }
-        ];
-
-        if (this.playerHand.length < 10) {
-            this.playerHand.push(newCards[0]);
-            this.renderPlayerHand();
-        }
+        }, 2000);
     }
 }
 
+// Add selected card styling
+const style = document.createElement('style');
+style.textContent = `
+    .card.selected {
+        border-color: #00FF00 !important;
+        box-shadow: 0 0 30px rgba(0,255,0,0.9) !important;
+        transform: translateY(-15px) scale(1.08) !important;
+        animation: pulse-glow 1.5s infinite;
+    }
+    
+    @keyframes pulse-glow {
+        0%, 100% { box-shadow: 0 0 30px rgba(0,255,0,0.9); }
+        50% { box-shadow: 0 0 40px rgba(0,255,0,1), 0 0 60px rgba(0,255,0,0.5); }
+    }
+`;
+document.head.appendChild(style);
+
 // Initialize the game when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    new TCGGame();
+    new SpellCasterGame();
 });
