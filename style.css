@@ -1,0 +1,355 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    min-height: 100vh;
+    overflow: hidden;
+    color: #fff;
+}
+
+.game-container {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.game-board {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: radial-gradient(ellipse at center, rgba(255,255,255,0.1) 0%, transparent 70%);
+}
+
+/* Opponent Area */
+.opponent-area {
+    height: 25%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+}
+
+.opponent-hero {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.hero-portrait {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #8B4513, #D2691E);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid #FFD700;
+    position: relative;
+}
+
+.hero-health {
+    font-weight: bold;
+    font-size: 18px;
+    color: #fff;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+}
+
+.hero-name {
+    font-size: 16px;
+    font-weight: bold;
+    color: #FFD700;
+}
+
+.opponent-hand {
+    display: flex;
+    gap: 5px;
+}
+
+.card-back {
+    width: 40px;
+    height: 60px;
+    background: linear-gradient(45deg, #4a4a4a, #2a2a2a);
+    border-radius: 8px;
+    border: 2px solid #666;
+    position: relative;
+}
+
+.card-back::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    background: radial-gradient(circle, #8B4513, #D2691E);
+    border-radius: 50%;
+}
+
+/* Battlefield */
+.battlefield {
+    height: 40%;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+
+.opponent-minions, .player-minions {
+    height: 50%;
+    border: 2px dashed rgba(255,255,255,0.3);
+    border-radius: 10px;
+    margin: 10px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.5);
+    font-style: italic;
+}
+
+.opponent-minions::before {
+    content: 'Opponent Battlefield';
+}
+
+.player-minions::before {
+    content: 'Your Battlefield';
+}
+
+/* Player Area */
+.player-area {
+    height: 35%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+}
+
+.player-hero {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.player-hand {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    perspective: 1000px;
+    min-height: 140px;
+    align-items: flex-end;
+}
+
+/* Card Styles */
+.card {
+    width: 100px;
+    height: 140px;
+    background: linear-gradient(145deg, #f0f0f0, #d0d0d0);
+    border-radius: 12px;
+    border: 3px solid #8B4513;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    transform-style: preserve-3d;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+}
+
+.card:hover {
+    transform: translateY(-20px) scale(1.05);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.4);
+    z-index: 10;
+}
+
+.card.legendary {
+    border-color: #FF8C00;
+    box-shadow: 0 0 20px rgba(255,140,0,0.5);
+}
+
+.card.epic {
+    border-color: #9932CC;
+    box-shadow: 0 0 15px rgba(153,50,204,0.4);
+}
+
+.card.rare {
+    border-color: #0080FF;
+    box-shadow: 0 0 10px rgba(0,128,255,0.3);
+}
+
+.card.common {
+    border-color: #808080;
+}
+
+/* Card Elements */
+.card-mana {
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    width: 25px;
+    height: 25px;
+    background: radial-gradient(circle, #4169E1, #191970);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+    color: white;
+    border: 2px solid #FFD700;
+    z-index: 2;
+}
+
+.card-art {
+    width: 80px;
+    height: 60px;
+    margin: 20px auto 5px;
+    background: linear-gradient(45deg, #87CEEB, #4682B4);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    border: 1px solid #333;
+}
+
+.card-name {
+    text-align: center;
+    font-size: 10px;
+    font-weight: bold;
+    color: #333;
+    margin: 2px 5px;
+    line-height: 1.1;
+}
+
+.card-text {
+    text-align: center;
+    font-size: 8px;
+    color: #555;
+    margin: 2px 5px;
+    line-height: 1.2;
+    height: 24px;
+    overflow: hidden;
+}
+
+.card-stats {
+    position: absolute;
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 5px;
+}
+
+.card-attack, .card-health {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 12px;
+    color: white;
+    border: 2px solid #FFD700;
+}
+
+.card-attack {
+    background: radial-gradient(circle, #FF4500, #DC143C);
+}
+
+.card-health {
+    background: radial-gradient(circle, #32CD32, #228B22);
+}
+
+/* Spell Cards */
+.card.spell .card-stats {
+    display: none;
+}
+
+.card.spell {
+    background: linear-gradient(145deg, #E6E6FA, #D8BFD8);
+}
+
+.card.spell .card-art {
+    background: linear-gradient(45deg, #9370DB, #8A2BE2);
+}
+
+/* Player Info */
+.player-info {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.mana-crystals {
+    font-size: 18px;
+    font-weight: bold;
+    color: #4169E1;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+}
+
+.end-turn-btn {
+    padding: 10px 20px;
+    background: linear-gradient(45deg, #FFD700, #FFA500);
+    border: none;
+    border-radius: 20px;
+    font-weight: bold;
+    color: #8B4513;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.end-turn-btn:hover {
+    background: linear-gradient(45deg, #FFA500, #FF8C00);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .card {
+        width: 80px;
+        height: 112px;
+    }
+    
+    .card-art {
+        width: 64px;
+        height: 48px;
+        font-size: 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    .player-hand {
+        gap: 5px;
+    }
+    
+    .card {
+        width: 60px;
+        height: 84px;
+    }
+    
+    .card-art {
+        width: 48px;
+        height: 36px;
+        font-size: 16px;
+        margin: 15px auto 3px;
+    }
+    
+    .card-name {
+        font-size: 8px;
+    }
+    
+    .card-text {
+        font-size: 6px;
+        height: 18px;
+    }
+}
