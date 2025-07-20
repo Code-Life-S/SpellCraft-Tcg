@@ -72,15 +72,17 @@ body {
 
 /* Enemy Battlefield */
 .enemy-battlefield {
-    height: 40%;
+    height: auto;
+    min-height: 220px;
+    max-height: 240px;
     background: linear-gradient(135deg, rgba(139,0,0,0.2), rgba(75,0,130,0.2));
     border: 3px solid rgba(255,69,0,0.4);
     border-radius: 15px;
-    margin: 15px 20px;
-    padding: 15px;
+    margin: 10px 20px;
+    padding: 10px;
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 15px;
     align-items: flex-start;
     justify-content: center;
     overflow-y: auto;
@@ -106,71 +108,76 @@ body {
 
 /* Enemy Cards */
 .enemy {
-    width: 80px;
-    height: 100px;
+    width: 140px;
+    height: 200px;
     background: linear-gradient(145deg, #8B0000, #DC143C);
-    border-radius: 10px;
-    border: 2px solid #FF4500;
+    border-radius: 15px;
+    border: 3px solid #FF4500;
     position: relative;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+    transition: all 0.4s ease;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
-    padding: 5px;
+    padding: 10px;
 }
 
 .enemy:hover {
     transform: scale(1.05);
-    box-shadow: 0 8px 16px rgba(255,69,0,0.6);
+    box-shadow: 0 15px 30px rgba(255,69,0,0.8);
 }
 
 .enemy-art {
-    font-size: 20px;
-    margin-top: 5px;
+    font-size: 32px;
+    margin-top: 15px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
 }
 
 .enemy-name {
-    font-size: 8px;
+    font-size: 14px;
     color: #FFD700;
     text-align: center;
     font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    margin: 8px 0;
 }
 
 .enemy-stats {
     display: flex;
-    gap: 5px;
-    margin-bottom: 5px;
+    gap: 10px;
+    margin-bottom: 10px;
 }
 
 .enemy-attack {
     background: radial-gradient(circle, #FF4500, #DC143C);
-    width: 20px;
-    height: 20px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: bold;
-    font-size: 10px;
+    font-size: 14px;
     color: white;
-    border: 2px solid #FFD700;
+    border: 3px solid #FFD700;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.4);
 }
 
 .enemy-health {
     background: radial-gradient(circle, #32CD32, #228B22);
-    width: 20px;
-    height: 20px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: bold;
-    font-size: 10px;
+    font-size: 14px;
     color: white;
-    border: 2px solid #FFD700;
+    border: 3px solid #FFD700;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.4);
 }
 
 /* Hero Portrait */
@@ -201,11 +208,12 @@ body {
 
 /* Player Area */
 .player-area {
-    height: 50%;
+    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 15px;
+    padding: 20px;
+    min-height: 300px;
 }
 
 .player-hero {
@@ -218,9 +226,9 @@ body {
 .player-hand {
     display: flex;
     gap: 15px;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
     perspective: 1000px;
-    min-height: 200px;
+    min-height: 220px;
     align-items: flex-end;
     justify-content: center;
     flex-wrap: wrap;

@@ -81,7 +81,7 @@ class SpellCasterGame {
             },
             {
                 id: 6,
-                name: "Arcane Missiles",
+                name: "Arcane Missile",
                 type: "spell",
                 mana: 1,
                 rarity: "common",
@@ -115,9 +115,11 @@ class SpellCasterGame {
         // Spawn a small group of enemies for the battle
         const enemyTypes = [
             { name: "Goblin", art: "👹", health: 3, attack: 2 },
-            { name: "Orc", art: "🧌", health: 5, attack: 3 },
+            { name: "Orc", art: "👿", health: 5, attack: 3 },
             { name: "Skeleton", art: "💀", health: 2, attack: 1 },
-            { name: "Wolf", art: "🐺", health: 4, attack: 2 }
+            { name: "Wolf", art: "🐺", health: 4, attack: 2 },
+            { name: "Bandit", art: "🗡️", health: 3, attack: 2 },
+            { name: "Spider", art: "🕷️", health: 2, attack: 1 }
         ];
 
         // Spawn 3-4 enemies for the battle
