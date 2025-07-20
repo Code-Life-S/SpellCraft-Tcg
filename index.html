@@ -10,15 +10,18 @@
     <div class="game-container">
         <!-- Game Board Area -->
         <div class="game-board">
-            <!-- Wave Info Area -->
-            <div class="wave-info">
-                <div class="wave-counter">
-                    <span class="wave-label">Wave</span>
-                    <span class="wave-number" id="wave-number">1</span>
+            <!-- Game Info Area -->
+            <div class="game-info">
+                <div class="turn-counter">
+                    <span class="turn-label">Turn</span>
+                    <span class="turn-number" id="turn-number">1</span>
                 </div>
                 <div class="enemies-remaining">
                     <span class="enemies-label">Enemies:</span>
                     <span class="enemies-count" id="enemies-count">0</span>
+                </div>
+                <div class="game-status">
+                    <span class="status-text" id="game-status">Your Turn</span>
                 </div>
             </div>
 
@@ -45,7 +48,7 @@
                         <span class="current-mana" id="current-mana">3</span>
                         <span class="max-mana" id="max-mana">/10</span>
                     </div>
-                    <button class="next-wave-btn" id="next-wave">Next Wave</button>
+                    <button class="end-turn-btn" id="end-turn">End Turn</button>
                 </div>
             </div>
         </div>

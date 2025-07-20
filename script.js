@@ -1,18 +1,21 @@
 class SpellCasterGame {
     constructor() {
         this.playerHand = [];
-        this.currentMana = 3;
-        this.maxMana = 10;
+        this.currentMana = 1;
+        this.maxMana = 1;
         this.playerHealth = 30;
-        this.currentWave = 1;
+        this.currentTurn = 1;
         this.enemies = [];
         this.enemyIdCounter = 1;
+        this.gameState = 'playing'; // 'playing', 'won', 'lost'
+        this.isPlayerTurn = true;
         
         this.initializeGame();
     }
 
     initializeGame() {
         this.createSpellCards();
+        this.spawnInitialEnemies();
         this.renderPlayerHand();
         this.bindEvents();
         this.updateUI();
@@ -101,11 +104,38 @@ class SpellCasterGame {
             }
         ];
 
-        // Add 5 random spell cards to player's hand
-        for (let i = 0; i < 5; i++) {
+        // Add 3 random spell cards to player's hand (starting smaller)
+        for (let i = 0; i < 3; i++) {
             const randomCard = spellCards[Math.floor(Math.random() * spellCards.length)];
             this.playerHand.push({...randomCard, handIndex: i});
         }
+    }
+
+    spawnInitialEnemies() {
+        // Spawn a small group of enemies for the battle
+        const enemyTypes = [
+            { name: "Goblin", art: "👹", health: 3, attack: 2 },
+            { name: "Orc", art: "🧌", health: 5, attack: 3 },
+            { name: "Skeleton", art: "💀", health: 2, attack: 1 },
+            { name: "Wolf", art: "🐺", health: 4, attack: 2 }
+        ];
+
+        // Spawn 3-4 enemies for the battle
+        const enemyCount = Math.floor(Math.random() * 2) + 3; // 3-4 enemies
+        
+        for (let i = 0; i < enemyCount; i++) {
+            const enemyType = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+            this.enemies.push({
+                id: this.enemyIdCounter++,
+                name: enemyType.name,
+                art: enemyType.art,
+                health: enemyType.health,
+                maxHealth: enemyType.health,
+                attack: enemyType.attack
+            });
+        }
+        
+        this.renderEnemies();
     }
 
     renderPlayerHand() {
@@ -172,13 +202,23 @@ class SpellCasterGame {
         nameDiv.className = 'enemy-name';
         nameDiv.textContent = enemy.name;
 
+        const statsDiv = document.createElement('div');
+        statsDiv.className = 'enemy-stats';
+
+        const attackDiv = document.createElement('div');
+        attackDiv.className = 'enemy-attack';
+        attackDiv.textContent = enemy.attack;
+
         const healthDiv = document.createElement('div');
         healthDiv.className = 'enemy-health';
         healthDiv.textContent = enemy.health;
 
+        statsDiv.appendChild(attackDiv);
+        statsDiv.appendChild(healthDiv);
+
         enemyDiv.appendChild(artDiv);
         enemyDiv.appendChild(nameDiv);
-        enemyDiv.appendChild(healthDiv);
+        enemyDiv.appendChild(statsDiv);
 
         return enemyDiv;
     }
@@ -244,9 +284,9 @@ class SpellCasterGame {
             }
         });
 
-        // Next wave button
-        document.getElementById('next-wave').addEventListener('click', () => {
-            this.nextWave();
+        // End turn button
+        document.getElementById('end-turn').addEventListener('click', () => {
+            this.endTurn();
         });
 
         // Card hover effects
@@ -258,6 +298,8 @@ class SpellCasterGame {
     }
 
     handleCardClick(cardElement) {
+        if (this.gameState !== 'playing' || !this.isPlayerTurn) return;
+        
         const handIndex = parseInt(cardElement.dataset.handIndex);
         const card = this.playerHand[handIndex];
 
@@ -306,9 +348,9 @@ class SpellCasterGame {
         this.renderPlayerHand();
         this.updateUI();
         
-        // Check if wave is complete
+        // Check if all enemies are defeated
         setTimeout(() => {
-            this.checkWaveComplete();
+            this.checkGameEnd();
         }, 1000);
     }
 
@@ -359,41 +401,139 @@ class SpellCasterGame {
         }
     }
 
-    checkWaveComplete() {
+    endTurn() {
+        if (this.gameState !== 'playing' || !this.isPlayerTurn) return;
+        
+        this.isPlayerTurn = false;
+        this.updateGameStatus('Enemy Turn');
+        document.getElementById('end-turn').disabled = true;
+        
+        // Enemy attack phase
+        setTimeout(() => {
+            this.enemyAttackPhase();
+        }, 1000);
+    }
+
+    enemyAttackPhase() {
         if (this.enemies.length === 0) {
-            this.showMessage(`Wave ${this.currentWave} complete! Prepare for the next wave.`);
-            document.getElementById('next-wave').disabled = false;
+            this.checkGameEnd();
+            return;
+        }
+
+        let attackIndex = 0;
+        const attackInterval = setInterval(() => {
+            if (attackIndex >= this.enemies.length) {
+                clearInterval(attackInterval);
+                this.startNewTurn();
+                return;
+            }
+
+            const enemy = this.enemies[attackIndex];
+            this.playerHealth -= enemy.attack;
             
-            // Restore some mana
-            this.currentMana = Math.min(this.maxMana, this.currentMana + 2);
+            // Show attack animation/message
+            this.showMessage(`${enemy.name} attacks for ${enemy.attack} damage!`);
+            
+            // Check if player died
+            if (this.playerHealth <= 0) {
+                clearInterval(attackInterval);
+                this.gameOver(false);
+                return;
+            }
+            
             this.updateUI();
+            attackIndex++;
+        }, 1500);
+    }
+
+    startNewTurn() {
+        this.currentTurn++;
+        this.maxMana = Math.min(10, this.currentTurn);
+        this.currentMana = this.maxMana;
+        this.isPlayerTurn = true;
+        
+        // Draw a card
+        this.drawCard();
+        
+        this.updateGameStatus('Your Turn');
+        document.getElementById('end-turn').disabled = false;
+        this.renderPlayerHand();
+        this.updateUI();
+    }
+
+    checkGameEnd() {
+        if (this.enemies.length === 0) {
+            this.gameOver(true);
+        } else if (this.playerHealth <= 0) {
+            this.gameOver(false);
         }
     }
 
-    nextWave() {
-        this.currentWave++;
-        this.spawnWave();
-        this.drawCard();
+    gameOver(playerWon) {
+        this.gameState = playerWon ? 'won' : 'lost';
+        this.isPlayerTurn = false;
+        document.getElementById('end-turn').disabled = true;
+        
+        if (playerWon) {
+            this.updateGameStatus('Victory!');
+            this.showMessage('🎉 Congratulations! You defeated all enemies! 🎉');
+        } else {
+            this.updateGameStatus('Defeat!');
+            this.showMessage('💀 Game Over! Your hero has fallen! 💀');
+        }
+        
+        // Show restart option
+        setTimeout(() => {
+            const restart = confirm(playerWon ? 
+                'You won! Would you like to play again?' : 
+                'You lost! Would you like to try again?');
+            if (restart) {
+                location.reload();
+            }
+        }, 3000);
     }
 
     drawCard() {
-        // Draw a new random spell card
-        const newSpells = [
+        // Draw a new random spell card from the spell pool
+        const spellPool = [
             {
-                id: Date.now(),
+                id: Date.now() + Math.random(),
                 name: "Magic Missile",
                 type: "spell",
-                mana: Math.floor(Math.random() * 4) + 1,
+                mana: 1,
                 rarity: "common",
-                text: "A basic spell attack.",
+                text: "Deal 2 damage to target enemy.",
                 art: "✨",
                 damage: 2,
                 targetType: "single"
+            },
+            {
+                id: Date.now() + Math.random(),
+                name: "Flame Burst",
+                type: "spell",
+                mana: 2,
+                rarity: "common",
+                text: "Deal 1 damage to all enemies.",
+                art: "🔥",
+                damage: 1,
+                targetType: "all"
+            },
+            {
+                id: Date.now() + Math.random(),
+                name: "Minor Heal",
+                type: "spell",
+                mana: 1,
+                rarity: "common",
+                text: "Restore 3 health.",
+                art: "💚",
+                healing: 3,
+                targetType: "self"
             }
         ];
 
         if (this.playerHand.length < 10) {
-            this.playerHand.push(newSpells[0]);
+            const randomSpell = spellPool[Math.floor(Math.random() * spellPool.length)];
+            this.playerHand.push(randomSpell);
             this.renderPlayerHand();
         }
     }
@@ -401,8 +541,25 @@ class SpellCasterGame {
     updateUI() {
         document.getElementById('current-mana').textContent = this.currentMana;
         document.getElementById('player-health').textContent = this.playerHealth;
-        document.getElementById('wave-number').textContent = this.currentWave;
+        document.getElementById('turn-number').textContent = this.currentTurn;
         document.getElementById('enemies-count').textContent = this.enemies.length;
+        
+        // Update max mana display
+        document.getElementById('max-mana').textContent = `/${this.maxMana}`;
+        
+        // Update player health color based on damage
+        const healthElement = document.getElementById('player-health');
+        if (this.playerHealth <= 10) {
+            healthElement.style.color = '#FF4444';
+        } else if (this.playerHealth <= 20) {
+            healthElement.style.color = '#FFA500';
+        } else {
+            healthElement.style.color = '#fff';
+        }
+    }
+
+    updateGameStatus(status) {
+        document.getElementById('game-status').textContent = status;
     }
 
     showCardDetails(cardElement) {

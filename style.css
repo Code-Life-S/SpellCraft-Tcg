@@ -28,8 +28,8 @@ body {
     background: radial-gradient(ellipse at center, rgba(255,255,255,0.1) 0%, transparent 70%);
 }
 
-/* Wave Info Area */
-.wave-info {
+/* Game Info Area */
+.game-info {
     height: 10%;
     display: flex;
     justify-content: space-between;
@@ -39,7 +39,7 @@ body {
     border-bottom: 2px solid rgba(255,215,0,0.5);
 }
 
-.wave-counter, .enemies-remaining {
+.turn-counter, .enemies-remaining, .game-status {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -47,15 +47,27 @@ body {
     font-weight: bold;
 }
 
-.wave-label, .enemies-label {
+.turn-label, .enemies-label {
     color: #FFD700;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
 }
 
-.wave-number, .enemies-count {
+.turn-number, .enemies-count {
     color: #FF6B6B;
     font-size: 24px;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+}
+
+.status-text {
+    color: #00FF7F;
+    font-size: 20px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    animation: status-pulse 2s infinite;
+}
+
+@keyframes status-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
 }
 
 /* Enemy Battlefield */
@@ -127,6 +139,26 @@ body {
     font-weight: bold;
 }
 
+.enemy-stats {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 5px;
+}
+
+.enemy-attack {
+    background: radial-gradient(circle, #FF4500, #DC143C);
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 10px;
+    color: white;
+    border: 2px solid #FFD700;
+}
+
 .enemy-health {
     background: radial-gradient(circle, #32CD32, #228B22);
     width: 20px;
@@ -139,7 +171,6 @@ body {
     font-size: 10px;
     color: white;
     border: 2px solid #FFD700;
-    margin-bottom: 5px;
 }
 
 /* Hero Portrait */
@@ -351,26 +382,28 @@ body {
     text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
 }
 
-.next-wave-btn {
-    padding: 10px 20px;
-    background: linear-gradient(45deg, #FF6B6B, #FF4757);
+.end-turn-btn {
+    padding: 12px 24px;
+    background: linear-gradient(45deg, #FFD700, #FFA500);
     border: none;
     border-radius: 20px;
     font-weight: bold;
-    color: white;
+    color: #8B4513;
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    font-size: 16px;
 }
 
-.next-wave-btn:hover {
-    background: linear-gradient(45deg, #FF4757, #FF3742);
+.end-turn-btn:hover {
+    background: linear-gradient(45deg, #FFA500, #FF8C00);
     transform: translateY(-2px);
     box-shadow: 0 6px 12px rgba(0,0,0,0.4);
 }
 
-.next-wave-btn:disabled {
+.end-turn-btn:disabled {
     background: linear-gradient(45deg, #666, #555);
+    color: #999;
     cursor: not-allowed;
     transform: none;
 }
