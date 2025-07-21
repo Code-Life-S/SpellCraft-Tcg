@@ -12,6 +12,7 @@ class SpellCasterGame {
         this.isPlayerTurn = true;
         this.cardManager = new CardManager();
         this.soundManager = new SoundManager();
+        this.actionHistory = [];
         
         this.initializeGame();
     }
@@ -29,6 +30,9 @@ class SpellCasterGame {
         
         // Initialize deck tracker
         this.updateDeckTracker();
+        
+        // Initialize history display
+        this.updateHistoryDisplay();
         
         // Start background music after first user interaction
         this.backgroundMusicStarted = false;
@@ -374,8 +378,13 @@ class SpellCasterGame {
         switch(card.targetType) {
             case 'single':
                 if (targetEnemyId) {
+                    const enemy = this.enemies.find(e => e.id === targetEnemyId);
                     this.createSpellImpact(targetEnemyId, spellType);
                     this.damageEnemyWithEffects(targetEnemyId, card.damage);
+                    // Add to history
+                    if (enemy) {
+                        this.addToHistory(`${card.art} - ${card.damage} ${enemy.art}`, true);
+                    }
                     // Play impact sound
                     setTimeout(() => {
                         this.soundManager.playSpellSound(card.id, 'impact');
@@ -385,6 +394,8 @@ class SpellCasterGame {
                 break;
                 
             case 'all':
+                // Add to history for AoE spell
+                this.addToHistory(`${card.art} - ${card.damage} 🌍`, true);
                 this.enemies.forEach((enemy, index) => {
                     this.createSpellImpact(enemy.id, spellType);
                     this.damageEnemyWithEffects(enemy.id, card.damage);
@@ -399,12 +410,33 @@ class SpellCasterGame {
                 break;
                 
             case 'random':
+                // Add to history for random spell
+                this.addToHistory(`${card.art} - ${card.damage}x${card.hits} 🌍`, true);
+                
+                // Track which enemies died during this spell to avoid duplicate death messages
+                const enemiesKilledThisSpell = new Set();
+                
                 for (let i = 0; i < card.hits; i++) {
                     if (this.enemies.length > 0) {
                         const randomEnemy = this.enemies[Math.floor(Math.random() * this.enemies.length)];
                         setTimeout(() => {
                             this.createSpellImpact(randomEnemy.id, spellType);
-                            this.damageEnemyWithEffects(randomEnemy.id, card.damage);
+                            
+                            // Check if enemy will die from this hit
+                            const enemy = this.enemies.find(e => e.id === randomEnemy.id);
+                            const willDie = enemy && (enemy.health - card.damage <= 0);
+                            const alreadyMarkedDead = enemiesKilledThisSpell.has(randomEnemy.id);
+                            
+                            if (willDie && !alreadyMarkedDead) {
+                                enemiesKilledThisSpell.add(randomEnemy.id);
+                                // Add death message for this enemy
+                                setTimeout(() => {
+                                    this.addToHistory(`${enemy.art} dies`, true);
+                                }, 1000);
+                            }
+                            
+                            // Damage enemy but skip automatic death history
+                            this.damageEnemyWithEffects(randomEnemy.id, card.damage, true);
                             this.soundManager.playSpellSound(card.id, 'impact');
                         }, i * 200);
                     }
@@ -420,12 +452,14 @@ class SpellCasterGame {
                     this.playerHealth = Math.min(30, this.playerHealth + card.healing);
                     this.createHealingEffect();
                     this.showHealingNumber(card.healing);
+                    this.addToHistory(`${card.art} - +${card.healing} ❤️`, true);
                     message += `${card.name} heals you for ${card.healing}! `;
                 }
                 
                 // Handle card draw
                 if (card.cardDraw) {
                     this.drawMultipleCards(card.cardDraw);
+                    this.addToHistory(`${card.art} - +${card.cardDraw} 📖`, true);
                     message += `Draw ${card.cardDraw} cards! `;
                 }
                 
@@ -433,6 +467,7 @@ class SpellCasterGame {
                 if (card.manaBoost) {
                     this.currentMana += card.manaBoost;
                     this.showManaBoostEffect();
+                    this.addToHistory(`${card.art} - +${card.manaBoost} 💎`, true);
                     message += `+${card.manaBoost} mana this turn! `;
                 }
                 
@@ -441,6 +476,7 @@ class SpellCasterGame {
                     this.playerShield += card.shield;
                     this.createShieldEffect();
                     this.showShieldNumber(card.shield);
+                    this.addToHistory(`${card.art} - +${card.shield} 🛡️`, true);
                     message += `Gain ${card.shield} shield! `;
                 }
                 
@@ -464,7 +500,7 @@ class SpellCasterGame {
         }
     }
 
-    damageEnemyWithEffects(enemyId, damage) {
+    damageEnemyWithEffects(enemyId, damage, skipDeathHistory = false) {
         const enemy = this.enemies.find(e => e.id === enemyId);
         if (enemy) {
             // Show damage number
@@ -490,6 +526,10 @@ class SpellCasterGame {
                 this.soundManager.play('enemy_death');
                 // Remove dead enemy after animation
                 setTimeout(() => {
+                    // Add death to history only if not skipped (to prevent duplicates)
+                    if (!skipDeathHistory) {
+                        this.addToHistory(`${enemy.art} dies`, true);
+                    }
                     this.enemies = this.enemies.filter(e => e.id !== enemyId);
                     this.renderEnemies();
                     // Check for victory immediately after enemy removal
@@ -824,6 +864,18 @@ class SpellCasterGame {
             // Apply remaining damage
             this.playerHealth -= damage;
             
+            // Add enemy attack to history
+            if (this.playerShield > 0 && damage === 0) {
+                // Attack was fully blocked
+                this.addToHistory(`${enemy.art} - ${enemy.attack} 🛡️`, false);
+            } else if (this.playerShield > 0 && damage > 0) {
+                // Attack was partially blocked
+                this.addToHistory(`${enemy.art} - ${enemy.attack} ❤️`, false);
+            } else {
+                // Attack hit directly
+                this.addToHistory(`${enemy.art} - ${damage} ❤️`, false);
+            }
+            
             // Play player hurt sound only if damage was taken
             if (damage > 0) {
                 this.soundManager.play('player_hurt');
@@ -903,6 +955,7 @@ class SpellCasterGame {
             if (newCard) {
                 this.playerHand.push(newCard);
                 this.renderPlayerHand();
+                // Don't add natural card draw to history - happens every turn
             }
         }
     }
@@ -1090,6 +1143,37 @@ class SpellCasterGame {
                 deckCardsElement.appendChild(emptyMessage);
             }
         }
+    }
+
+    // Action History Methods
+    addToHistory(action, isPlayerAction = true) {
+        this.actionHistory.unshift({
+            turn: this.currentTurn,
+            action: action,
+            isPlayerAction: isPlayerAction,
+            timestamp: Date.now()
+        });
+        
+        // Keep only last 25 actions to prevent overflow
+        if (this.actionHistory.length > 25) {
+            this.actionHistory = this.actionHistory.slice(0, 25);
+        }
+        
+        this.updateHistoryDisplay();
+    }
+
+    updateHistoryDisplay() {
+        const historyElement = document.getElementById('action-history');
+        if (!historyElement) return;
+        
+        historyElement.innerHTML = '';
+        
+        this.actionHistory.forEach(entry => {
+            const historyItem = document.createElement('div');
+            historyItem.className = `history-item ${entry.isPlayerAction ? 'player-action' : 'enemy-action'}`;
+            historyItem.textContent = `T${entry.turn} ${entry.action}`;
+            historyElement.appendChild(historyItem);
+        });
     }
 
     showMessage(message) {
