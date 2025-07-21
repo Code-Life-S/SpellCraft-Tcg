@@ -10,6 +10,7 @@ class SpellCasterGame {
         this.gameState = 'playing'; // 'playing', 'won', 'lost'
         this.isPlayerTurn = true;
         this.cardManager = new CardManager();
+        this.soundManager = new SoundManager();
         
         this.initializeGame();
     }
@@ -24,6 +25,9 @@ class SpellCasterGame {
         this.renderPlayerHand();
         this.bindEvents();
         this.updateUI();
+        
+        // Start background music after first user interaction
+        this.backgroundMusicStarted = false;
     }
 
     createSpellCards() {
@@ -195,6 +199,9 @@ class SpellCasterGame {
     bindEvents() {
         // Card click events
         document.addEventListener('click', (e) => {
+            // Start background music on first click
+            this.startBackgroundMusicIfNeeded();
+            
             if (e.target.closest('.card')) {
                 const card = e.target.closest('.card');
                 this.handleCardClick(card);
@@ -208,6 +215,7 @@ class SpellCasterGame {
 
         // End turn button
         document.getElementById('end-turn').addEventListener('click', () => {
+            this.soundManager.play('button_click');
             this.endTurn();
         });
 
@@ -217,6 +225,44 @@ class SpellCasterGame {
                 this.showCardDetails(e.target.closest('.card'));
             }
         });
+
+        // Audio control buttons
+        document.getElementById('toggle-sound').addEventListener('click', () => {
+            const enabled = this.soundManager.toggle();
+            const button = document.getElementById('toggle-sound');
+            button.textContent = enabled ? '🔊' : '🔇';
+            button.classList.toggle('disabled', !enabled);
+            this.soundManager.play('button_click');
+        });
+
+        document.getElementById('toggle-music').addEventListener('click', () => {
+            const button = document.getElementById('toggle-music');
+            const isPlaying = !button.classList.contains('disabled');
+            
+            if (isPlaying) {
+                this.soundManager.stopBackgroundMusic();
+                button.textContent = '🎵';
+                button.classList.add('disabled');
+            } else {
+                this.soundManager.playBackgroundMusic();
+                button.textContent = '🎶';
+                button.classList.remove('disabled');
+            }
+            this.soundManager.play('button_click');
+        });
+    }
+
+    startBackgroundMusicIfNeeded() {
+        if (!this.backgroundMusicStarted && !this.soundManager.backgroundMusicPlaying) {
+            this.backgroundMusicStarted = true;
+            setTimeout(() => {
+                this.soundManager.playBackgroundMusic();
+                // Update music button to show it's playing
+                const musicButton = document.getElementById('toggle-music');
+                musicButton.textContent = '🎶';
+                musicButton.classList.remove('disabled');
+            }, 500);
+        }
     }
 
     handleCardClick(cardElement) {
@@ -232,6 +278,9 @@ class SpellCasterGame {
             // Highlight card selection
             document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
             cardElement.classList.add('selected');
+            
+            // Play card selection sound
+            this.soundManager.play('card_select');
             
             if (card.targetType === 'self' || card.targetType === 'all' || card.targetType === 'random') {
                 // Auto-cast spells that don't need targeting
@@ -273,6 +322,10 @@ class SpellCasterGame {
         const cardElement = document.querySelector(`[data-hand-index="${handIndex}"]`);
         if (cardElement) {
             cardElement.classList.add('casting');
+            
+            // Play spell casting sound
+            this.soundManager.playSpellSound(card.id, 'cast');
+            this.soundManager.play('card_play');
             
             // Create particle trail from card to target
             if (targetEnemyId) {
@@ -316,16 +369,25 @@ class SpellCasterGame {
                 if (targetEnemyId) {
                     this.createSpellImpact(targetEnemyId, spellType);
                     this.damageEnemyWithEffects(targetEnemyId, card.damage);
+                    // Play impact sound
+                    setTimeout(() => {
+                        this.soundManager.playSpellSound(card.id, 'impact');
+                    }, 800);
                     this.showMessage(`${card.name} deals ${card.damage} damage!`);
                 }
                 break;
                 
             case 'all':
-                this.enemies.forEach(enemy => {
+                this.enemies.forEach((enemy, index) => {
                     this.createSpellImpact(enemy.id, spellType);
                     this.damageEnemyWithEffects(enemy.id, card.damage);
+                    // Play impact sounds with slight delay
+                    setTimeout(() => {
+                        this.soundManager.playSpellSound(card.id, 'impact');
+                    }, 800 + index * 100);
                 });
                 this.createScreenShake();
+                this.soundManager.play('screen_shake');
                 this.showMessage(`${card.name} deals ${card.damage} damage to all enemies!`);
                 break;
                 
@@ -336,6 +398,7 @@ class SpellCasterGame {
                         setTimeout(() => {
                             this.createSpellImpact(randomEnemy.id, spellType);
                             this.damageEnemyWithEffects(randomEnemy.id, card.damage);
+                            this.soundManager.playSpellSound(card.id, 'impact');
                         }, i * 200);
                     }
                 }
@@ -346,6 +409,7 @@ class SpellCasterGame {
                 this.playerHealth = Math.min(30, this.playerHealth + card.healing);
                 this.createHealingEffect();
                 this.showHealingNumber(card.healing);
+                this.soundManager.playSpellSound(card.id, 'cast');
                 this.showMessage(`${card.name} heals you for ${card.healing}!`);
                 break;
         }
@@ -387,6 +451,8 @@ class SpellCasterGame {
                 if (enemyElement) {
                     enemyElement.classList.add('dying');
                 }
+                // Play enemy death sound
+                this.soundManager.play('enemy_death');
                 // Remove dead enemy after animation
                 setTimeout(() => {
                     this.enemies = this.enemies.filter(e => e.id !== enemyId);
@@ -697,6 +763,9 @@ class SpellCasterGame {
             const enemy = this.enemies[attackIndex];
             this.playerHealth -= enemy.attack;
             
+            // Play player hurt sound
+            this.soundManager.play('player_hurt');
+            
             // Show attack animation/message
             this.showMessage(`${enemy.name} attacks for ${enemy.attack} damage!`);
             
@@ -717,6 +786,9 @@ class SpellCasterGame {
         this.maxMana = Math.min(10, this.currentTurn);
         this.currentMana = this.maxMana;
         this.isPlayerTurn = true;
+        
+        // Play mana restore sound
+        this.soundManager.play('mana_restore');
         
         // Draw a card
         this.drawCard();
@@ -742,9 +814,11 @@ class SpellCasterGame {
         
         if (playerWon) {
             this.updateGameStatus('Victory!');
+            this.soundManager.play('victory');
             this.showMessage('🎉 Congratulations! You defeated all enemies! 🎉');
         } else {
             this.updateGameStatus('Defeat!');
+            this.soundManager.play('defeat');
             this.showMessage('💀 Game Over! Your hero has fallen! 💀');
         }
         
