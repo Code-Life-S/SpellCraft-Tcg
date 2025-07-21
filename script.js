@@ -27,13 +27,16 @@ class SpellCasterGame {
         this.bindEvents();
         this.updateUI();
         
+        // Initialize deck tracker
+        this.updateDeckTracker();
+        
         // Start background music after first user interaction
         this.backgroundMusicStarted = false;
     }
 
     createSpellCards() {
-        // Get starting hand from CardManager
-        this.playerHand = this.cardManager.getRandomCards(3);
+        // Get starting hand from deck
+        this.playerHand = this.cardManager.getStartingHand(3);
     }
 
     spawnInitialEnemies() {
@@ -999,6 +1002,9 @@ class SpellCasterGame {
             healthElement.style.background = 'linear-gradient(45deg, #32CD32, #228B22)'; // Green for healthy
         }
         
+        // Update deck tracker
+        this.updateDeckTracker();
+        
         // Update end turn button based on playable cards
         this.updateEndTurnButton();
     }
@@ -1025,6 +1031,64 @@ class SpellCasterGame {
 
     showCardDetails(cardElement) {
         cardElement.style.zIndex = '100';
+    }
+
+    updateDeckTracker() {
+        const deckInfo = this.cardManager.getDeckInfo();
+        const remainingCounts = this.cardManager.getRemainingCardCounts();
+        
+        // Update deck count
+        const deckRemainingElement = document.getElementById('deck-remaining');
+        if (deckRemainingElement) {
+            deckRemainingElement.textContent = deckInfo.remainingCards;
+        }
+        
+        // Update deck cards list
+        const deckCardsElement = document.getElementById('deck-cards');
+        if (deckCardsElement) {
+            deckCardsElement.innerHTML = '';
+            
+            // Group cards by ID and sort by mana cost
+            const cardEntries = Object.entries(remainingCounts);
+            cardEntries.sort((a, b) => {
+                const cardA = this.cardManager.getCardById(a[0]);
+                const cardB = this.cardManager.getCardById(b[0]);
+                if (cardA && cardB) {
+                    return cardA.mana - cardB.mana;
+                }
+                return 0;
+            });
+            
+            cardEntries.forEach(([cardId, count]) => {
+                const card = this.cardManager.getCardById(cardId);
+                if (card) {
+                    const cardItem = document.createElement('div');
+                    cardItem.className = 'deck-card-item';
+                    
+                    cardItem.innerHTML = `
+                        <span class="deck-card-mana">${card.mana}</span>
+                        <span class="deck-card-name" title="${card.name}">${card.name}</span>
+                        <span class="deck-card-count">×${count}</span>
+                    `;
+                    
+                    deckCardsElement.appendChild(cardItem);
+                }
+            });
+            
+            // Show message if deck is empty
+            if (deckInfo.remainingCards === 0) {
+                const emptyMessage = document.createElement('div');
+                emptyMessage.className = 'deck-empty-message';
+                emptyMessage.style.cssText = `
+                    text-align: center;
+                    color: #FF6B6B;
+                    font-style: italic;
+                    padding: 10px;
+                `;
+                emptyMessage.textContent = 'Deck is empty!';
+                deckCardsElement.appendChild(emptyMessage);
+            }
+        }
     }
 
     showMessage(message) {

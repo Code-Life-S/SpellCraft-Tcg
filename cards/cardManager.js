@@ -1,7 +1,11 @@
 class CardManager {
     constructor() {
         this.allSpells = [];
+        this.allDecks = [];
+        this.currentDeck = [];
+        this.remainingDeck = [];
         this.loaded = false;
+        this.decksLoaded = false;
     }
 
     async loadCards() {
@@ -14,10 +18,32 @@ class CardManager {
             this.allSpells = data.spells;
             this.validateCards();
             this.loaded = true;
+            
+            // Also load decks
+            await this.loadDecks();
         } catch (error) {
             console.error('Error loading cards:', error);
             // Fallback to hardcoded cards if JSON fails
             this.loadFallbackCards();
+        }
+    }
+
+    async loadDecks() {
+        try {
+            const response = await fetch('cards/decks.json');
+            if (!response.ok) {
+                throw new Error(`Failed to load decks: ${response.status}`);
+            }
+            const data = await response.json();
+            this.allDecks = data.decks;
+            this.decksLoaded = true;
+            
+            // Load default starter deck
+            this.loadDeck('starter_deck');
+        } catch (error) {
+            console.error('Error loading decks:', error);
+            // Fallback to creating a basic deck from available cards
+            this.createFallbackDeck();
         }
     }
 
@@ -62,38 +88,29 @@ class CardManager {
         this.loaded = true;
     }
 
-    // Get random cards for starting hand
-    getRandomCards(count = 3) {
-        if (!this.loaded) {
-            console.error('Cards not loaded yet!');
+    // Get starting hand from deck
+    getStartingHand(count = 3) {
+        if (!this.isLoaded()) {
+            console.error('Cards and decks not loaded yet!');
             return [];
         }
 
-        const cards = [];
-        for (let i = 0; i < count; i++) {
-            const randomCard = this.allSpells[Math.floor(Math.random() * this.allSpells.length)];
-            // Create a copy with unique ID for hand tracking
-            cards.push({
-                ...randomCard,
-                handIndex: i,
-                instanceId: Date.now() + Math.random()
-            });
-        }
-        return cards;
+        return this.drawMultipleCardsFromDeck(count);
     }
 
-    // Get a single random card (for drawing)
+    // Legacy method for compatibility - now draws from deck
+    getRandomCards(count = 3) {
+        return this.getStartingHand(count);
+    }
+
+    // Get a single card from deck (for drawing)
     getRandomCard() {
-        if (!this.loaded || this.allSpells.length === 0) {
-            console.error('No cards available!');
+        if (!this.isLoaded()) {
+            console.error('Cards and decks not loaded yet!');
             return null;
         }
 
-        const randomCard = this.allSpells[Math.floor(Math.random() * this.allSpells.length)];
-        return {
-            ...randomCard,
-            instanceId: Date.now() + Math.random()
-        };
+        return this.drawCardFromDeck();
     }
 
     // Filter cards by criteria (future deck building)
@@ -138,9 +155,126 @@ class CardManager {
         return this.allSpells.find(card => card.id === id);
     }
 
-    // Check if cards are loaded
+    // Deck Management Methods
+    loadDeck(deckId) {
+        const deck = this.allDecks.find(d => d.id === deckId);
+        if (!deck) {
+            console.error(`Deck ${deckId} not found!`);
+            return false;
+        }
+
+        // Build the deck array from card definitions
+        this.currentDeck = [];
+        deck.cards.forEach(cardDef => {
+            const card = this.getCardById(cardDef.id);
+            if (card) {
+                for (let i = 0; i < cardDef.count; i++) {
+                    this.currentDeck.push({
+                        ...card,
+                        deckIndex: this.currentDeck.length
+                    });
+                }
+            }
+        });
+
+        // Reset and shuffle the deck
+        this.resetDeck();
+        
+        console.log(`Loaded deck: ${deck.name} (${this.currentDeck.length} cards)`);
+        return true;
+    }
+
+    shuffleDeck() {
+        // Fisher-Yates shuffle algorithm
+        for (let i = this.remainingDeck.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [this.remainingDeck[i], this.remainingDeck[j]] = [this.remainingDeck[j], this.remainingDeck[i]];
+        }
+    }
+
+    resetDeck() {
+        // Reset remaining deck to full deck
+        this.remainingDeck = [...this.currentDeck];
+        this.shuffleDeck();
+    }
+
+    drawCardFromDeck() {
+        if (this.remainingDeck.length === 0) {
+            console.warn('Deck is empty! Cannot draw more cards.');
+            return null;
+        }
+
+        const drawnCard = this.remainingDeck.pop();
+        return {
+            ...drawnCard,
+            instanceId: Date.now() + Math.random()
+        };
+    }
+
+    drawMultipleCardsFromDeck(count) {
+        const cards = [];
+        for (let i = 0; i < count; i++) {
+            const card = this.drawCardFromDeck();
+            if (card) {
+                cards.push(card);
+            }
+        }
+        return cards;
+    }
+
+    createFallbackDeck() {
+        // Create a basic deck if decks.json fails to load
+        if (this.allSpells.length === 0) return;
+
+        this.currentDeck = [];
+        // Add 2 copies of each available spell (up to 30 cards)
+        const maxCards = 30;
+        let cardCount = 0;
+
+        for (const spell of this.allSpells) {
+            if (cardCount >= maxCards) break;
+            
+            const copies = Math.min(2, maxCards - cardCount);
+            for (let i = 0; i < copies; i++) {
+                this.currentDeck.push({
+                    ...spell,
+                    deckIndex: this.currentDeck.length
+                });
+                cardCount++;
+            }
+        }
+
+        this.resetDeck();
+        this.decksLoaded = true;
+        console.log('Created fallback deck with', this.currentDeck.length, 'cards');
+    }
+
+    // Get deck information for UI
+    getDeckInfo() {
+        return {
+            totalCards: this.currentDeck.length,
+            remainingCards: this.remainingDeck.length,
+            cardsDrawn: this.currentDeck.length - this.remainingDeck.length
+        };
+    }
+
+    // Get remaining cards grouped by card ID for deck tracker
+    getRemainingCardCounts() {
+        const counts = {};
+        this.remainingDeck.forEach(card => {
+            counts[card.id] = (counts[card.id] || 0) + 1;
+        });
+        return counts;
+    }
+
+    // Get all available decks
+    getAvailableDecks() {
+        return [...this.allDecks];
+    }
+
+    // Check if cards and decks are loaded
     isLoaded() {
-        return this.loaded;
+        return this.loaded && this.decksLoaded;
     }
 }
 

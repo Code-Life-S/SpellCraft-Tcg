@@ -30,11 +30,11 @@ body {
 
 /* Game Info Area */
 .game-info {
-    height: 10%;
+    height: 6%;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px 40px;
+    padding: 8px 40px;
     background: linear-gradient(90deg, rgba(139,69,19,0.3), rgba(210,105,30,0.3));
     border-bottom: 2px solid rgba(255,215,0,0.5);
 }
@@ -42,8 +42,8 @@ body {
 .turn-counter, .enemies-remaining, .game-status {
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-size: 18px;
+    gap: 8px;
+    font-size: 16px;
     font-weight: bold;
 }
 
@@ -54,13 +54,13 @@ body {
 
 .turn-number, .enemies-count {
     color: #FF6B6B;
-    font-size: 24px;
+    font-size: 20px;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
 }
 
 .status-text {
     color: #00FF7F;
-    font-size: 20px;
+    font-size: 18px;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
     animation: status-pulse 2s infinite;
 }
@@ -70,15 +70,42 @@ body {
     50% { opacity: 0.7; }
 }
 
-/* Enemy Battlefield */
-.enemy-battlefield {
+/* Main Game Area Layout */
+.main-game-area {
+    display: flex;
     height: auto;
     min-height: 220px;
-    max-height: 240px;
+    max-height: 300px;
+    margin: 10px 20px;
+    gap: 15px;
+}
+
+.left-sidebar, .right-sidebar {
+    width: 200px;
+    background: linear-gradient(135deg, rgba(30,30,50,0.8), rgba(50,50,80,0.8));
+    border: 2px solid rgba(255,215,0,0.3);
+    border-radius: 10px;
+    padding: 10px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 180px); /* Extend down to align with End Turn button */
+}
+
+.center-battlefield {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Enemy Battlefield */
+.enemy-battlefield {
+    height: 100%;
+    min-height: 200px;
+    max-height: 280px;
     background: linear-gradient(135deg, rgba(139,0,0,0.2), rgba(75,0,130,0.2));
     border: 3px solid rgba(255,69,0,0.4);
     border-radius: 15px;
-    margin: 10px 20px;
     padding: 10px;
     display: flex;
     flex-wrap: wrap;
@@ -843,6 +870,111 @@ body {
 .hero-shield:hover {
     transform: scale(1.05);
     box-shadow: 0 6px 12px rgba(0,0,0,0.6);
+}
+
+/* Deck Tracker Styles */
+.deck-tracker, .history-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.deck-tracker h3, .history-panel h3 {
+    color: #FFD700;
+    font-size: 16px;
+    margin-bottom: 10px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255,215,0,0.3);
+    padding-bottom: 5px;
+    flex-shrink: 0;
+}
+
+.deck-info {
+    margin-bottom: 15px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.deck-count {
+    font-size: 18px;
+    font-weight: bold;
+    color: #00FF7F;
+}
+
+.deck-remaining {
+    color: #FF6B6B;
+}
+
+.deck-total {
+    color: #FFD700;
+}
+
+.deck-cards {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.deck-card-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 8px;
+    margin-bottom: 3px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 5px;
+    font-size: 12px;
+}
+
+.deck-card-name {
+    color: #fff;
+    flex: 1;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.deck-card-count {
+    color: #FFD700;
+    font-weight: bold;
+    margin-left: 5px;
+}
+
+.deck-card-mana {
+    color: #4169E1;
+    font-weight: bold;
+    margin-right: 5px;
+    min-width: 20px;
+    text-align: center;
+}
+
+/* History Panel Styles */
+.history-content {
+    flex: 1;
+    overflow-y: auto;
+    font-size: 12px;
+    min-height: 0;
+}
+
+.history-item {
+    padding: 4px 6px;
+    margin-bottom: 3px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 3px;
+    border-left: 3px solid #FFD700;
+}
+
+.history-item.player-action {
+    border-left-color: #00FF7F;
+}
+
+.history-item.enemy-action {
+    border-left-color: #FF6B6B;
+}
+
+.history-time {
+    color: #888;
+    font-size: 10px;
 }
 
 .shield-number {
