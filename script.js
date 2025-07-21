@@ -971,7 +971,7 @@ class SpellCasterGame {
 
     updateUI() {
         document.getElementById('current-mana').textContent = this.currentMana;
-        document.getElementById('player-health').textContent = this.playerHealth;
+        document.getElementById('player-health').textContent = `❤️ ${this.playerHealth}`;
         document.getElementById('turn-number').textContent = this.currentTurn;
         document.getElementById('enemies-count').textContent = this.enemies.length;
         
@@ -982,21 +982,21 @@ class SpellCasterGame {
         const shieldElement = document.getElementById('player-shield');
         if (shieldElement) {
             if (this.playerShield > 0) {
-                shieldElement.textContent = `🛡️${this.playerShield}`;
+                shieldElement.textContent = `🛡️ ${this.playerShield}`;
                 shieldElement.style.display = 'block';
             } else {
                 shieldElement.style.display = 'none';
             }
         }
         
-        // Update player health color based on damage
+        // Update player health background color based on damage
         const healthElement = document.getElementById('player-health');
         if (this.playerHealth <= 10) {
-            healthElement.style.color = '#FF4444';
+            healthElement.style.background = 'linear-gradient(45deg, #DC143C, #B22222)'; // Red for critical
         } else if (this.playerHealth <= 20) {
-            healthElement.style.color = '#FFA500';
+            healthElement.style.background = 'linear-gradient(45deg, #FF8C00, #FF6347)'; // Orange for low
         } else {
-            healthElement.style.color = '#fff';
+            healthElement.style.background = 'linear-gradient(45deg, #32CD32, #228B22)'; // Green for healthy
         }
         
         // Update end turn button based on playable cards
