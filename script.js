@@ -9,11 +9,16 @@ class SpellCasterGame {
         this.enemyIdCounter = 1;
         this.gameState = 'playing'; // 'playing', 'won', 'lost'
         this.isPlayerTurn = true;
+        this.cardManager = new CardManager();
         
         this.initializeGame();
     }
 
-    initializeGame() {
+    async initializeGame() {
+        // Load cards first
+        await this.cardManager.loadCards();
+        
+        // Then initialize game
         this.createSpellCards();
         this.spawnInitialEnemies();
         this.renderPlayerHand();
@@ -22,93 +27,8 @@ class SpellCasterGame {
     }
 
     createSpellCards() {
-        // Only spell cards for our wave defense game
-        const spellCards = [
-            {
-                id: 1,
-                name: "Fire Bolt",
-                type: "spell",
-                mana: 1,
-                rarity: "common",
-                text: "Deal 3 damage to target enemy.",
-                art: "🔥",
-                damage: 3,
-                targetType: "single"
-            },
-            {
-                id: 2,
-                name: "Lightning Storm",
-                type: "spell",
-                mana: 3,
-                rarity: "rare",
-                text: "Deal 2 damage to all enemies.",
-                art: "⚡",
-                damage: 2,
-                targetType: "all"
-            },
-            {
-                id: 3,
-                name: "Healing Light",
-                type: "spell",
-                mana: 2,
-                rarity: "common",
-                text: "Restore 5 health to yourself.",
-                art: "✨",
-                healing: 5,
-                targetType: "self"
-            },
-            {
-                id: 4,
-                name: "Meteor",
-                type: "spell",
-                mana: 5,
-                rarity: "epic",
-                text: "Deal 8 damage to target enemy.",
-                art: "☄️",
-                damage: 8,
-                targetType: "single"
-            },
-            {
-                id: 5,
-                name: "Frost Nova",
-                type: "spell",
-                mana: 2,
-                rarity: "rare",
-                text: "Deal 1 damage to all enemies.",
-                art: "❄️",
-                damage: 1,
-                targetType: "all"
-            },
-            {
-                id: 6,
-                name: "Arcane Missile",
-                type: "spell",
-                mana: 1,
-                rarity: "common",
-                text: "Deal 1 damage 3 times randomly.",
-                art: "🌟",
-                damage: 1,
-                targetType: "random",
-                hits: 3
-            },
-            {
-                id: 7,
-                name: "Divine Wrath",
-                type: "spell",
-                mana: 6,
-                rarity: "legendary",
-                text: "Deal 5 damage to all enemies.",
-                art: "⚡",
-                damage: 5,
-                targetType: "all"
-            }
-        ];
-
-        // Add 3 random spell cards to player's hand (starting smaller)
-        for (let i = 0; i < 3; i++) {
-            const randomCard = spellCards[Math.floor(Math.random() * spellCards.length)];
-            this.playerHand.push({...randomCard, handIndex: i});
-        }
+        // Get starting hand from CardManager
+        this.playerHand = this.cardManager.getRandomCards(3);
     }
 
     spawnInitialEnemies() {
@@ -317,6 +237,8 @@ class SpellCasterGame {
                 // Auto-cast spells that don't need targeting
                 this.castSpell(card, handIndex);
             } else {
+                // Enable enemy targeting
+                this.enableEnemyTargeting();
                 this.showMessage("Select a target enemy!");
             }
         } else {
@@ -327,48 +249,83 @@ class SpellCasterGame {
     handleEnemyClick(enemyElement) {
         if (this.selectedCard && (this.selectedCard.targetType === 'single')) {
             const enemyId = parseInt(enemyElement.dataset.enemyId);
+            this.disableEnemyTargeting();
             this.castSpell(this.selectedCard, this.selectedCardIndex, enemyId);
         }
     }
 
+    enableEnemyTargeting() {
+        // Add targetable class to all enemies
+        document.querySelectorAll('.enemy').forEach(enemy => {
+            enemy.classList.add('targetable');
+        });
+    }
+
+    disableEnemyTargeting() {
+        // Remove targetable class from all enemies
+        document.querySelectorAll('.enemy').forEach(enemy => {
+            enemy.classList.remove('targetable');
+        });
+    }
+
     castSpell(card, handIndex, targetEnemyId = null) {
+        // Add casting animation to card
+        const cardElement = document.querySelector(`[data-hand-index="${handIndex}"]`);
+        if (cardElement) {
+            cardElement.classList.add('casting');
+            
+            // Create particle trail from card to target
+            if (targetEnemyId) {
+                this.createParticleTrail(cardElement, targetEnemyId, this.getSpellEffectType(card.id));
+            } else if (card.targetType === 'all') {
+                this.createAOEParticles(this.getSpellEffectType(card.id));
+            }
+        }
+        
         // Deduct mana
         this.currentMana -= card.mana;
-        
-        // Remove card from hand
-        this.playerHand.splice(handIndex, 1);
         
         // Clear selection
         this.selectedCard = null;
         this.selectedCardIndex = null;
         document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+        this.disableEnemyTargeting();
 
-        // Apply spell effect
-        this.applySpellEffect(card, targetEnemyId);
-        
-        // Re-render hand and update UI
-        this.renderPlayerHand();
-        this.updateUI();
+        // Apply spell effect with delay for animation
+        setTimeout(() => {
+            this.applySpellEffect(card, targetEnemyId);
+            
+            // Remove card from hand after effect
+            this.playerHand.splice(handIndex, 1);
+            this.renderPlayerHand();
+            this.updateUI();
+        }, 500);
         
         // Check if all enemies are defeated
         setTimeout(() => {
             this.checkGameEnd();
-        }, 1000);
+        }, 1500);
     }
 
     applySpellEffect(card, targetEnemyId) {
+        // Get spell effect type for visual effects
+        const spellType = this.getSpellEffectType(card.id);
+        
         switch(card.targetType) {
             case 'single':
                 if (targetEnemyId) {
-                    this.damageEnemy(targetEnemyId, card.damage);
+                    this.createSpellImpact(targetEnemyId, spellType);
+                    this.damageEnemyWithEffects(targetEnemyId, card.damage);
                     this.showMessage(`${card.name} deals ${card.damage} damage!`);
                 }
                 break;
                 
             case 'all':
                 this.enemies.forEach(enemy => {
-                    this.damageEnemy(enemy.id, card.damage);
+                    this.createSpellImpact(enemy.id, spellType);
+                    this.damageEnemyWithEffects(enemy.id, card.damage);
                 });
+                this.createScreenShake();
                 this.showMessage(`${card.name} deals ${card.damage} damage to all enemies!`);
                 break;
                 
@@ -376,7 +333,10 @@ class SpellCasterGame {
                 for (let i = 0; i < card.hits; i++) {
                     if (this.enemies.length > 0) {
                         const randomEnemy = this.enemies[Math.floor(Math.random() * this.enemies.length)];
-                        this.damageEnemy(randomEnemy.id, card.damage);
+                        setTimeout(() => {
+                            this.createSpellImpact(randomEnemy.id, spellType);
+                            this.damageEnemyWithEffects(randomEnemy.id, card.damage);
+                        }, i * 200);
                     }
                 }
                 this.showMessage(`${card.name} hits ${card.hits} times!`);
@@ -384,6 +344,8 @@ class SpellCasterGame {
                 
             case 'self':
                 this.playerHealth = Math.min(30, this.playerHealth + card.healing);
+                this.createHealingEffect();
+                this.showHealingNumber(card.healing);
                 this.showMessage(`${card.name} heals you for ${card.healing}!`);
                 break;
         }
@@ -400,6 +362,308 @@ class SpellCasterGame {
             }
             
             this.renderEnemies();
+        }
+    }
+
+    damageEnemyWithEffects(enemyId, damage) {
+        const enemy = this.enemies.find(e => e.id === enemyId);
+        if (enemy) {
+            // Show damage number
+            this.showDamageNumber(enemyId, damage);
+            
+            // Add damage animation to enemy
+            const enemyElement = document.querySelector(`[data-enemy-id="${enemyId}"]`);
+            if (enemyElement) {
+                enemyElement.classList.add('taking-damage');
+                setTimeout(() => {
+                    enemyElement.classList.remove('taking-damage');
+                }, 600);
+            }
+            
+            enemy.health -= damage;
+            
+            if (enemy.health <= 0) {
+                // Add dying animation
+                if (enemyElement) {
+                    enemyElement.classList.add('dying');
+                }
+                // Remove dead enemy after animation
+                setTimeout(() => {
+                    this.enemies = this.enemies.filter(e => e.id !== enemyId);
+                    this.renderEnemies();
+                }, 1000);
+            } else {
+                this.renderEnemies();
+            }
+        }
+    }
+
+    getSpellEffectType(spellId) {
+        // Map spell IDs to visual effect types
+        const spellEffects = {
+            'fire_bolt': 'fire',
+            'flame_burst': 'fire',
+            'meteor': 'fire',
+            'lightning_storm': 'lightning',
+            'divine_wrath': 'lightning',
+            'frost_nova': 'frost',
+            'arcane_missiles': 'arcane',
+            'magic_missile': 'arcane',
+            'healing_light': 'healing',
+            'minor_heal': 'healing'
+        };
+        return spellEffects[spellId] || 'arcane';
+    }
+
+    createSpellImpact(enemyId, spellType) {
+        const enemyElement = document.querySelector(`[data-enemy-id="${enemyId}"]`);
+        if (enemyElement) {
+            const rect = enemyElement.getBoundingClientRect();
+            const impact = document.createElement('div');
+            impact.className = `spell-impact ${spellType}`;
+            impact.style.left = `${rect.left + rect.width / 2 - 30}px`;
+            impact.style.top = `${rect.top + rect.height / 2 - 30}px`;
+            
+            document.body.appendChild(impact);
+            
+            // Remove impact after animation
+            setTimeout(() => {
+                if (document.body.contains(impact)) {
+                    document.body.removeChild(impact);
+                }
+            }, 1000);
+        }
+    }
+
+    showDamageNumber(enemyId, damage) {
+        const enemyElement = document.querySelector(`[data-enemy-id="${enemyId}"]`);
+        if (enemyElement) {
+            const rect = enemyElement.getBoundingClientRect();
+            const damageDiv = document.createElement('div');
+            damageDiv.className = 'damage-number';
+            damageDiv.textContent = `-${damage}`;
+            damageDiv.style.left = `${rect.left + rect.width / 2}px`;
+            damageDiv.style.top = `${rect.top}px`;
+            
+            document.body.appendChild(damageDiv);
+            
+            // Remove damage number after animation
+            setTimeout(() => {
+                if (document.body.contains(damageDiv)) {
+                    document.body.removeChild(damageDiv);
+                }
+            }, 1500);
+        }
+    }
+
+    showHealingNumber(healing) {
+        const playerElement = document.querySelector('.player-hero');
+        if (playerElement) {
+            const rect = playerElement.getBoundingClientRect();
+            const healingDiv = document.createElement('div');
+            healingDiv.className = 'healing-number';
+            healingDiv.textContent = `+${healing}`;
+            healingDiv.style.left = `${rect.left + rect.width / 2}px`;
+            healingDiv.style.top = `${rect.top}px`;
+            
+            document.body.appendChild(healingDiv);
+            
+            // Remove healing number after animation
+            setTimeout(() => {
+                if (document.body.contains(healingDiv)) {
+                    document.body.removeChild(healingDiv);
+                }
+            }, 1500);
+        }
+    }
+
+    createHealingEffect() {
+        const playerHero = document.querySelector('.player-hero');
+        if (playerHero) {
+            playerHero.classList.add('healing');
+            setTimeout(() => {
+                playerHero.classList.remove('healing');
+            }, 1000);
+        }
+    }
+
+    createScreenShake() {
+        const gameBoard = document.querySelector('.game-board');
+        if (gameBoard) {
+            gameBoard.classList.add('screen-shake');
+            setTimeout(() => {
+                gameBoard.classList.remove('screen-shake');
+            }, 500);
+        }
+    }
+
+    createParticleTrail(cardElement, targetEnemyId, spellType) {
+        const cardRect = cardElement.getBoundingClientRect();
+        const targetElement = document.querySelector(`[data-enemy-id="${targetEnemyId}"]`);
+        
+        if (!targetElement) return;
+        
+        const targetRect = targetElement.getBoundingClientRect();
+        
+        // Calculate trajectory
+        const startX = cardRect.left + cardRect.width / 2;
+        const startY = cardRect.top + cardRect.height / 2;
+        const endX = targetRect.left + targetRect.width / 2;
+        const endY = targetRect.top + targetRect.height / 2;
+        
+        // Create particle projectile
+        const projectile = document.createElement('div');
+        projectile.className = `spell-projectile ${spellType}`;
+        projectile.style.cssText = `
+            position: fixed;
+            left: ${startX}px;
+            top: ${startY}px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            z-index: 1000;
+            pointer-events: none;
+            transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        `;
+        
+        // Set projectile appearance based on spell type
+        switch(spellType) {
+            case 'fire':
+                projectile.style.background = 'radial-gradient(circle, #ff4500 0%, #ff8c00 50%, #ffa500 100%)';
+                projectile.style.boxShadow = '0 0 20px #ff4500, 0 0 40px #ff4500';
+                break;
+            case 'lightning':
+                projectile.style.background = 'radial-gradient(circle, #ffff00 0%, #87ceeb 50%, #4169e1 100%)';
+                projectile.style.boxShadow = '0 0 20px #ffff00, 0 0 40px #87ceeb';
+                break;
+            case 'frost':
+                projectile.style.background = 'radial-gradient(circle, #add8e6 0%, #b0e0e6 50%, #87ceeb 100%)';
+                projectile.style.boxShadow = '0 0 20px #add8e6, 0 0 40px #b0e0e6';
+                break;
+            case 'arcane':
+                projectile.style.background = 'radial-gradient(circle, #8a2be2 0%, #9370db 50%, #dda0dd 100%)';
+                projectile.style.boxShadow = '0 0 20px #8a2be2, 0 0 40px #9370db';
+                break;
+        }
+        
+        
+        document.body.appendChild(projectile);
+        
+        // Create particle trail
+        this.createTrailParticles(startX, startY, endX, endY, spellType);
+        
+        // Animate projectile to target
+        setTimeout(() => {
+            projectile.style.left = `${endX}px`;
+            projectile.style.top = `${endY}px`;
+            projectile.style.transform = 'scale(1.5)';
+        }, 50);
+        
+        // Remove projectile after animation
+        setTimeout(() => {
+            if (document.body.contains(projectile)) {
+                document.body.removeChild(projectile);
+            }
+        }, 900);
+    }
+
+    createTrailParticles(startX, startY, endX, endY, spellType) {
+        const particleCount = 15;
+        const deltaX = (endX - startX) / particleCount;
+        const deltaY = (endY - startY) / particleCount;
+        
+        for (let i = 0; i < particleCount; i++) {
+            setTimeout(() => {
+                const particle = document.createElement('div');
+                particle.className = 'trail-particle';
+                particle.style.cssText = `
+                    position: fixed;
+                    left: ${startX + deltaX * i + (Math.random() - 0.5) * 20}px;
+                    top: ${startY + deltaY * i + (Math.random() - 0.5) * 20}px;
+                    width: ${4 + Math.random() * 6}px;
+                    height: ${4 + Math.random() * 6}px;
+                    border-radius: 50%;
+                    z-index: 999;
+                    pointer-events: none;
+                    opacity: 0.8;
+                    animation: trailParticle 1s ease-out forwards;
+                `;
+                
+                // Set particle color based on spell type
+                switch(spellType) {
+                    case 'fire':
+                        particle.style.background = `hsl(${Math.random() * 60}, 100%, ${50 + Math.random() * 30}%)`;
+                        break;
+                    case 'lightning':
+                        particle.style.background = `hsl(${180 + Math.random() * 60}, 100%, ${70 + Math.random() * 30}%)`;
+                        break;
+                    case 'frost':
+                        particle.style.background = `hsl(${180 + Math.random() * 40}, 60%, ${70 + Math.random() * 30}%)`;
+                        break;
+                    case 'arcane':
+                        particle.style.background = `hsl(${270 + Math.random() * 60}, 70%, ${50 + Math.random() * 30}%)`;
+                        break;
+                }
+                
+                document.body.appendChild(particle);
+                
+                setTimeout(() => {
+                    if (document.body.contains(particle)) {
+                        document.body.removeChild(particle);
+                    }
+                }, 1000);
+            }, i * 40);
+        }
+    }
+
+    createAOEParticles(spellType) {
+        const battlefield = document.getElementById('enemy-battlefield');
+        const battlefieldRect = battlefield.getBoundingClientRect();
+        
+        // Create area effect particles
+        const particleCount = 30;
+        
+        for (let i = 0; i < particleCount; i++) {
+            setTimeout(() => {
+                const particle = document.createElement('div');
+                particle.className = 'aoe-particle';
+                particle.style.cssText = `
+                    position: fixed;
+                    left: ${battlefieldRect.left + Math.random() * battlefieldRect.width}px;
+                    top: ${battlefieldRect.top + Math.random() * battlefieldRect.height}px;
+                    width: ${6 + Math.random() * 10}px;
+                    height: ${6 + Math.random() * 10}px;
+                    border-radius: 50%;
+                    z-index: 999;
+                    pointer-events: none;
+                    opacity: 0.9;
+                    animation: aoeParticle 2s ease-out forwards;
+                `;
+                
+                // Set particle appearance based on spell type
+                switch(spellType) {
+                    case 'lightning':
+                        particle.style.background = 'radial-gradient(circle, #ffff00 0%, #87ceeb 100%)';
+                        particle.style.boxShadow = '0 0 10px #ffff00';
+                        break;
+                    case 'frost':
+                        particle.style.background = 'radial-gradient(circle, #add8e6 0%, #ffffff 100%)';
+                        particle.style.boxShadow = '0 0 8px #add8e6';
+                        break;
+                    case 'fire':
+                        particle.style.background = 'radial-gradient(circle, #ff4500 0%, #ffa500 100%)';
+                        particle.style.boxShadow = '0 0 12px #ff4500';
+                        break;
+                }
+                
+                document.body.appendChild(particle);
+                
+                setTimeout(() => {
+                    if (document.body.contains(particle)) {
+                        document.body.removeChild(particle);
+                    }
+                }, 2000);
+            }, i * 50);
         }
     }
 
@@ -496,47 +760,13 @@ class SpellCasterGame {
     }
 
     drawCard() {
-        // Draw a new random spell card from the spell pool
-        const spellPool = [
-            {
-                id: Date.now() + Math.random(),
-                name: "Magic Missile",
-                type: "spell",
-                mana: 1,
-                rarity: "common",
-                text: "Deal 2 damage to target enemy.",
-                art: "✨",
-                damage: 2,
-                targetType: "single"
-            },
-            {
-                id: Date.now() + Math.random(),
-                name: "Flame Burst",
-                type: "spell",
-                mana: 2,
-                rarity: "common",
-                text: "Deal 1 damage to all enemies.",
-                art: "🔥",
-                damage: 1,
-                targetType: "all"
-            },
-            {
-                id: Date.now() + Math.random(),
-                name: "Minor Heal",
-                type: "spell",
-                mana: 1,
-                rarity: "common",
-                text: "Restore 3 health.",
-                art: "💚",
-                healing: 3,
-                targetType: "self"
-            }
-        ];
-
+        // Draw a new random spell card from CardManager
         if (this.playerHand.length < 10) {
-            const randomSpell = spellPool[Math.floor(Math.random() * spellPool.length)];
-            this.playerHand.push(randomSpell);
-            this.renderPlayerHand();
+            const newCard = this.cardManager.getRandomCard();
+            if (newCard) {
+                this.playerHand.push(newCard);
+                this.renderPlayerHand();
+            }
         }
     }
 
@@ -596,22 +826,6 @@ class SpellCasterGame {
     }
 }
 
-// Add selected card styling
-const style = document.createElement('style');
-style.textContent = `
-    .card.selected {
-        border-color: #00FF00 !important;
-        box-shadow: 0 0 30px rgba(0,255,0,0.9) !important;
-        transform: translateY(-15px) scale(1.08) !important;
-        animation: pulse-glow 1.5s infinite;
-    }
-    
-    @keyframes pulse-glow {
-        0%, 100% { box-shadow: 0 0 30px rgba(0,255,0,0.9); }
-        50% { box-shadow: 0 0 40px rgba(0,255,0,1), 0 0 60px rgba(0,255,0,0.5); }
-    }
-`;
-document.head.appendChild(style);
 
 // Initialize the game when the page loads
 document.addEventListener('DOMContentLoaded', () => {

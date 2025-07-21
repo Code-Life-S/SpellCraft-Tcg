@@ -1,0 +1,115 @@
+{
+  "spells": [
+    {
+      "id": "fire_bolt",
+      "name": "Fire Bolt",
+      "type": "spell",
+      "mana": 1,
+      "rarity": "common",
+      "text": "Deal 3 damage to target enemy.",
+      "art": "🔥",
+      "damage": 3,
+      "targetType": "single"
+    },
+    {
+      "id": "lightning_storm",
+      "name": "Lightning Storm",
+      "type": "spell",
+      "mana": 3,
+      "rarity": "rare",
+      "text": "Deal 2 damage to all enemies.",
+      "art": "⚡",
+      "damage": 2,
+      "targetType": "all"
+    },
+    {
+      "id": "healing_light",
+      "name": "Healing Light",
+      "type": "spell",
+      "mana": 2,
+      "rarity": "common",
+      "text": "Restore 5 health to yourself.",
+      "art": "✨",
+      "healing": 5,
+      "targetType": "self"
+    },
+    {
+      "id": "meteor",
+      "name": "Meteor",
+      "type": "spell",
+      "mana": 5,
+      "rarity": "epic",
+      "text": "Deal 8 damage to target enemy.",
+      "art": "☄️",
+      "damage": 8,
+      "targetType": "single"
+    },
+    {
+      "id": "frost_nova",
+      "name": "Frost Nova",
+      "type": "spell",
+      "mana": 2,
+      "rarity": "rare",
+      "text": "Deal 1 damage to all enemies.",
+      "art": "❄️",
+      "damage": 1,
+      "targetType": "all"
+    },
+    {
+      "id": "arcane_missiles",
+      "name": "Arcane Missiles",
+      "type": "spell",
+      "mana": 1,
+      "rarity": "common",
+      "text": "Deal 1 damage 3 times randomly.",
+      "art": "🌟",
+      "damage": 1,
+      "targetType": "random",
+      "hits": 3
+    },
+    {
+      "id": "divine_wrath",
+      "name": "Divine Wrath",
+      "type": "spell",
+      "mana": 6,
+      "rarity": "legendary",
+      "text": "Deal 5 damage to all enemies.",
+      "art": "⚡",
+      "damage": 5,
+      "targetType": "all"
+    },
+    {
+      "id": "magic_missile",
+      "name": "Magic Missile",
+      "type": "spell",
+      "mana": 1,
+      "rarity": "common",
+      "text": "Deal 2 damage to target enemy.",
+      "art": "✨",
+      "damage": 2,
+      "targetType": "single"
+    },
+    {
+      "id": "flame_burst",
+      "name": "Flame Burst",
+      "type": "spell",
+      "mana": 2,
+      "rarity": "common",
+      "text": "Deal 1 damage to all enemies.",
+      "art": "🔥",
+      "damage": 1,
+      "targetType": "all"
+    },
+    {
+      "id": "minor_heal",
+      "name": "Minor Heal",
+      "type": "spell",
+      "mana": 1,
+      "rarity": "common",
+      "text": "Restore 3 health.",
+      "art": "💚",
+      "healing": 3,
+      "targetType": "self"
+    }
+  ]
+}
