@@ -361,10 +361,7 @@ class SpellCasterGame {
             this.updateUI();
         }, 500);
         
-        // Check if all enemies are defeated
-        setTimeout(() => {
-            this.checkGameEnd();
-        }, 1500);
+        // Victory check now happens in damageEnemyWithEffects after enemy removal
     }
 
     applySpellEffect(card, targetEnemyId) {
@@ -492,6 +489,8 @@ class SpellCasterGame {
                 setTimeout(() => {
                     this.enemies = this.enemies.filter(e => e.id !== enemyId);
                     this.renderEnemies();
+                    // Check for victory immediately after enemy removal
+                    this.checkGameEnd();
                 }, 1000);
             } else {
                 this.renderEnemies();
@@ -771,6 +770,12 @@ class SpellCasterGame {
     endTurn() {
         if (this.gameState !== 'playing' || !this.isPlayerTurn) return;
         
+        // Check for victory before ending turn
+        if (this.enemies.length === 0) {
+            this.checkGameEnd();
+            return;
+        }
+        
         this.isPlayerTurn = false;
         this.updateGameStatus('Enemy Turn');
         document.getElementById('end-turn').disabled = true;
@@ -853,7 +858,10 @@ class SpellCasterGame {
 
     checkGameEnd() {
         if (this.enemies.length === 0) {
-            this.gameOver(true);
+            // Victory! End the game immediately
+            setTimeout(() => {
+                this.gameOver(true);
+            }, 1000); // Small delay to let animations finish
         } else if (this.playerHealth <= 0) {
             this.gameOver(false);
         }
@@ -989,6 +997,25 @@ class SpellCasterGame {
             healthElement.style.color = '#FFA500';
         } else {
             healthElement.style.color = '#fff';
+        }
+        
+        // Update end turn button based on playable cards
+        this.updateEndTurnButton();
+    }
+
+    updateEndTurnButton() {
+        const endTurnButton = document.getElementById('end-turn');
+        const hasPlayableCards = this.playerHand.some(card => card.mana <= this.currentMana);
+        
+        
+        if (hasPlayableCards) {
+            endTurnButton.classList.remove('no-plays-available');
+            endTurnButton.style.backgroundColor = '';
+            endTurnButton.style.borderColor = '';
+        } else {
+            endTurnButton.classList.add('no-plays-available');
+            endTurnButton.style.backgroundColor = 'rgba(34, 139, 34, 0.8)';
+            endTurnButton.style.borderColor = '#32CD32';
         }
     }
 
