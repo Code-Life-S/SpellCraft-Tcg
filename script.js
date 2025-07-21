@@ -4,6 +4,7 @@ class SpellCasterGame {
         this.currentMana = 1;
         this.maxMana = 1;
         this.playerHealth = 30;
+        this.playerShield = 0;
         this.currentTurn = 1;
         this.enemies = [];
         this.enemyIdCounter = 1;
@@ -43,7 +44,13 @@ class SpellCasterGame {
             { name: "Skeleton", art: "💀", health: 2, attack: 1 },
             { name: "Wolf", art: "🐺", health: 4, attack: 2 },
             { name: "Bandit", art: "🗡️", health: 3, attack: 2 },
-            { name: "Spider", art: "🕷️", health: 2, attack: 1 }
+            { name: "Spider", art: "🕷️", health: 2, attack: 1 },
+            { name: "Dark Mage", art: "🧙‍♂️", health: 4, attack: 3 },
+            { name: "Minotaur", art: "🐂", health: 6, attack: 4 },
+            { name: "Wraith", art: "👻", health: 3, attack: 2 },
+            { name: "Gargoyle", art: "🗿", health: 5, attack: 2 },
+            { name: "Demon", art: "😈", health: 4, attack: 3 },
+            { name: "Vampire", art: "🧛", health: 4, attack: 3 }
         ];
 
         // Spawn 3-4 enemies for the battle
@@ -406,11 +413,39 @@ class SpellCasterGame {
                 break;
                 
             case 'self':
-                this.playerHealth = Math.min(30, this.playerHealth + card.healing);
-                this.createHealingEffect();
-                this.showHealingNumber(card.healing);
+                let message = '';
+                
+                // Handle healing
+                if (card.healing) {
+                    this.playerHealth = Math.min(30, this.playerHealth + card.healing);
+                    this.createHealingEffect();
+                    this.showHealingNumber(card.healing);
+                    message += `${card.name} heals you for ${card.healing}! `;
+                }
+                
+                // Handle card draw
+                if (card.cardDraw) {
+                    this.drawMultipleCards(card.cardDraw);
+                    message += `Draw ${card.cardDraw} cards! `;
+                }
+                
+                // Handle mana boost
+                if (card.manaBoost) {
+                    this.currentMana += card.manaBoost;
+                    this.showManaBoostEffect();
+                    message += `+${card.manaBoost} mana this turn! `;
+                }
+                
+                // Handle shield
+                if (card.shield) {
+                    this.playerShield += card.shield;
+                    this.createShieldEffect();
+                    this.showShieldNumber(card.shield);
+                    message += `Gain ${card.shield} shield! `;
+                }
+                
                 this.soundManager.playSpellSound(card.id, 'cast');
-                this.showMessage(`${card.name} heals you for ${card.healing}!`);
+                this.showMessage(message.trim());
                 break;
         }
     }
@@ -761,13 +796,30 @@ class SpellCasterGame {
             }
 
             const enemy = this.enemies[attackIndex];
-            this.playerHealth -= enemy.attack;
+            let damage = enemy.attack;
             
-            // Play player hurt sound
-            this.soundManager.play('player_hurt');
+            // Apply shield protection
+            if (this.playerShield > 0) {
+                const shieldAbsorbed = Math.min(this.playerShield, damage);
+                this.playerShield -= shieldAbsorbed;
+                damage -= shieldAbsorbed;
+                
+                if (shieldAbsorbed > 0) {
+                    this.showMessage(`${enemy.name} attacks for ${enemy.attack} damage! Shield absorbs ${shieldAbsorbed}!`);
+                } else {
+                    this.showMessage(`${enemy.name} attacks for ${enemy.attack} damage!`);
+                }
+            } else {
+                this.showMessage(`${enemy.name} attacks for ${enemy.attack} damage!`);
+            }
             
-            // Show attack animation/message
-            this.showMessage(`${enemy.name} attacks for ${enemy.attack} damage!`);
+            // Apply remaining damage
+            this.playerHealth -= damage;
+            
+            // Play player hurt sound only if damage was taken
+            if (damage > 0) {
+                this.soundManager.play('player_hurt');
+            }
             
             // Check if player died
             if (this.playerHealth <= 0) {
@@ -844,6 +896,71 @@ class SpellCasterGame {
         }
     }
 
+    drawMultipleCards(count) {
+        for (let i = 0; i < count; i++) {
+            if (this.playerHand.length < 10) {
+                const newCard = this.cardManager.getRandomCard();
+                if (newCard) {
+                    this.playerHand.push(newCard);
+                }
+            }
+        }
+        this.renderPlayerHand();
+        this.createCardDrawEffect(count);
+    }
+
+    createCardDrawEffect(count) {
+        // Visual effect for drawing cards
+        const handElement = document.getElementById('player-hand');
+        if (handElement) {
+            handElement.classList.add('card-draw-effect');
+            setTimeout(() => {
+                handElement.classList.remove('card-draw-effect');
+            }, 1000);
+        }
+    }
+
+    showManaBoostEffect() {
+        const manaElement = document.getElementById('current-mana');
+        if (manaElement) {
+            manaElement.classList.add('mana-boost-effect');
+            setTimeout(() => {
+                manaElement.classList.remove('mana-boost-effect');
+            }, 1000);
+        }
+    }
+
+    createShieldEffect() {
+        const playerHero = document.querySelector('.player-hero');
+        if (playerHero) {
+            playerHero.classList.add('shield-effect');
+            setTimeout(() => {
+                playerHero.classList.remove('shield-effect');
+            }, 1000);
+        }
+    }
+
+    showShieldNumber(shield) {
+        const playerElement = document.querySelector('.player-hero');
+        if (playerElement) {
+            const rect = playerElement.getBoundingClientRect();
+            const shieldDiv = document.createElement('div');
+            shieldDiv.className = 'shield-number';
+            shieldDiv.textContent = `+${shield} 🛡️`;
+            shieldDiv.style.left = `${rect.left + rect.width / 2}px`;
+            shieldDiv.style.top = `${rect.top}px`;
+            
+            document.body.appendChild(shieldDiv);
+            
+            // Remove shield number after animation
+            setTimeout(() => {
+                if (document.body.contains(shieldDiv)) {
+                    document.body.removeChild(shieldDiv);
+                }
+            }, 1500);
+        }
+    }
+
     updateUI() {
         document.getElementById('current-mana').textContent = this.currentMana;
         document.getElementById('player-health').textContent = this.playerHealth;
@@ -852,6 +969,17 @@ class SpellCasterGame {
         
         // Update max mana display
         document.getElementById('max-mana').textContent = `/${this.maxMana}`;
+        
+        // Update shield display
+        const shieldElement = document.getElementById('player-shield');
+        if (shieldElement) {
+            if (this.playerShield > 0) {
+                shieldElement.textContent = `🛡️${this.playerShield}`;
+                shieldElement.style.display = 'block';
+            } else {
+                shieldElement.style.display = 'none';
+            }
+        }
         
         // Update player health color based on damage
         const healthElement = document.getElementById('player-health');

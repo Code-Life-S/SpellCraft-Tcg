@@ -110,6 +110,73 @@
       "art": "💚",
       "healing": 3,
       "targetType": "self"
+    },
+    {
+      "id": "arcane_study",
+      "name": "Arcane Study",
+      "type": "spell",
+      "mana": 1,
+      "rarity": "common",
+      "text": "Draw 2 cards.",
+      "art": "📚",
+      "cardDraw": 2,
+      "targetType": "self"
+    },
+    {
+      "id": "mystical_insight",
+      "name": "Mystical Insight",
+      "type": "spell",
+      "mana": 2,
+      "rarity": "rare",
+      "text": "Draw 3 cards.",
+      "art": "🔮",
+      "cardDraw": 3,
+      "targetType": "self"
+    },
+    {
+      "id": "lightning_reflexes",
+      "name": "Lightning Reflexes",
+      "type": "spell",
+      "mana": 3,
+      "rarity": "rare",
+      "text": "Draw 2 cards and gain +1 mana this turn.",
+      "art": "⚡",
+      "cardDraw": 2,
+      "manaBoost": 1,
+      "targetType": "self"
+    },
+    {
+      "id": "arcane_shield",
+      "name": "Arcane Shield",
+      "type": "spell",
+      "mana": 1,
+      "rarity": "common",
+      "text": "Take 3 less damage from next enemy attack.",
+      "art": "🛡️",
+      "shield": 3,
+      "targetType": "self"
+    },
+    {
+      "id": "mana_surge",
+      "name": "Mana Surge",
+      "type": "spell",
+      "mana": 1,
+      "rarity": "common",
+      "text": "Gain +2 mana this turn only.",
+      "art": "🔄",
+      "manaBoost": 2,
+      "targetType": "self"
+    },
+    {
+      "id": "greater_heal",
+      "name": "Greater Heal",
+      "type": "spell",
+      "mana": 3,
+      "rarity": "rare",
+      "text": "Restore 8 health.",
+      "art": "💖",
+      "healing": 8,
+      "targetType": "self"
     }
   ]
 }
