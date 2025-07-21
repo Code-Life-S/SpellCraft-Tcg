@@ -917,13 +917,28 @@ body {
 
 .deck-card-item {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     padding: 4px 8px;
     margin-bottom: 3px;
     background: rgba(255,255,255,0.1);
     border-radius: 5px;
     font-size: 12px;
+    gap: 6px;
+}
+
+.deck-card-mana {
+    color: #4169E1;
+    font-weight: bold;
+    min-width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.deck-card-art {
+    font-size: 14px;
+    flex-shrink: 0;
+    min-width: 20px;
+    text-align: center;
 }
 
 .deck-card-name {
@@ -932,20 +947,13 @@ body {
     text-overflow: ellipsis;
     overflow: hidden;
     white-space: nowrap;
+    min-width: 0;
 }
 
 .deck-card-count {
     color: #FFD700;
     font-weight: bold;
-    margin-left: 5px;
-}
-
-.deck-card-mana {
-    color: #4169E1;
-    font-weight: bold;
-    margin-right: 5px;
-    min-width: 20px;
-    text-align: center;
+    flex-shrink: 0;
 }
 
 /* History Panel Styles */

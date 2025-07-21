@@ -1067,6 +1067,7 @@ class SpellCasterGame {
                     
                     cardItem.innerHTML = `
                         <span class="deck-card-mana">${card.mana}</span>
+                        <span class="deck-card-art">${card.art}</span>
                         <span class="deck-card-name" title="${card.name}">${card.name}</span>
                         <span class="deck-card-count">×${count}</span>
                     `;
