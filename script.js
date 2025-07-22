@@ -14,6 +14,9 @@ class SpellCasterGame {
         this.soundManager = new SoundManager();
         this.actionHistory = [];
         
+        // Initialize UI toggles
+        this.initializeUIToggles();
+        
         this.initializeGame();
     }
 
@@ -1201,6 +1204,112 @@ class SpellCasterGame {
                 document.body.removeChild(messageDiv);
             }
         }, 2000);
+    }
+
+    initializeUIToggles() {
+        // Load saved preferences or set defaults based on screen size
+        const isMobile = window.innerWidth <= 768;
+        
+        // Default visibility: hidden on mobile, visible on desktop
+        this.sidebarStates = {
+            history: localStorage.getItem('historyVisible') !== null ? 
+                localStorage.getItem('historyVisible') === 'true' : !isMobile,
+            deck: localStorage.getItem('deckVisible') !== null ? 
+                localStorage.getItem('deckVisible') === 'true' : !isMobile
+        };
+        
+        // Apply initial states
+        this.updateSidebarVisibility();
+        
+        // Setup toggle button event listeners
+        document.getElementById('toggle-history').addEventListener('click', () => {
+            this.toggleSidebar('history');
+        });
+        
+        document.getElementById('toggle-deck').addEventListener('click', () => {
+            this.toggleSidebar('deck');
+        });
+        
+        // Handle window resize to auto-adjust on mobile
+        window.addEventListener('resize', () => {
+            this.handleResize();
+        });
+    }
+
+    toggleSidebar(type) {
+        this.sidebarStates[type] = !this.sidebarStates[type];
+        
+        // Save preference
+        localStorage.setItem(type === 'history' ? 'historyVisible' : 'deckVisible', 
+            this.sidebarStates[type]);
+        
+        this.updateSidebarVisibility();
+        
+        // Add haptic feedback for mobile
+        if (navigator.vibrate) {
+            navigator.vibrate(50);
+        }
+    }
+
+    updateSidebarVisibility() {
+        const leftSidebar = document.getElementById('left-sidebar');
+        const rightSidebar = document.getElementById('right-sidebar');
+        const mainGameArea = document.querySelector('.main-game-area');
+        const historyBtn = document.getElementById('toggle-history');
+        const deckBtn = document.getElementById('toggle-deck');
+        
+        // Update left sidebar (history)
+        if (this.sidebarStates.history) {
+            leftSidebar.classList.remove('hidden');
+            leftSidebar.classList.add('visible');
+            historyBtn.classList.add('active');
+        } else {
+            leftSidebar.classList.add('hidden');
+            leftSidebar.classList.remove('visible');
+            historyBtn.classList.remove('active');
+        }
+        
+        // Update right sidebar (deck)
+        if (this.sidebarStates.deck) {
+            rightSidebar.classList.remove('hidden');
+            rightSidebar.classList.add('visible');
+            deckBtn.classList.add('active');
+        } else {
+            rightSidebar.classList.add('hidden');
+            rightSidebar.classList.remove('visible');
+            deckBtn.classList.remove('active');
+        }
+        
+        // Update main game area classes for better spacing
+        mainGameArea.classList.toggle('left-hidden', !this.sidebarStates.history);
+        mainGameArea.classList.toggle('right-hidden', !this.sidebarStates.deck);
+        mainGameArea.classList.toggle('sidebars-hidden', 
+            !this.sidebarStates.history && !this.sidebarStates.deck);
+    }
+
+    handleResize() {
+        const isMobile = window.innerWidth <= 768;
+        
+        // On mobile, auto-hide sidebars if they weren't explicitly shown
+        if (isMobile) {
+            // Only auto-hide if user hasn't explicitly set preferences
+            if (localStorage.getItem('historyVisible') === null) {
+                this.sidebarStates.history = false;
+            }
+            if (localStorage.getItem('deckVisible') === null) {
+                this.sidebarStates.deck = false;
+            }
+        } else {
+            // On desktop, show sidebars by default if no preference set
+            if (localStorage.getItem('historyVisible') === null) {
+                this.sidebarStates.history = true;
+            }
+            if (localStorage.getItem('deckVisible') === null) {
+                this.sidebarStates.deck = true;
+            }
+        }
+        
+        this.updateSidebarVisibility();
     }
 }
 

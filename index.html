@@ -23,16 +23,20 @@
                 <div class="game-status">
                     <span class="status-text" id="game-status">Your Turn</span>
                 </div>
-                <div class="audio-controls">
-                    <button class="audio-btn" id="toggle-sound" title="Toggle Sound">🔊</button>
-                    <button class="audio-btn" id="toggle-music" title="Toggle Music">🎵</button>
+                <div class="ui-controls">
+                    <button class="ui-btn" id="toggle-history" title="Toggle Action History">📜</button>
+                    <button class="ui-btn" id="toggle-deck" title="Toggle Deck Tracker">🃏</button>
+                    <div class="audio-controls">
+                        <button class="audio-btn" id="toggle-sound" title="Toggle Sound">🔊</button>
+                        <button class="audio-btn" id="toggle-music" title="Toggle Music">🎵</button>
+                    </div>
                 </div>
             </div>
 
             <!-- Main Game Area with Sidebars -->
             <div class="main-game-area">
-                <!-- Left Sidebar - Action History (placeholder for future) -->
-                <div class="left-sidebar">
+                <!-- Left Sidebar - Action History -->
+                <div class="left-sidebar" id="left-sidebar">
                     <div class="history-panel">
                         <h3>Action History</h3>
                         <div class="history-content" id="action-history">
@@ -49,7 +53,7 @@
                 </div>
 
                 <!-- Right Sidebar - Deck Tracker -->
-                <div class="right-sidebar">
+                <div class="right-sidebar" id="right-sidebar">
                     <div class="deck-tracker">
                         <h3>Deck Tracker</h3>
                         <div class="deck-info">
