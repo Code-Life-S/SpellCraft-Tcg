@@ -17,6 +17,9 @@ class SpellCasterGame {
         // Initialize UI toggles
         this.initializeUIToggles();
         
+        // Initialize audio preferences
+        this.initializeAudioPreferences();
+        
         this.initializeGame();
     }
 
@@ -249,6 +252,10 @@ class SpellCasterGame {
             const button = document.getElementById('toggle-sound');
             button.textContent = enabled ? '🔊' : '🔇';
             button.classList.toggle('disabled', !enabled);
+            
+            // Save sound preference
+            localStorage.setItem('soundEnabled', enabled);
+            
             this.soundManager.play('button_click');
         });
 
@@ -260,10 +267,14 @@ class SpellCasterGame {
                 this.soundManager.stopBackgroundMusic();
                 button.textContent = '🎵';
                 button.classList.add('disabled');
+                // Save music preference
+                localStorage.setItem('musicEnabled', false);
             } else {
                 this.soundManager.playBackgroundMusic();
                 button.textContent = '🎶';
                 button.classList.remove('disabled');
+                // Save music preference
+                localStorage.setItem('musicEnabled', true);
             }
             this.soundManager.play('button_click');
         });
@@ -272,13 +283,20 @@ class SpellCasterGame {
     startBackgroundMusicIfNeeded() {
         if (!this.backgroundMusicStarted && !this.soundManager.backgroundMusicPlaying) {
             this.backgroundMusicStarted = true;
-            setTimeout(() => {
-                this.soundManager.playBackgroundMusic();
-                // Update music button to show it's playing
-                const musicButton = document.getElementById('toggle-music');
-                musicButton.textContent = '🎶';
-                musicButton.classList.remove('disabled');
-            }, 500);
+            
+            // Check if music is enabled in localStorage before auto-starting
+            const musicEnabled = localStorage.getItem('musicEnabled');
+            const shouldPlayMusic = musicEnabled === null || musicEnabled === 'true';
+            
+            if (shouldPlayMusic) {
+                setTimeout(() => {
+                    this.soundManager.playBackgroundMusic();
+                    // Update music button to show it's playing
+                    const musicButton = document.getElementById('toggle-music');
+                    musicButton.textContent = '🎶';
+                    musicButton.classList.remove('disabled');
+                }, 500);
+            }
         }
     }
 
@@ -848,15 +866,22 @@ class SpellCasterGame {
 
             const enemy = this.enemies[attackIndex];
             let damage = enemy.attack;
+            let shieldAbsorbed = 0;
             
             // Apply shield protection
             if (this.playerShield > 0) {
-                const shieldAbsorbed = Math.min(this.playerShield, damage);
+                shieldAbsorbed = Math.min(this.playerShield, damage);
                 this.playerShield -= shieldAbsorbed;
                 damage -= shieldAbsorbed;
                 
                 if (shieldAbsorbed > 0) {
                     this.showMessage(`${enemy.name} attacks for ${enemy.attack} damage! Shield absorbs ${shieldAbsorbed}!`);
+                    // Play shield sound when shield actually absorbs damage
+                    this.soundManager.play('shield_block');
+                    // Ensure fallback synthesis works
+                    setTimeout(() => {
+                        this.soundManager.createSynthesizedSound('shield_block');
+                    }, 50);
                 } else {
                     this.showMessage(`${enemy.name} attacks for ${enemy.attack} damage!`);
                 }
@@ -868,10 +893,10 @@ class SpellCasterGame {
             this.playerHealth -= damage;
             
             // Add enemy attack to history
-            if (this.playerShield > 0 && damage === 0) {
+            if (shieldAbsorbed > 0 && damage === 0) {
                 // Attack was fully blocked
                 this.addToHistory(`${enemy.art} - ${enemy.attack} 🛡️`, false);
-            } else if (this.playerShield > 0 && damage > 0) {
+            } else if (shieldAbsorbed > 0 && damage > 0) {
                 // Attack was partially blocked
                 this.addToHistory(`${enemy.art} - ${enemy.attack} ❤️`, false);
             } else {
@@ -886,6 +911,8 @@ class SpellCasterGame {
             
             // Check if player died
             if (this.playerHealth <= 0) {
+                // Update UI to show correct health before game over
+                this.updateUI();
                 clearInterval(attackInterval);
                 this.gameOver(false);
                 return;
@@ -1310,6 +1337,36 @@ class SpellCasterGame {
         }
         
         this.updateSidebarVisibility();
+    }
+
+    initializeAudioPreferences() {
+        // Load saved audio preferences
+        const soundEnabled = localStorage.getItem('soundEnabled');
+        const musicEnabled = localStorage.getItem('musicEnabled');
+        
+        // Apply sound preference
+        if (soundEnabled !== null) {
+            const enabled = soundEnabled === 'true';
+            if (!enabled) {
+                this.soundManager.toggle(); // Disable if it was enabled by default
+            }
+            const soundButton = document.getElementById('toggle-sound');
+            soundButton.textContent = enabled ? '🔊' : '🔇';
+            soundButton.classList.toggle('disabled', !enabled);
+        }
+        
+        // Apply music preference
+        if (musicEnabled !== null) {
+            const enabled = musicEnabled === 'true';
+            const musicButton = document.getElementById('toggle-music');
+            if (!enabled) {
+                musicButton.textContent = '🎵';
+                musicButton.classList.add('disabled');
+            } else {
+                musicButton.textContent = '🎶';
+                musicButton.classList.remove('disabled');
+            }
+        }
     }
 }
 

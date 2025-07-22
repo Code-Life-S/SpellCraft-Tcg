@@ -194,7 +194,8 @@ class SoundManager {
             'victory': { frequency: 523, type: 'sine', volume: 0.4, duration: 1.0 },
             'defeat': { frequency: 200, type: 'sawtooth', volume: 0.4, duration: 1.5 },
             'screen_shake': { frequency: 80, type: 'square', volume: 0.2, duration: 0.3 },
-            'mana_restore': { frequency: 700, type: 'sine', volume: 0.2, duration: 0.5 }
+            'mana_restore': { frequency: 700, type: 'sine', volume: 0.2, duration: 0.5 },
+            'shield_block': { frequency: 400, type: 'triangle', volume: 0.3, duration: 0.4 }
         };
         
         return configs[soundName] || { frequency: 440, type: 'sine', volume: 0.2, duration: 0.3 };
