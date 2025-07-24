@@ -783,7 +783,103 @@
     animation: enemyDamageFlash 0.6s ease-out;
 }
 
-/* Duplicate keyframes removed - already defined above */
+/* Enhanced Targeting Animations for Single-Target Spells */
+.enemy.targetable {
+    animation: targetablePulse 1.5s ease-in-out infinite !important;
+    cursor: crosshair !important;
+    transition: all 0.3s ease !important;
+}
+
+.enemy.targetable:hover {
+    transform: scale(1.15) !important;
+    border: 4px solid #FFD700 !important;
+    box-shadow: 0 0 25px rgba(255, 215, 0, 1), 0 0 50px rgba(255, 215, 0, 0.5) !important;
+    animation: targetableHover 0.8s ease-in-out infinite !important;
+    z-index: 100 !important;
+}
+
+@keyframes targetablePulse {
+    0%, 100% {
+        transform: scale(1);
+        border-color: rgba(255, 215, 0, 0.6);
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+    }
+    50% {
+        transform: scale(1.05);
+        border-color: rgba(255, 215, 0, 0.9);
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+    }
+}
+
+@keyframes targetableHover {
+    0%, 100% {
+        box-shadow: 0 0 25px rgba(255, 215, 0, 1), 0 0 50px rgba(255, 215, 0, 0.5);
+        filter: brightness(1.1);
+    }
+    50% {
+        box-shadow: 0 0 35px rgba(255, 215, 0, 1), 0 0 70px rgba(255, 215, 0, 0.7);
+        filter: brightness(1.3);
+    }
+}
+
+/* Card Selection State */
+.card.selected {
+    transform: translateY(-20px) scale(1.1) !important;
+    border: 3px solid #FFD700 !important;
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.8), 0 15px 35px rgba(0,0,0,0.5) !important;
+    z-index: 200 !important;
+    animation: selectedCardGlow 1s ease-in-out infinite !important;
+}
+
+@keyframes selectedCardGlow {
+    0%, 100% {
+        box-shadow: 0 0 30px rgba(255, 215, 0, 0.8), 0 15px 35px rgba(0,0,0,0.5);
+    }
+    50% {
+        box-shadow: 0 0 40px rgba(255, 215, 0, 1), 0 15px 45px rgba(0,0,0,0.6);
+    }
+}
+
+/* Targeting Instructions */
+.targeting-instruction {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(145deg, #4169E1, #1E90FF);
+    color: white;
+    padding: 20px 30px;
+    border-radius: 15px;
+    font-size: 18px;
+    font-weight: bold;
+    border: 3px solid #FFD700;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    z-index: 10000;
+    animation: instructionPulse 1.5s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes instructionPulse {
+    0%, 100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.9;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.05);
+        opacity: 1;
+    }
+}
+
+@keyframes instructionFadeOut {
+    from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    to { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+}
+
+@keyframes targetSelected {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); border-color: #FFD700; box-shadow: 0 0 30px rgba(255, 215, 0, 1), 0 0 60px rgba(255, 215, 0, 0.6); }
+    100% { transform: scale(1); }
+}
 
 /* FORCE hero-stats to display as flex - high specificity */
 .game-screen .hero-stats,

@@ -229,7 +229,7 @@ class SpellCasterApp {
         
         // TESTING MODE: Skip menu and go directly to game
         // TODO: Remove this testing code after debugging
-        const TESTING_MODE = true;
+        const TESTING_MODE = false;
         
         if (TESTING_MODE) {
             console.log('🧪 TESTING MODE: Going directly to game screen');

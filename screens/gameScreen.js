@@ -675,9 +675,9 @@ class GameScreen extends BaseScreen {
                 // Auto-cast spells that don't need targeting
                 this.castSpell(card, handIndex);
             } else {
-                // Enable enemy targeting
+                // Enable enemy targeting with enhanced animations
                 this.enableEnemyTargeting();
-                this.showMessage("Select a target enemy!");
+                this.showTargetingInstruction(`🎯 Select a target for ${card.name}!`);
             }
         } else {
             this.showMessage(`Not enough mana! Need ${card.mana}, have ${this.currentMana}`);
@@ -687,23 +687,63 @@ class GameScreen extends BaseScreen {
     handleEnemyClick(enemyElement) {
         if (this.selectedCard && (this.selectedCard.targetType === 'single')) {
             const enemyId = parseInt(enemyElement.dataset.enemyId);
+            
+            // Add target selection confirmation effect
+            enemyElement.style.animation = 'targetSelected 0.5s ease-out';
+            
+            console.log('🎯 Target selected for', this.selectedCard.name);
+            
+            // Disable targeting and clear selection
             this.disableEnemyTargeting();
-            this.castSpell(this.selectedCard, this.selectedCardIndex, enemyId);
+            this.element.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+            
+            // Cast spell with slight delay for visual feedback
+            setTimeout(() => {
+                this.castSpell(this.selectedCard, this.selectedCardIndex, enemyId);
+            }, 200);
         }
     }
 
     enableEnemyTargeting() {
-        // Add targetable class to all enemies
-        this.element.querySelectorAll('.enemy').forEach(enemy => {
-            enemy.classList.add('targetable');
+        console.log('🎯 Enabling enemy targeting with enhanced animations');
+        // Add targetable class to all enemies with staggered animation
+        this.element.querySelectorAll('.enemy').forEach((enemy, index) => {
+            setTimeout(() => {
+                enemy.classList.add('targetable');
+            }, index * 100);
         });
     }
 
     disableEnemyTargeting() {
+        console.log('🎯 Disabling enemy targeting');
         // Remove targetable class from all enemies
         this.element.querySelectorAll('.enemy').forEach(enemy => {
             enemy.classList.remove('targetable');
         });
+        this.hideTargetingInstruction();
+    }
+
+    showTargetingInstruction(message) {
+        // Remove any existing instruction
+        this.hideTargetingInstruction();
+        
+        const instruction = document.createElement('div');
+        instruction.className = 'targeting-instruction';
+        instruction.id = 'targeting-instruction';
+        instruction.textContent = message;
+        document.body.appendChild(instruction);
+    }
+
+    hideTargetingInstruction() {
+        const instruction = document.getElementById('targeting-instruction');
+        if (instruction) {
+            instruction.style.animation = 'instructionFadeOut 0.3s ease-out forwards';
+            setTimeout(() => {
+                if (document.body.contains(instruction)) {
+                    document.body.removeChild(instruction);
+                }
+            }, 300);
+        }
     }
 
     castSpell(card, handIndex, targetEnemyId = null) {

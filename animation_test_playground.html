@@ -140,6 +140,93 @@
             font-weight: bold;
             margin-bottom: 10px;
         }
+
+        /* Enhanced Targeting Animations */
+        .enemy.targetable {
+            animation: targetablePulse 1.5s ease-in-out infinite;
+            cursor: crosshair;
+            transition: all 0.3s ease;
+        }
+
+        .enemy.targetable:hover {
+            transform: scale(1.15);
+            border: 4px solid #FFD700;
+            box-shadow: 0 0 25px rgba(255, 215, 0, 1), 0 0 50px rgba(255, 215, 0, 0.5);
+            animation: targetableHover 0.8s ease-in-out infinite;
+            z-index: 100;
+        }
+
+        @keyframes targetablePulse {
+            0%, 100% {
+                transform: scale(1);
+                border-color: rgba(255, 215, 0, 0.6);
+                box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+            }
+            50% {
+                transform: scale(1.05);
+                border-color: rgba(255, 215, 0, 0.9);
+                box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+            }
+        }
+
+        @keyframes targetableHover {
+            0%, 100% {
+                box-shadow: 0 0 25px rgba(255, 215, 0, 1), 0 0 50px rgba(255, 215, 0, 0.5);
+                filter: brightness(1.1);
+            }
+            50% {
+                box-shadow: 0 0 35px rgba(255, 215, 0, 1), 0 0 70px rgba(255, 215, 0, 0.7);
+                filter: brightness(1.3);
+            }
+        }
+
+        /* Card Selection State */
+        .card.selected {
+            transform: translateY(-20px) scale(1.1);
+            border: 3px solid #FFD700;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.8), 0 15px 35px rgba(0,0,0,0.5);
+            z-index: 200;
+            animation: selectedCardGlow 1s ease-in-out infinite;
+        }
+
+        @keyframes selectedCardGlow {
+            0%, 100% {
+                box-shadow: 0 0 30px rgba(255, 215, 0, 0.8), 0 15px 35px rgba(0,0,0,0.5);
+            }
+            50% {
+                box-shadow: 0 0 40px rgba(255, 215, 0, 1), 0 15px 45px rgba(0,0,0,0.6);
+            }
+        }
+
+        /* Targeting Instructions */
+        .targeting-instruction {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(145deg, #4169E1, #1E90FF);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            border: 3px solid #FFD700;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 10000;
+            animation: instructionPulse 1.5s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes instructionPulse {
+            0%, 100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.9;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.05);
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 <body>
@@ -430,30 +517,73 @@
                 // Auto-cast spells that don't need targeting
                 castSpell(card, handIndex);
             } else {
-                // Enable enemy targeting
+                // Enable enemy targeting with enhanced animations
                 enableEnemyTargeting();
-                showMessage("Select a target enemy!");
+                showTargetingInstruction(`🎯 Select a target for ${card.name}!`);
             }
         }
 
         function handleEnemyClick(enemyElement) {
             if (selectedCard && (selectedCard.targetType === 'single')) {
                 const enemyId = parseInt(enemyElement.dataset.enemyId);
+                
+                // Add target selection effect
+                enemyElement.style.animation = 'targetSelected 0.5s ease-out';
+                
+                // Play targeting sound
+                console.log('🎯 Target selected!');
+                
+                // Disable targeting and cast spell
                 disableEnemyTargeting();
-                castSpell(selectedCard, selectedCardIndex, enemyId);
+                
+                // Clear card selection
+                document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+                
+                setTimeout(() => {
+                    castSpell(selectedCard, selectedCardIndex, enemyId);
+                }, 200);
             }
         }
 
         function enableEnemyTargeting() {
-            document.querySelectorAll('.enemy').forEach(enemy => {
-                enemy.classList.add('targetable');
+            console.log('🎯 Enabling enemy targeting with animations');
+            document.querySelectorAll('.enemy').forEach((enemy, index) => {
+                // Stagger the animation start for a wave effect
+                setTimeout(() => {
+                    enemy.classList.add('targetable');
+                }, index * 100);
             });
         }
 
         function disableEnemyTargeting() {
+            console.log('🎯 Disabling enemy targeting');
             document.querySelectorAll('.enemy').forEach(enemy => {
                 enemy.classList.remove('targetable');
             });
+            hideTargetingInstruction();
+        }
+
+        function showTargetingInstruction(message) {
+            // Remove any existing instruction
+            hideTargetingInstruction();
+            
+            const instruction = document.createElement('div');
+            instruction.className = 'targeting-instruction';
+            instruction.id = 'targeting-instruction';
+            instruction.textContent = message;
+            document.body.appendChild(instruction);
+        }
+
+        function hideTargetingInstruction() {
+            const instruction = document.getElementById('targeting-instruction');
+            if (instruction) {
+                instruction.style.animation = 'instructionFadeOut 0.3s ease-out forwards';
+                setTimeout(() => {
+                    if (document.body.contains(instruction)) {
+                        document.body.removeChild(instruction);
+                    }
+                }, 300);
+            }
         }
 
         function castSpell(card, handIndex, targetEnemyId = null) {
@@ -660,6 +790,17 @@
             @keyframes slideOut {
                 from { transform: translateX(0); opacity: 1; }
                 to { transform: translateX(100%); opacity: 0; }
+            }
+            
+            @keyframes instructionFadeOut {
+                from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+                to { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+            }
+            
+            @keyframes targetSelected {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.2); border-color: #FFD700; box-shadow: 0 0 30px rgba(255, 215, 0, 1), 0 0 60px rgba(255, 215, 0, 0.6); }
+                100% { transform: scale(1); }
             }
         `;
         document.head.appendChild(style);
