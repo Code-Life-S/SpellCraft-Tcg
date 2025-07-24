@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎭 Spell Caster - Animation Test Playground</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="screens/game/gameScreen.css">
+    <style>
+        body {
+            padding: 20px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        
+        .test-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .test-title {
+            font-size: 2.5em;
+            color: #FFD700;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
+            margin-bottom: 10px;
+        }
+        
+        .test-subtitle {
+            font-size: 1.2em;
+            color: #87CEEB;
+            margin-bottom: 20px;
+        }
+        
+        .test-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .test-btn {
+            background: linear-gradient(145deg, #4169E1, #1E90FF);
+            color: white;
+            border: 2px solid #FFD700;
+            border-radius: 10px;
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        
+        .test-btn:hover {
+            background: linear-gradient(145deg, #1E90FF, #00BFFF);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(65,105,225,0.4);
+        }
+        
+        .test-btn.animation-btn {
+            background: linear-gradient(145deg, #8B0000, #DC143C);
+        }
+        
+        .test-btn.animation-btn:hover {
+            background: linear-gradient(145deg, #DC143C, #FF6347);
+        }
+        
+        .game-area {
+            display: flex;
+            justify-content: space-between;
+            max-width: 1200px;
+            margin: 0 auto;
+            gap: 30px;
+        }
+        
+        .player-section {
+            flex: 1;
+            background: rgba(30,30,50,0.8);
+            border: 2px solid rgba(255,215,0,0.3);
+            border-radius: 15px;
+            padding: 20px;
+        }
+        
+        .enemy-section {
+            flex: 1;
+            background: rgba(139,0,0,0.2);
+            border: 3px solid rgba(255,69,0,0.4);
+            border-radius: 15px;
+            padding: 20px;
+        }
+        
+        .section-title {
+            text-align: center;
+            font-size: 1.5em;
+            color: #FFD700;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+        
+        .player-hand {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .enemy-battlefield {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            min-height: 250px;
+            align-items: center;
+        }
+        
+        .reset-btn {
+            background: linear-gradient(145deg, #32CD32, #228B22);
+            margin-top: 20px;
+        }
+        
+        .reset-btn:hover {
+            background: linear-gradient(145deg, #228B22, #006400);
+        }
+        
+        .info-panel {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,215,0,0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+        
+        .info-title {
+            color: #FFD700;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-header">
+        <h1 class="test-title">🎭 Animation Test Playground</h1>
+        <p class="test-subtitle">Test spell effects, death animations, and particle systems</p>
+    </div>
+
+    <div class="test-controls">
+        <button class="test-btn animation-btn" onclick="testAnimation('dying-spin')">🌪️ Spin Death</button>
+        <button class="test-btn animation-btn" onclick="testAnimation('dying-dissolve')">✨ Dissolve Death</button>
+        <button class="test-btn animation-btn" onclick="testAnimation('dying-explode')">💥 Explode Death</button>
+        <button class="test-btn animation-btn" onclick="testAnimation('dying-fade')">👻 Fade Death</button>
+        <button class="test-btn" onclick="testAllAnimations()">🎪 Test All Deaths</button>
+        <button class="test-btn reset-btn" onclick="resetEnemies()">🔄 Reset Enemies</button>
+    </div>
+
+    <div class="game-area">
+        <div class="player-section">
+            <h2 class="section-title">🧙‍♂️ Player Hand</h2>
+            <div class="player-hand" id="player-hand">
+                <!-- Cards will be generated here -->
+            </div>
+            <div class="info-panel">
+                <div class="info-title">📖 Instructions:</div>
+                • Click spell cards to cast them<br>
+                • Single target spells require clicking an enemy<br>
+                • AoE spells cast automatically<br>
+                • Watch for particle effects and animations!
+            </div>
+        </div>
+
+        <div class="enemy-section">
+            <h2 class="section-title">👹 Enemy Battlefield</h2>
+            <div class="enemy-battlefield" id="enemy-battlefield">
+                <!-- Enemies will be generated here -->
+            </div>
+            <div class="info-panel">
+                <div class="info-title">🎯 Test Targets:</div>
+                • <strong>Goblin (2/3)</strong> - Easy target for testing<br>
+                • <strong>Skeleton (1/1)</strong> - Dies in one hit<br>
+                • Use animation buttons above to test death effects
+            </div>
+        </div>
+    </div>
+
+    <!-- Include game scripts -->
+    <script src="cards/cardManager.js"></script>
+    <script src="audio/soundManager.js"></script>
+    
+    <script>
+        // Test Game State
+        let playerHand = [];
+        let enemies = [];
+        let enemyIdCounter = 1;
+        let selectedCard = null;
+        let selectedCardIndex = null;
+        let cardManager = null;
+        let soundManager = null;
+
+        // Initialize test environment
+        async function initializeTest() {
+            // Initialize managers
+            cardManager = new CardManager();
+            await cardManager.loadCards();
+            
+            soundManager = new SoundManager();
+            
+            // Create test hand with specific spells
+            playerHand = [
+                {
+                    id: "arcane_missiles",
+                    name: "Arcane Missiles",
+                    type: "spell",
+                    mana: 1,
+                    rarity: "common",
+                    text: "Deal 1 damage 3 times randomly.",
+                    art: "🌟",
+                    damage: 1,
+                    targetType: "random",
+                    hits: 3
+                },
+                {
+                    id: "lightning_storm",
+                    name: "Lightning Storm",
+                    type: "spell",
+                    mana: 3,
+                    rarity: "rare",
+                    text: "Deal 2 damage to all enemies.",
+                    art: "⚡",
+                    damage: 2,
+                    targetType: "all"
+                },
+                {
+                    id: "arcane_shield",
+                    name: "Arcane Shield",
+                    type: "spell",
+                    mana: 1,
+                    rarity: "common",
+                    text: "Gain 3 shield.",
+                    art: "🛡️",
+                    shield: 3,
+                    targetType: "self"
+                },
+                {
+                    id: "fire_bolt",
+                    name: "Fire Bolt",
+                    type: "spell",
+                    mana: 1,
+                    rarity: "common",
+                    text: "Deal 3 damage to target enemy.",
+                    art: "🔥",
+                    damage: 3,
+                    targetType: "single"
+                }
+            ];
+
+            // Create test enemies
+            resetEnemies();
+            
+            // Render initial state
+            renderPlayerHand();
+            renderEnemies();
+            
+            console.log('🎭 Test environment initialized!');
+        }
+
+        function resetEnemies() {
+            enemies = [
+                {
+                    id: enemyIdCounter++,
+                    name: "Goblin",
+                    art: "👹",
+                    health: 2,
+                    maxHealth: 3,
+                    attack: 2
+                },
+                {
+                    id: enemyIdCounter++,
+                    name: "Skeleton",
+                    art: "💀",
+                    health: 1,
+                    maxHealth: 1,
+                    attack: 1
+                },
+                {
+                    id: enemyIdCounter++,
+                    name: "Skeleton",
+                    art: "💀",
+                    health: 1,
+                    maxHealth: 1,
+                    attack: 1
+                }
+            ];
+            renderEnemies();
+        }
+
+        function renderPlayerHand() {
+            const handContainer = document.getElementById('player-hand');
+            handContainer.innerHTML = '';
+
+            playerHand.forEach((card, index) => {
+                const cardElement = createCardElement(card, index);
+                handContainer.appendChild(cardElement);
+            });
+        }
+
+        function createCardElement(card, index) {
+            const cardDiv = document.createElement('div');
+            cardDiv.className = `card ${card.type} ${card.rarity}`;
+            cardDiv.dataset.cardId = card.id;
+            cardDiv.dataset.handIndex = index;
+            cardDiv.onclick = () => handleCardClick(cardDiv);
+
+            // Mana cost
+            const manaDiv = document.createElement('div');
+            manaDiv.className = 'card-mana';
+            manaDiv.textContent = card.mana;
+
+            // Card art
+            const artDiv = document.createElement('div');
+            artDiv.className = 'card-art';
+            artDiv.textContent = card.art;
+
+            // Card name
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'card-name';
+            nameDiv.textContent = card.name;
+
+            // Card text
+            const textDiv = document.createElement('div');
+            textDiv.className = 'card-text';
+            textDiv.textContent = card.text;
+
+            // Assemble card
+            cardDiv.appendChild(manaDiv);
+            cardDiv.appendChild(artDiv);
+            cardDiv.appendChild(nameDiv);
+            cardDiv.appendChild(textDiv);
+
+            return cardDiv;
+        }
+
+        function renderEnemies() {
+            const battlefield = document.getElementById('enemy-battlefield');
+            
+            // Only clear and re-render if no enemies are currently dying
+            const dyingEnemies = enemies.filter(e => e.isDying);
+            if (dyingEnemies.length === 0) {
+                battlefield.innerHTML = '';
+                enemies.forEach(enemy => {
+                    if (!enemy.isDying) {
+                        const enemyElement = createEnemyElement(enemy);
+                        battlefield.appendChild(enemyElement);
+                    }
+                });
+            } else {
+                // Selective update: only update non-dying enemies
+                enemies.forEach(enemy => {
+                    if (!enemy.isDying) {
+                        const existingElement = battlefield.querySelector(`[data-enemy-id="${enemy.id}"]`);
+                        if (existingElement) {
+                            // Update existing element stats
+                            const healthDiv = existingElement.querySelector('.enemy-health');
+                            if (healthDiv) {
+                                healthDiv.textContent = enemy.health;
+                            }
+                        } else {
+                            // Add new enemy element if it doesn't exist
+                            const enemyElement = createEnemyElement(enemy);
+                            battlefield.appendChild(enemyElement);
+                        }
+                    }
+                });
+            }
+        }
+
+        function createEnemyElement(enemy) {
+            const enemyDiv = document.createElement('div');
+            enemyDiv.className = 'enemy';
+            enemyDiv.dataset.enemyId = enemy.id;
+            enemyDiv.onclick = () => handleEnemyClick(enemyDiv);
+
+            const artDiv = document.createElement('div');
+            artDiv.className = 'enemy-art';
+            artDiv.textContent = enemy.art;
+
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'enemy-name';
+            nameDiv.textContent = enemy.name;
+
+            const statsDiv = document.createElement('div');
+            statsDiv.className = 'enemy-stats';
+
+            const attackDiv = document.createElement('div');
+            attackDiv.className = 'enemy-attack';
+            attackDiv.textContent = enemy.attack;
+
+            const healthDiv = document.createElement('div');
+            healthDiv.className = 'enemy-health';
+            healthDiv.textContent = enemy.health;
+
+            statsDiv.appendChild(attackDiv);
+            statsDiv.appendChild(healthDiv);
+
+            enemyDiv.appendChild(artDiv);
+            enemyDiv.appendChild(nameDiv);
+            enemyDiv.appendChild(statsDiv);
+
+            return enemyDiv;
+        }
+
+        function handleCardClick(cardElement) {
+            const handIndex = parseInt(cardElement.dataset.handIndex);
+            const card = playerHand[handIndex];
+
+            selectedCard = card;
+            selectedCardIndex = handIndex;
+            
+            // Highlight card selection
+            document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+            cardElement.classList.add('selected');
+            
+            // Play card selection sound
+            soundManager?.play('card_select');
+            
+            if (card.targetType === 'self' || card.targetType === 'all' || card.targetType === 'random') {
+                // Auto-cast spells that don't need targeting
+                castSpell(card, handIndex);
+            } else {
+                // Enable enemy targeting
+                enableEnemyTargeting();
+                showMessage("Select a target enemy!");
+            }
+        }
+
+        function handleEnemyClick(enemyElement) {
+            if (selectedCard && (selectedCard.targetType === 'single')) {
+                const enemyId = parseInt(enemyElement.dataset.enemyId);
+                disableEnemyTargeting();
+                castSpell(selectedCard, selectedCardIndex, enemyId);
+            }
+        }
+
+        function enableEnemyTargeting() {
+            document.querySelectorAll('.enemy').forEach(enemy => {
+                enemy.classList.add('targetable');
+            });
+        }
+
+        function disableEnemyTargeting() {
+            document.querySelectorAll('.enemy').forEach(enemy => {
+                enemy.classList.remove('targetable');
+            });
+        }
+
+        function castSpell(card, handIndex, targetEnemyId = null) {
+            console.log(`🪄 Casting ${card.name}`, { card, targetEnemyId });
+            
+            // Clear selection
+            selectedCard = null;
+            selectedCardIndex = null;
+            document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+            disableEnemyTargeting();
+
+            // Apply spell effect
+            setTimeout(() => {
+                applySpellEffect(card, targetEnemyId);
+            }, 500);
+        }
+
+        function applySpellEffect(card, targetEnemyId) {
+            switch(card.targetType) {
+                case 'single':
+                    if (targetEnemyId) {
+                        damageEnemy(targetEnemyId, card.damage);
+                        showMessage(`${card.name} deals ${card.damage} damage!`);
+                    }
+                    break;
+                    
+                case 'all':
+                    enemies.forEach((enemy, index) => {
+                        setTimeout(() => {
+                            damageEnemy(enemy.id, card.damage);
+                        }, index * 150);
+                    });
+                    showMessage(`${card.name} deals ${card.damage} damage to all enemies!`);
+                    break;
+                    
+                case 'random':
+                    for (let i = 0; i < card.hits; i++) {
+                        setTimeout(() => {
+                            const aliveEnemies = enemies.filter(e => e.health > 0);
+                            if (aliveEnemies.length > 0) {
+                                const randomEnemy = aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)];
+                                damageEnemy(randomEnemy.id, card.damage);
+                            }
+                        }, i * 200);
+                    }
+                    showMessage(`${card.name} hits ${card.hits} times!`);
+                    break;
+                    
+                case 'self':
+                    showMessage(`${card.name} - Self effect applied!`);
+                    break;
+            }
+        }
+
+        function damageEnemy(enemyId, damage) {
+            const enemy = enemies.find(e => e.id === enemyId);
+            if (enemy) {
+                enemy.health -= damage;
+                
+                const enemyElement = document.querySelector(`[data-enemy-id="${enemyId}"]`);
+                if (enemyElement) {
+                    // Add damage animation
+                    enemyElement.classList.add('taking-damage');
+                    setTimeout(() => {
+                        enemyElement.classList.remove('taking-damage');
+                    }, 600);
+                }
+                
+                if (enemy.health <= 0) {
+                    // Add random death animation with isolation
+                    if (enemyElement) {
+                        const deathAnimations = ['dying-spin', 'dying-dissolve', 'dying-explode', 'dying-fade'];
+                        const randomAnimation = deathAnimations[Math.floor(Math.random() * deathAnimations.length)];
+                        
+                        // Ensure no other death animations are active on this element
+                        deathAnimations.forEach(anim => enemyElement.classList.remove(anim));
+                        
+                        // Add unique identifier to prevent conflicts
+                        enemyElement.dataset.dyingAnimation = randomAnimation;
+                        enemyElement.dataset.dyingStartTime = Date.now();
+                        
+                        // Apply the animation
+                        enemyElement.classList.add(randomAnimation);
+                        
+                        console.log(`💀 ${enemy.name} dies with ${randomAnimation} animation at ${Date.now()}`);
+                    }
+                    
+                    // Mark enemy as dying to prevent re-rendering
+                    enemy.isDying = true;
+                    
+                    // Remove enemy after animation without re-rendering
+                    setTimeout(() => {
+                        enemies = enemies.filter(e => e.id !== enemyId);
+                        // Don't call renderEnemies() here to avoid flicker
+                        // Just remove the DOM element directly
+                        if (enemyElement && enemyElement.parentNode) {
+                            enemyElement.parentNode.removeChild(enemyElement);
+                        }
+                    }, 1800);
+                } else {
+                    // Only re-render if enemy is not dying
+                    if (!enemy.isDying) {
+                        renderEnemies();
+                    }
+                }
+            }
+        }
+
+        function testAnimation(animationClass) {
+            const enemyElements = document.querySelectorAll('.enemy');
+            if (enemyElements.length === 0) {
+                showMessage('No enemies to test animation!', 'warning');
+                return;
+            }
+
+            const firstEnemy = enemyElements[0];
+            const allAnimations = ['dying-spin', 'dying-dissolve', 'dying-explode', 'dying-fade'];
+            
+            // Remove any existing animations
+            allAnimations.forEach(anim => firstEnemy.classList.remove(anim));
+            
+            // Add unique identifier to prevent conflicts
+            firstEnemy.dataset.dyingAnimation = animationClass;
+            firstEnemy.dataset.dyingStartTime = Date.now();
+            
+            // Add the specific animation
+            firstEnemy.classList.add(animationClass);
+            
+            const animationNames = {
+                'dying-spin': '🌪️ Spin',
+                'dying-dissolve': '✨ Dissolve', 
+                'dying-explode': '💥 Explode',
+                'dying-fade': '👻 Fade'
+            };
+            
+            showMessage(`Testing ${animationNames[animationClass]} animation!`, 'info');
+            
+            // Reset after animation
+            setTimeout(() => {
+                firstEnemy.classList.remove(animationClass);
+            }, 2000);
+        }
+
+        function testAllAnimations() {
+            const enemyElements = document.querySelectorAll('.enemy');
+            if (enemyElements.length === 0) {
+                showMessage('No enemies to test animations!', 'warning');
+                return;
+            }
+
+            const animations = [
+                { name: 'dying-spin', label: '🌪️ Spin' },
+                { name: 'dying-dissolve', label: '✨ Dissolve' },
+                { name: 'dying-explode', label: '💥 Explode' },
+                { name: 'dying-fade', label: '👻 Fade' }
+            ];
+
+            showMessage('🎪 Starting animation showcase!', 'success');
+
+            animations.forEach((anim, index) => {
+                setTimeout(() => {
+                    if (enemyElements[index % enemyElements.length]) {
+                        testAnimation(anim.name);
+                    }
+                }, index * 2500);
+            });
+        }
+
+        function showMessage(message, type = 'info') {
+            const messageDiv = document.createElement('div');
+            messageDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'warning' ? '#FFA500' : type === 'success' ? '#32CD32' : '#4169E1'};
+                color: white;
+                padding: 15px 20px;
+                border-radius: 8px;
+                font-weight: bold;
+                z-index: 10000;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                animation: slideIn 0.3s ease-out;
+            `;
+            messageDiv.textContent = message;
+            document.body.appendChild(messageDiv);
+
+            setTimeout(() => {
+                messageDiv.style.animation = 'slideOut 0.3s ease-in forwards';
+                setTimeout(() => {
+                    if (document.body.contains(messageDiv)) {
+                        document.body.removeChild(messageDiv);
+                    }
+                }, 300);
+            }, 2000);
+        }
+
+        // Add CSS animations for messages
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initializeTest);
+    </script>
+</body>
+</html>

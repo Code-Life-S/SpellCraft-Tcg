@@ -1,0 +1,88 @@
+<div class="game-container">
+    <!-- Game Board Area -->
+    <div class="game-board">
+        <!-- Game Info Area -->
+        <div class="game-info">
+            <div class="turn-counter">
+                <span class="turn-label">Turn</span>
+                <span class="turn-number" id="turn-number">1</span>
+            </div>
+            <div class="enemies-remaining">
+                <span class="enemies-label">Enemies:</span>
+                <span class="enemies-count" id="enemies-count">0</span>
+            </div>
+            <div class="game-status">
+                <span class="status-text" id="game-status">Your Turn</span>
+            </div>
+            <div class="ui-controls">
+                <button class="ui-btn" id="back-to-menu" title="Back to Main Menu">🏠</button>
+                <button class="ui-btn" id="toggle-history" title="Toggle Action History">📜</button>
+                <button class="ui-btn" id="toggle-deck" title="Toggle Deck Tracker">🃏</button>
+                <div class="audio-controls">
+                    <button class="ui-btn audio-btn" id="toggle-sound" title="Toggle Sound">🔊</button>
+                    <button class="ui-btn audio-btn" id="toggle-music" title="Toggle Music">🎵</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Game Area with Sidebars -->
+        <div class="main-game-area">
+            <!-- Left Sidebar - Action History -->
+            <div class="left-sidebar" id="left-sidebar">
+                <div class="history-panel">
+                    <h3>Action History</h3>
+                    <div class="history-content" id="action-history">
+                        <!-- Action history will be added here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center - Enemy Battlefield -->
+            <div class="center-battlefield">
+                <div class="enemy-battlefield" id="enemy-battlefield">
+                    <!-- Enemy waves will spawn here -->
+                </div>
+            </div>
+
+            <!-- Right Sidebar - Deck Tracker -->
+            <div class="right-sidebar" id="right-sidebar">
+                <div class="deck-tracker">
+                    <h3>Deck Tracker</h3>
+                    <div class="deck-info">
+                        <div class="deck-count">
+                            <span class="deck-remaining" id="deck-remaining">30</span>
+                            <span class="deck-total">/ 30</span>
+                        </div>
+                    </div>
+                    <div class="deck-cards" id="deck-cards">
+                        <!-- Deck card list will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Player Area -->
+        <div class="player-area">
+            <div class="player-hero">
+                <div class="hero-portrait">
+                    <div class="hero-stats">
+                        <span class="hero-health" id="player-health">❤️ 30</span>
+                        <span class="hero-shield" id="player-shield" style="display: none;">🛡️0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="player-hand" id="player-hand">
+                <!-- Player's spell cards will be dynamically generated here -->
+            </div>
+            
+            <div class="player-info">
+                <div class="mana-crystals">
+                    <span class="current-mana" id="current-mana">3</span>
+                    <span class="max-mana" id="max-mana">/10</span>
+                </div>
+                <button class="end-turn-btn" id="end-turn">End Turn</button>
+            </div>
+        </div>
+    </div>
+</div>

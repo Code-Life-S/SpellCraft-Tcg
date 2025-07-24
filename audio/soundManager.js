@@ -8,6 +8,7 @@ class SoundManager {
         this.enabled = true;
         this.backgroundMusicPlaying = false;
         this.activeOscillators = [];
+        this.musicRestartTimeout = null;
         
         this.initializeAudioContext();
         this.loadSounds();
@@ -30,41 +31,75 @@ class SoundManager {
     }
 
     loadSounds() {
-        // Define sound files and their properties
+        // TODO: Add MP3 audio files to /audio/ directory for enhanced audio experience
+        // For now, we use synthesized sounds as fallbacks to avoid 404 errors
+        
+        // Define sound files and their properties (commented out until MP3 files are added)
         const soundDefinitions = {
+            // TODO: Uncomment when MP3 files are available
             // Spell casting sounds
-            'fire_cast': { url: 'audio/fire_cast.mp3', volume: 0.6, type: 'sfx' },
-            'lightning_cast': { url: 'audio/lightning_cast.mp3', volume: 0.7, type: 'sfx' },
-            'frost_cast': { url: 'audio/frost_cast.mp3', volume: 0.5, type: 'sfx' },
-            'arcane_cast': { url: 'audio/arcane_cast.mp3', volume: 0.6, type: 'sfx' },
-            'healing_cast': { url: 'audio/healing_cast.mp3', volume: 0.5, type: 'sfx' },
+            // 'fire_cast': { url: 'audio/fire_cast.mp3', volume: 0.6, type: 'sfx' },
+            // 'lightning_cast': { url: 'audio/lightning_cast.mp3', volume: 0.7, type: 'sfx' },
+            // 'frost_cast': { url: 'audio/frost_cast.mp3', volume: 0.5, type: 'sfx' },
+            // 'arcane_cast': { url: 'audio/arcane_cast.mp3', volume: 0.6, type: 'sfx' },
+            // 'healing_cast': { url: 'audio/healing_cast.mp3', volume: 0.5, type: 'sfx' },
             
+            // TODO: Uncomment when MP3 files are available
             // Impact sounds
-            'fire_impact': { url: 'audio/fire_impact.mp3', volume: 0.7, type: 'sfx' },
-            'lightning_impact': { url: 'audio/lightning_impact.mp3', volume: 0.8, type: 'sfx' },
-            'frost_impact': { url: 'audio/frost_impact.mp3', volume: 0.6, type: 'sfx' },
-            'arcane_impact': { url: 'audio/arcane_impact.mp3', volume: 0.7, type: 'sfx' },
+            // 'fire_impact': { url: 'audio/fire_impact.mp3', volume: 0.7, type: 'sfx' },
+            // 'lightning_impact': { url: 'audio/lightning_impact.mp3', volume: 0.8, type: 'sfx' },
+            // 'frost_impact': { url: 'audio/frost_impact.mp3', volume: 0.6, type: 'sfx' },
+            // 'arcane_impact': { url: 'audio/arcane_impact.mp3', volume: 0.7, type: 'sfx' },
             
+            // TODO: Uncomment when MP3 files are available
             // UI sounds
-            'card_select': { url: 'audio/card_select.mp3', volume: 0.4, type: 'sfx' },
-            'card_play': { url: 'audio/card_play.mp3', volume: 0.5, type: 'sfx' },
-            'button_click': { url: 'audio/button_click.mp3', volume: 0.3, type: 'sfx' },
-            'enemy_death': { url: 'audio/enemy_death.mp3', volume: 0.6, type: 'sfx' },
-            'player_hurt': { url: 'audio/player_hurt.mp3', volume: 0.5, type: 'sfx' },
-            'victory': { url: 'audio/victory.mp3', volume: 0.8, type: 'sfx' },
-            'defeat': { url: 'audio/defeat.mp3', volume: 0.7, type: 'sfx' },
+            // 'card_select': { url: 'audio/card_select.mp3', volume: 0.4, type: 'sfx' },
+            // 'card_play': { url: 'audio/card_play.mp3', volume: 0.5, type: 'sfx' },
+            // 'button_click': { url: 'audio/button_click.mp3', volume: 0.3, type: 'sfx' },
+            // 'enemy_death': { url: 'audio/enemy_death.mp3', volume: 0.6, type: 'sfx' },
+            // 'player_hurt': { url: 'audio/player_hurt.mp3', volume: 0.5, type: 'sfx' },
+            // 'victory': { url: 'audio/victory.mp3', volume: 0.8, type: 'sfx' },
+            // 'defeat': { url: 'audio/defeat.mp3', volume: 0.7, type: 'sfx' },
             
+            // TODO: Uncomment when MP3 files are available
             // Ambient sounds
-            'screen_shake': { url: 'audio/screen_shake.mp3', volume: 0.4, type: 'sfx' },
-            'mana_restore': { url: 'audio/mana_restore.mp3', volume: 0.3, type: 'sfx' },
+            // 'screen_shake': { url: 'audio/screen_shake.mp3', volume: 0.4, type: 'sfx' },
+            // 'mana_restore': { url: 'audio/mana_restore.mp3', volume: 0.3, type: 'sfx' },
             
+            // TODO: Uncomment when MP3 files are available
             // Background music
-            'background_music': { url: 'audio/background_music.mp3', volume: 0.3, type: 'music', loop: true }
+            // 'background_music': { url: 'audio/background_music.mp3', volume: 0.3, type: 'music', loop: true }
         };
 
-        // Load each sound
+        // Load each sound (currently empty, will use synthesized sounds as fallback)
         Object.entries(soundDefinitions).forEach(([name, config]) => {
             this.loadSound(name, config);
+        });
+        
+        // Initialize synthesized sound placeholders for all expected sounds
+        this.initializeSynthesizedSoundPlaceholders();
+    }
+
+    initializeSynthesizedSoundPlaceholders() {
+        // Create placeholder entries for all sounds we expect to use
+        // This prevents errors when trying to play sounds that don't exist
+        const expectedSounds = [
+            'fire_cast', 'lightning_cast', 'frost_cast', 'arcane_cast', 'healing_cast',
+            'fire_impact', 'lightning_impact', 'frost_impact', 'arcane_impact',
+            'card_select', 'card_play', 'button_click', 'enemy_death', 'player_hurt',
+            'victory', 'defeat', 'screen_shake', 'mana_restore', 'shield_block',
+            'background_music'
+        ];
+        
+        expectedSounds.forEach(soundName => {
+            if (!this.sounds[soundName]) {
+                // Create a placeholder that will use synthesized sound
+                this.sounds[soundName] = {
+                    audio: { play: () => {}, pause: () => {}, currentTime: 0 },
+                    config: { volume: 0.5, type: 'sfx' },
+                    loaded: false
+                };
+            }
         });
     }
 
@@ -107,6 +142,13 @@ class SoundManager {
         if (!this.enabled) return;
 
         const sound = this.sounds[soundName];
+        
+        // Always use synthesized sound since MP3 files are not loaded
+        // TODO: When MP3 files are added, uncomment the MP3 playback logic below
+        this.createSynthesizedSound(soundName, options);
+        return;
+
+        /* TODO: Uncomment when MP3 files are available
         if (!sound || !sound.loaded) {
             // Fallback: try to play anyway or create synthesized sound
             if (sound && sound.audio) {
@@ -144,6 +186,7 @@ class SoundManager {
             // Fallback to synthesized sound
             this.createSynthesizedSound(soundName, options);
         }
+        */
     }
 
     createSynthesizedSound(soundName, options = {}) {
@@ -266,6 +309,14 @@ class SoundManager {
 
     playBackgroundMusic() {
         if (this.enabled) {
+            // Stop any existing music first to prevent overlapping
+            this.stopBackgroundMusic();
+            
+            // Use synthesized background music since MP3 files are not loaded
+            // TODO: When background_music.mp3 is added, uncomment the MP3 playback logic below
+            this.createSynthesizedBackgroundMusic();
+            
+            /* TODO: Uncomment when MP3 files are available
             // Try to play audio file first, fallback to synthesized music
             const bgMusic = this.sounds['background_music'];
             if (bgMusic && bgMusic.loaded) {
@@ -274,11 +325,17 @@ class SoundManager {
                 // Create synthesized background music
                 this.createSynthesizedBackgroundMusic();
             }
+            */
         }
     }
 
     createSynthesizedBackgroundMusic() {
-        if (!this.audioContext || this.backgroundMusicPlaying) return;
+        if (!this.audioContext) return;
+        
+        // Stop any existing music first
+        if (this.backgroundMusicPlaying) {
+            this.stopBackgroundMusic();
+        }
 
         try {
             this.backgroundMusicPlaying = true;
@@ -372,9 +429,9 @@ class SoundManager {
                 // Calculate total duration and restart
                 const totalDuration = melody.reduce((sum, note) => sum + note.duration, 0);
                 
-                setTimeout(() => {
+                this.musicRestartTimeout = setTimeout(() => {
                     if (this.backgroundMusicPlaying) {
-                        setTimeout(() => {
+                        this.musicRestartTimeout = setTimeout(() => {
                             playZeldaTheme();
                         }, 500); // Small pause between loops
                     }
@@ -408,6 +465,32 @@ class SoundManager {
             bgMusic.audio.pause();
             bgMusic.audio.currentTime = 0;
         }
+        
+        // Clear any pending music restart timeouts
+        if (this.musicRestartTimeout) {
+            clearTimeout(this.musicRestartTimeout);
+            this.musicRestartTimeout = null;
+        }
+    }
+
+    // Global method to ensure only one background music instance
+    static stopAllBackgroundMusic() {
+        // Stop any existing background music from other instances
+        if (window.globalSoundManager) {
+            window.globalSoundManager.stopBackgroundMusic();
+        }
+    }
+
+    // Set this instance as the global sound manager
+    setAsGlobalInstance() {
+        // Stop any existing background music
+        SoundManager.stopAllBackgroundMusic();
+        window.globalSoundManager = this;
+    }
+
+    // Property getter for enabled state (for compatibility)
+    get soundEnabled() {
+        return this.enabled;
     }
 }
 
