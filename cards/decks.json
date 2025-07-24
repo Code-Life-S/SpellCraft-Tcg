@@ -16,7 +16,7 @@
         { "id": "frost_nova", "count": 2 },
         { "id": "arcane_missiles", "count": 2 },
         { "id": "mystical_insight", "count": 1 },
-        { "id": "lightning_reflexes", "count": 1 },
+        { "id": "quickdraw", "count": 1 },
         { "id": "greater_heal", "count": 1 },
         { "id": "lightning_storm", "count": 1 },
         { "id": "meteor", "count": 2 },
@@ -41,7 +41,7 @@
         { "id": "healing_light", "count": 1 },
         { "id": "arcane_shield", "count": 1 },
         { "id": "mystical_insight", "count": 1 },
-        { "id": "lightning_reflexes", "count": 1 },
+        { "id": "quickdraw", "count": 1 },
         { "id": "greater_heal", "count": 1 },
         { "id": "divine_wrath", "count": 2 }
       ]
@@ -57,7 +57,7 @@
         { "id": "arcane_shield", "count": 2 },
         { "id": "arcane_study", "count": 2 },
         { "id": "mystical_insight", "count": 2 },
-        { "id": "lightning_reflexes", "count": 2 },
+        { "id": "quickdraw", "count": 2 },
         { "id": "frost_nova", "count": 2 },
         { "id": "lightning_storm", "count": 2 },
         { "id": "fire_bolt", "count": 1 },

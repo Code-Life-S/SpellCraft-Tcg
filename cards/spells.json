@@ -6,7 +6,7 @@
       "type": "spell",
       "mana": 1,
       "rarity": "common",
-      "text": "Deal 3 damage to target enemy.",
+      "text": "Target enemy takes 3 damage.",
       "art": "🔥",
       "damage": 3,
       "targetType": "single"
@@ -28,7 +28,7 @@
       "type": "spell",
       "mana": 2,
       "rarity": "common",
-      "text": "Restore 5 health to yourself.",
+      "text": "Restore 5 health.",
       "art": "✨",
       "healing": 5,
       "targetType": "self"
@@ -39,7 +39,7 @@
       "type": "spell",
       "mana": 5,
       "rarity": "epic",
-      "text": "Deal 8 damage to target enemy.",
+      "text": "Target enemy takes 8 damage.",
       "art": "☄️",
       "damage": 8,
       "targetType": "single"
@@ -84,7 +84,7 @@
       "type": "spell",
       "mana": 1,
       "rarity": "common",
-      "text": "Deal 2 damage to target enemy.",
+      "text": "Target enemy takes 2 damage.",
       "art": "✨",
       "damage": 2,
       "targetType": "single"
@@ -134,12 +134,12 @@
       "targetType": "self"
     },
     {
-      "id": "lightning_reflexes",
-      "name": "Lightning Reflexes",
+      "id": "quickdraw",
+      "name": "Quickdraw",
       "type": "spell",
       "mana": 3,
       "rarity": "rare",
-      "text": "Draw 2 cards and gain +1 mana this turn.",
+      "text": "Draw 2 cards. Gain +1 mana.",
       "art": "⚡",
       "cardDraw": 2,
       "manaBoost": 1,
@@ -151,7 +151,7 @@
       "type": "spell",
       "mana": 1,
       "rarity": "common",
-      "text": "Take 3 less damage from next enemy attack.",
+      "text": "Protect from 3 damage.",
       "art": "🛡️",
       "shield": 3,
       "targetType": "self"
@@ -162,7 +162,7 @@
       "type": "spell",
       "mana": 1,
       "rarity": "common",
-      "text": "Gain +2 mana this turn only.",
+      "text": "Gain +2 mana.",
       "art": "🔄",
       "manaBoost": 2,
       "targetType": "self"

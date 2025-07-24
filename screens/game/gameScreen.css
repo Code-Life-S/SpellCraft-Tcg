@@ -379,12 +379,11 @@
 
 .card:hover .card-text {
     font-size: 12px;
-    font-weight: 600;
     color: #333;
 }
 
 .card:hover .card-name {
-    font-size: 16px;
+    font-size: 14px;
     text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
 }
 
@@ -879,6 +878,230 @@
     0% { transform: scale(1); }
     50% { transform: scale(1.2); border-color: #FFD700; box-shadow: 0 0 30px rgba(255, 215, 0, 1), 0 0 60px rgba(255, 215, 0, 0.6); }
     100% { transform: scale(1); }
+}
+
+/* Mulligan System Styles */
+.mulligan-overlay {
+    position: fixed;
+    top: 380px;
+    left: 0;
+    width: 100%;
+    height: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: mulliganFadeIn 0.5s ease-out;
+}
+
+.mulligan-panel {
+    background: linear-gradient(145deg, #1a1a2e, #16213e);
+    border: 3px solid #FFD700;
+    border-radius: 20px;
+    padding: 40px 30px 30px 30px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+    width: 95%;
+    max-width: 1200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    height: 90%;
+}
+
+.mulligan-hand {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    flex: 1;
+    align-items: center;
+}
+
+.mulligan-bottom {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.mulligan-title {
+    font-size: 1.6em;
+    color: #FFD700;
+    margin: 0;
+    text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.8);
+}
+
+.mulligan-confirm-btn {
+    padding: 15px 40px;
+    background: linear-gradient(145deg, #32CD32, #228B22);
+    color: white;
+    border: 3px solid #32CD32;
+    border-radius: 12px;
+    font-size: 1.2em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.mulligan-confirm-btn:hover {
+    background: linear-gradient(145deg, #228B22, #006400);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(50, 205, 50, 0.5);
+}
+
+/* Mulligan Cards - Exact same size as regular hand cards */
+.mulligan-card {
+    width: 175px;
+    height: 250px;
+    background: linear-gradient(145deg, #f0f0f0, #d0d0d0);
+    border-radius: 15px;
+    border: 3px solid #32CD32; /* Green border by default (keep) */
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    transform-style: preserve-3d;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.3), 0 0 15px rgba(50, 205, 50, 0.4);
+    display: flex;
+    flex-direction: column;
+}
+
+.mulligan-card:hover {
+    transform: translateY(-8px) scale(1.05);
+    box-shadow: 0 12px 25px rgba(0,0,0,0.4), 0 0 25px rgba(50, 205, 50, 0.7);
+}
+
+/* Selected mulligan cards (red - replace) */
+.mulligan-card.mulligan-selected {
+    border-color: #DC143C;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.3), 0 0 15px rgba(220, 20, 60, 0.4);
+}
+
+.mulligan-card.mulligan-selected:hover {
+    transform: translateY(-8px) scale(1.05);
+    box-shadow: 0 12px 25px rgba(0,0,0,0.4), 0 0 25px rgba(220, 20, 60, 0.7);
+}
+
+/* Mulligan card elements - Exact same proportions as regular cards */
+.mulligan-card .card-mana {
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    width: 30px;
+    height: 30px;
+    background: radial-gradient(circle, #4169E1, #191970);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 16px;
+    color: white;
+    border: 2px solid #FFD700;
+    z-index: 2;
+}
+
+.mulligan-card .card-art {
+    width: 120px;
+    height: 80px;
+    margin: 25px auto 6px;
+    background: linear-gradient(45deg, #87CEEB, #4682B4);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    border: 2px solid #333;
+}
+
+.mulligan-card .card-name {
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+    margin: 12px 5px 25px 5px;
+}
+
+.mulligan-card .card-text {
+    text-align: center;
+    font-size: 16px;
+    color: #555;
+    margin: 0 6px 6px;
+    line-height: 1.2;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Mulligan Card Replacement Animation */
+.card.mulligan-replacing {
+    animation: mulliganReplace 0.8s ease-in-out;
+}
+
+@keyframes mulliganReplace {
+    0% {
+        transform: scale(1) rotateY(0deg);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1) rotateY(90deg);
+        opacity: 0.5;
+    }
+    100% {
+        transform: scale(1) rotateY(180deg);
+        opacity: 1;
+    }
+}
+
+/* Mulligan Instructions */
+.mulligan-instructions {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: linear-gradient(145deg, #2F4F4F, #1C1C1C);
+    border: 2px solid #FFD700;
+    border-radius: 15px;
+    padding: 20px;
+    z-index: 9999;
+    max-width: 300px;
+    animation: instructionSlideIn 0.5s ease-out;
+}
+
+.instruction-content h3 {
+    color: #FFD700;
+    margin-bottom: 15px;
+    text-align: center;
+    font-size: 1.3em;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.instruction-content p {
+    color: #87CEEB;
+    margin-bottom: 8px;
+    font-size: 0.9em;
+    line-height: 1.3;
+}
+
+/* Mulligan Animations */
+@keyframes mulliganFadeIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes mulliganFadeOut {
+    from { opacity: 1; transform: scale(1); }
+    to { opacity: 0; transform: scale(0.9); }
+}
+
+@keyframes instructionSlideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
 }
 
 /* FORCE hero-stats to display as flex - high specificity */

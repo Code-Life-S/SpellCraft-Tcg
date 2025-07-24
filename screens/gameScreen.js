@@ -57,6 +57,9 @@ class GameScreen extends BaseScreen {
         
         // Initialize game
         await this.initializeGame();
+        
+        // Start mulligan phase after initialization
+        this.startMulliganPhase();
     }
 
     loadFallbackHTML() {
@@ -179,6 +182,9 @@ class GameScreen extends BaseScreen {
         
         // Initialize history display
         this.updateHistoryDisplay();
+        
+        // Initialize mulligan state
+        this.selectedCardsForMulligan = new Set();
     }
 
     bindEvents() {
@@ -269,8 +275,12 @@ class GameScreen extends BaseScreen {
 
     // Game Logic Methods (extracted from original script.js)
     createSpellCards() {
-        // Get starting hand from deck
-        this.playerHand = this.cardManager.getStartingHand(3);
+        // Get starting hand from deck (4 cards for mulligan)
+        this.playerHand = this.cardManager.getStartingHand(4);
+        
+        // Set initial game state to mulligan phase
+        this.gameState = 'mulligan';
+        this.isPlayerTurn = false; // Disable normal gameplay during mulligan
     }
 
     spawnInitialEnemies() {
@@ -655,6 +665,9 @@ class GameScreen extends BaseScreen {
 
     // Card and Enemy Interaction Methods
     handleCardClick(cardElement) {
+        // Mulligan cards are handled separately in the overlay
+        // Regular hand cards are not clickable during mulligan
+        
         if (this.gameState !== 'playing' || !this.isPlayerTurn) return;
         
         const handIndex = parseInt(cardElement.dataset.handIndex);
@@ -1531,6 +1544,9 @@ class GameScreen extends BaseScreen {
         this.updateUI();
         this.updateDeckTracker();
         this.updateHistoryDisplay();
+        
+        // Start mulligan phase for the new game
+        this.startMulliganPhase();
     }
 
     updateGameStatus(status) {
@@ -1835,7 +1851,227 @@ class GameScreen extends BaseScreen {
         return 'game';
     }
 
+    // Mulligan System
+    startMulliganPhase() {
+        console.log('🎴 Starting mulligan phase');
+        this.gameState = 'mulligan';
+        this.isPlayerTurn = false;
+        this.selectedCardsForMulligan = new Set();
+        
+        // Update UI (no special status needed - mulligan is self-explanatory)
+        this.showMulliganInterface();
+        this.renderPlayerHand(); // Re-render with mulligan styling
+    }
 
+    showMulliganInterface() {
+        // Create mulligan UI overlay
+        const mulliganOverlay = document.createElement('div');
+        mulliganOverlay.id = 'mulligan-overlay';
+        mulliganOverlay.className = 'mulligan-overlay';
+        mulliganOverlay.innerHTML = `
+            <div class="mulligan-panel">
+                <div class="mulligan-hand" id="mulligan-hand">
+                    <!-- Mulligan cards will be rendered here -->
+                </div>
+                <div class="mulligan-bottom">
+                    <h2 class="mulligan-title">Choose the cards to replace</h2>
+                    <button class="mulligan-confirm-btn" id="confirm-mulligan">
+                        Confirm
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        // Add to game container
+        const gameContainer = this.element.querySelector('.game-container');
+        gameContainer.appendChild(mulliganOverlay);
+        
+        // Render mulligan cards
+        this.renderMulliganCards();
+        
+        // Bind mulligan button events
+        this.bindMulliganEvents();
+    }
+
+    renderMulliganCards() {
+        const mulliganHandContainer = this.element.querySelector('#mulligan-hand');
+        mulliganHandContainer.innerHTML = '';
+
+        this.playerHand.forEach((card, index) => {
+            const cardElement = this.createMulliganCardElement(card, index);
+            mulliganHandContainer.appendChild(cardElement);
+        });
+    }
+
+    createMulliganCardElement(card, index) {
+        const cardDiv = document.createElement('div');
+        cardDiv.className = `mulligan-card ${card.type} ${card.rarity}`;
+        cardDiv.dataset.cardId = card.id;
+        cardDiv.dataset.handIndex = index;
+        cardDiv.onclick = () => this.handleMulliganCardClick(cardDiv);
+
+        // Mana cost
+        const manaDiv = document.createElement('div');
+        manaDiv.className = 'card-mana';
+        manaDiv.textContent = card.mana;
+
+        // Card art
+        const artDiv = document.createElement('div');
+        artDiv.className = 'card-art';
+        artDiv.textContent = card.art;
+
+        // Card name
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'card-name';
+        nameDiv.textContent = card.name;
+
+        // Card text
+        const textDiv = document.createElement('div');
+        textDiv.className = 'card-text';
+        textDiv.textContent = card.text;
+
+        // Assemble card
+        cardDiv.appendChild(manaDiv);
+        cardDiv.appendChild(artDiv);
+        cardDiv.appendChild(nameDiv);
+        cardDiv.appendChild(textDiv);
+
+        return cardDiv;
+    }
+
+    bindMulliganEvents() {
+        // Confirm mulligan
+        this.addEventListenerSafe(
+            this.element.querySelector('#confirm-mulligan'),
+            'click',
+            () => this.confirmMulligan()
+        );
+    }
+
+    handleMulliganCardClick(cardElement) {
+        if (this.gameState !== 'mulligan') return;
+        
+        const handIndex = parseInt(cardElement.dataset.handIndex);
+        
+        if (this.selectedCardsForMulligan.has(handIndex)) {
+            // Deselect card (back to green - keep)
+            this.selectedCardsForMulligan.delete(handIndex);
+            cardElement.classList.remove('mulligan-selected');
+        } else {
+            // Select card (red - replace)
+            this.selectedCardsForMulligan.add(handIndex);
+            cardElement.classList.add('mulligan-selected');
+        }
+        
+        // Play selection sound
+        this.soundManager?.play('card_select');
+    }
+
+    updateMulliganCount() {
+        const countElement = this.element.querySelector('#mulligan-count');
+        if (countElement) {
+            countElement.textContent = this.selectedCardsForMulligan.size;
+        }
+    }
+
+    confirmMulligan() {
+        console.log('🎴 Confirming mulligan');
+        
+        // If no cards selected, skip mulligan
+        if (this.selectedCardsForMulligan.size === 0) {
+            console.log('🎴 No cards selected - keeping all cards');
+            this.showMessage('Keeping all cards!', 'info');
+            this.endMulliganPhase();
+            return;
+        }
+        
+        // Replace the selected (red) cards
+        const cardsToReplace = Array.from(this.selectedCardsForMulligan);
+        this.performMulligan(cardsToReplace);
+    }
+
+    skipMulligan() {
+        console.log('🎴 Skipping mulligan - keeping all cards');
+        this.showMessage('Keeping all cards!', 'info');
+        this.endMulliganPhase();
+    }
+
+    performMulligan(indicesToReplace) {
+        console.log('🎴 Performing mulligan for indices:', indicesToReplace);
+        
+        // Show replacement animation
+        this.showMessage(`Replacing ${indicesToReplace.length} cards...`, 'info');
+        
+        // Replace cards with new ones from deck
+        const newCards = [];
+        indicesToReplace.forEach(index => {
+            const newCard = this.cardManager.getRandomCard();
+            if (newCard) {
+                newCards.push({ index, card: newCard });
+            }
+        });
+        
+        // Apply replacements with animation
+        this.animateMulliganReplacements(newCards);
+    }
+
+    animateMulliganReplacements(replacements) {
+        // Add replacement animation to selected cards
+        replacements.forEach(({ index }, i) => {
+            const cardElement = this.element.querySelector(`[data-hand-index="${index}"]`);
+            if (cardElement) {
+                setTimeout(() => {
+                    cardElement.classList.add('mulligan-replacing');
+                }, i * 100);
+            }
+        });
+        
+        // Replace cards after animation
+        setTimeout(() => {
+            replacements.forEach(({ index, card }) => {
+                this.playerHand[index] = card;
+            });
+            
+            this.renderPlayerHand();
+            this.showMessage(`✅ Replaced ${replacements.length} cards!`, 'success');
+            
+            // End mulligan phase
+            setTimeout(() => {
+                this.endMulliganPhase();
+            }, 1000);
+        }, 800);
+    }
+
+    endMulliganPhase() {
+        console.log('🎴 Ending mulligan phase');
+        
+        // Remove mulligan overlay
+        const overlay = this.element.querySelector('#mulligan-overlay');
+        if (overlay) {
+            overlay.style.animation = 'mulliganFadeOut 0.5s ease-out forwards';
+            setTimeout(() => {
+                if (overlay.parentNode) {
+                    overlay.parentNode.removeChild(overlay);
+                }
+            }, 500);
+        }
+        
+        // Reset game state to normal
+        this.gameState = 'playing';
+        this.isPlayerTurn = true;
+        this.selectedCardsForMulligan.clear();
+        
+        // Update UI
+        this.updateGameStatus('Your Turn');
+        this.renderPlayerHand(); // Remove mulligan styling
+        this.updateUI();
+        
+        // Show game start message
+        this.showMessage('🎮 Game begins! Good luck!', 'success');
+        
+        // Add to history
+        this.addToHistory('🎴 Mulligan complete - Game begins!', true);
+    }
 }
 
 // Export to global scope
