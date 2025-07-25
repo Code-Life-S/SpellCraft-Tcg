@@ -66,6 +66,7 @@ class DeckBuilderScreen extends BaseScreen {
         this.updateDeckInfo();
         this.updateDeckCardsList();
         this.updateManaChart();
+        this.updateSpellGrid(); // Update spell grid to show proper indicators
     }
 
     bindEvents() {
@@ -166,6 +167,12 @@ class DeckBuilderScreen extends BaseScreen {
         
         if (!spell) return;
 
+        // Don't allow clicking on disabled cards
+        if (spellCard.classList.contains('disabled')) {
+            this.showMessage('Maximum 2 copies per card allowed!', 'warning');
+            return;
+        }
+
         // Add to deck if not at max capacity
         if (this.currentDeck.cards.length < this.currentDeck.maxCards) {
             this.addCardToDeck(spell);
@@ -191,6 +198,7 @@ class DeckBuilderScreen extends BaseScreen {
         this.updateDeckInfo();
         this.updateDeckCardsList();
         this.updateManaChart();
+        this.updateSpellGrid(); // Update spell grid to reflect new card counts
         this.showMessage(`Added ${spell.name} to deck`, 'success');
     }
 
@@ -201,6 +209,7 @@ class DeckBuilderScreen extends BaseScreen {
             this.updateDeckInfo();
             this.updateDeckCardsList();
             this.updateManaChart();
+            this.updateSpellGrid(); // Update spell grid to reflect new card counts
             this.showMessage(`Removed ${removedCard.name} from deck`, 'info');
         }
     }
@@ -216,6 +225,12 @@ class DeckBuilderScreen extends BaseScreen {
     updateSpellGrid() {
         const spellGrid = this.element.querySelector('.spell-grid');
         if (!spellGrid) return;
+
+        // Calculate card counts in current deck
+        const deckCardCounts = {};
+        this.currentDeck.cards.forEach(card => {
+            deckCardCounts[card.id] = (deckCardCounts[card.id] || 0) + 1;
+        });
 
         // Filter spells
         let filteredSpells = this.availableSpells.filter(spell => {
@@ -233,14 +248,21 @@ class DeckBuilderScreen extends BaseScreen {
         });
 
         // Generate spell cards HTML
-        spellGrid.innerHTML = filteredSpells.map(spell => `
-            <div class="spell-card" data-spell-id="${spell.id}" title="${spell.text}">
-                <div class="spell-art">${spell.art}</div>
-                <div class="spell-mana">${spell.mana}</div>
-                <div class="spell-name">${spell.name}</div>
-                <div class="spell-rarity ${spell.rarity}"></div>
-            </div>
-        `).join('');
+        spellGrid.innerHTML = filteredSpells.map(spell => {
+            const countInDeck = deckCardCounts[spell.id] || 0;
+            const isMaxed = countInDeck >= 2;
+            const hasInDeck = countInDeck > 0;
+            
+            return `
+                <div class="spell-card ${isMaxed ? 'disabled' : ''}" data-spell-id="${spell.id}" title="${spell.text}">
+                    <div class="spell-art">${spell.art}</div>
+                    <div class="spell-mana">${spell.mana}</div>
+                    <div class="spell-name">${spell.name}</div>
+                    <div class="spell-rarity ${spell.rarity}"></div>
+                    ${hasInDeck ? `<div class="card-count-indicator">${countInDeck}/2</div>` : ''}
+                </div>
+            `;
+        }).join('');
     }
 
     updateDeckCardsList() {
@@ -347,6 +369,7 @@ class DeckBuilderScreen extends BaseScreen {
         this.updateDeckInfo();
         this.updateDeckCardsList();
         this.updateManaChart();
+        this.updateSpellGrid(); // Update spell grid to clear any indicators
         this.showMessage('New deck created!', 'success');
     }
 

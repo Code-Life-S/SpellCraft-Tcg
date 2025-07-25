@@ -255,7 +255,7 @@ class SoundManager {
             'fire_bolt': 'fire',
             'flame_burst': 'fire',
             'meteor': 'fire',
-            'lightning_storm': 'lightning',
+            'thunder_storm': 'lightning',
             'divine_wrath': 'lightning',
             'frost_nova': 'frost',
             'arcane_missiles': 'arcane',

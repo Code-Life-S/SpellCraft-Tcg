@@ -21,7 +21,7 @@ A unique spell-focused wave defense game inspired by TCG mechanics, built with H
 
 ### Spell Examples
 - **Fire Bolt** (1 mana): Deal 3 damage to target enemy
-- **Lightning Storm** (3 mana): Deal 2 damage to all enemies
+- **Thunder Storm** (3 mana): Deal 2 damage to all enemies
 - **Meteor** (5 mana): Deal 8 damage to target enemy
 - **Healing Light** (2 mana): Restore 5 health to yourself
 
