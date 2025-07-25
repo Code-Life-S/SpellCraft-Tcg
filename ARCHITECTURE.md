@@ -4,19 +4,60 @@
 
 We've successfully transformed Spell Caster from a single-file application into a clean, modular system with proper separation of concerns and screen management.
 
+## 🎯 Core Architectural Principles
+
+### Separation of Concerns
+- **HTML**: Structure and content only - no styling or behavior
+- **CSS**: Presentation and styling only - no content or logic  
+- **JavaScript**: Logic and behavior only - no HTML structure or CSS styling
+
+### Template-Based Architecture
+- **HTML Templates**: All UI structure defined in dedicated .html files
+- **CSS Modules**: Component-specific styling in dedicated .css files
+- **Data Binding**: JavaScript updates content through data binding, not DOM manipulation
+- **State Management**: UI state changes through CSS class toggles, not inline styles
+
+### Clean Code Standards
+- ❌ **NO** HTML structure declared directly in JavaScript files
+- ❌ **NO** CSS styling injected via JavaScript (innerHTML, textContent, cssText)
+- ❌ **NO** mixed concerns within single files
+- ❌ **NO** dynamic HTML creation in JS (use templates and data binding instead)
+- ❌ **NO** inline styles or CSS manipulation in JavaScript
+- ✅ **YES** to dedicated HTML templates for each screen and component
+- ✅ **YES** to dedicated CSS files for component styling
+- ✅ **YES** to JavaScript focused purely on logic and data management
+- ✅ **YES** to CSS classes for state changes (add/remove classes, not direct style manipulation)
+- ✅ **YES** to template-based rendering with data binding
+
 ## 📁 New File Structure
 
 ```
 /
 ├── index.html              # Main HTML file (updated)
 ├── app.js                  # Main application entry point
-├── style.css              # Game styles (unchanged)
+├── style.css              # Global game styles
 ├── README.md              # Project documentation
 ├── ARCHITECTURE.md        # This file
 │
 ├── /screens/              # Screen management system
 │   ├── screenManager.js   # Core screen navigation system
 │   ├── baseScreen.js      # Abstract base class for all screens
+│   ├── templateLoader.js  # HTML template loading utility
+│   │
+│   ├── /mainmenu/         # Main menu screen module
+│   │   ├── mainMenuScreen.js    # Logic and behavior
+│   │   ├── mainMenuScreen.html  # HTML structure
+│   │   └── mainMenuScreen.css   # Styling
+│   │
+│   ├── /game/             # Game screen module
+│   │   ├── gameScreen.js        # Logic and behavior
+│   │   ├── gameScreen.html      # HTML structure
+│   │   └── gameScreen.css       # Styling
+│   │
+│   └── /deckbuilder/      # Deck builder screen module (planned)
+│       ├── deckBuilderScreen.js   # Logic and behavior
+│       ├── deckBuilderScreen.html # HTML structure
+│       └── deckBuilderScreen.css  # Styling
 │   ├── mainMenuScreen.js  # Main menu with navigation
 │   └── gameScreen.js      # Game screen (refactored from script.js)
 │
