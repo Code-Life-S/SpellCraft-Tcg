@@ -1,0 +1,104 @@
+<div class="deck-builder">
+    <!-- Header -->
+    <div class="deck-builder-header">
+        <button class="header-btn back-btn" title="Back to Main Menu">
+            <span class="btn-icon">🏠</span>
+            <span class="btn-text">Back</span>
+        </button>
+        
+        <h1 class="screen-title">
+            <span class="title-icon">🏗️</span>
+            Deck Builder
+        </h1>
+        
+        <div class="header-actions">
+            <button class="header-btn save-deck-btn" title="Save Current Deck">
+                <span class="btn-icon">💾</span>
+                <span class="btn-text">Save</span>
+            </button>
+            <button class="header-btn delete-deck-btn" title="Delete Current Deck">
+                <span class="btn-icon">🗑️</span>
+                <span class="btn-text">Delete</span>
+            </button>
+            <button class="header-btn new-deck-btn" title="Create New Deck">
+                <span class="btn-icon">➕</span>
+                <span class="btn-text">New Deck</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="deck-builder-content">
+        <!-- Spell Collection Area -->
+        <div class="spell-collection">
+            <!-- Filters & Search -->
+            <div class="collection-filters">
+                <div class="search-container">
+                    <input type="text" class="search-input" placeholder="🔍 Search spells..." />
+                </div>
+                
+                <div class="filter-container">
+                    <select class="mana-filter">
+                        <option value="all">All Mana</option>
+                        <option value="0">0 Mana</option>
+                        <option value="1">1 Mana</option>
+                        <option value="2">2 Mana</option>
+                        <option value="3">3 Mana</option>
+                        <option value="4">4 Mana</option>
+                        <option value="5">5 Mana</option>
+                        <option value="6">6+ Mana</option>
+                    </select>
+                    
+                    <select class="rarity-filter">
+                        <option value="all">All Rarity</option>
+                        <option value="common">Common</option>
+                        <option value="rare">Rare</option>
+                        <option value="epic">Epic</option>
+                        <option value="legendary">Legendary</option>
+                    </select>
+                    
+                    <button class="clear-filters-btn">Clear</button>
+                </div>
+            </div>
+
+            <!-- Spell Grid -->
+            <div class="spell-grid">
+                <!-- Spell cards will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Deck Panel (Right Side) -->
+        <div class="deck-panel">
+            <!-- Deck Info -->
+            <div class="deck-info">
+                <div class="deck-name-container">
+                    <label for="deck-name">Deck Name:</label>
+                    <input type="text" class="deck-name-input" id="deck-name" value="New Deck" maxlength="30" />
+                </div>
+                
+                <div class="deck-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Cards:</span>
+                        <span class="stat-value card-count">0/30</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mana Curve Chart -->
+            <div class="mana-curve-section">
+                <h3 class="section-title">Mana Curve</h3>
+                <div class="mana-chart">
+                    <!-- Mana distribution bars will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Current Deck Cards -->
+            <div class="deck-cards-section">
+                <h3 class="section-title">Current Cards</h3>
+                <div class="deck-cards-list">
+                    <!-- Deck cards will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

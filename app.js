@@ -161,6 +161,7 @@ class SpellCasterApp {
             { name: 'Base Screen', check: () => window.BaseScreen },
             { name: 'Main Menu Screen', check: () => window.MainMenuScreen },
             { name: 'Game Screen', check: () => window.GameScreen },
+            { name: 'Deck Builder Screen', check: () => window.DeckBuilderScreen },
             { name: 'Card Manager', check: () => window.CardManager },
             { name: 'Sound Manager', check: () => window.SoundManager }
         ];
@@ -205,8 +206,10 @@ class SpellCasterApp {
         // Register game screen
         this.screenManager.registerScreen('game', GameScreen);
         
-        // TODO: Register additional screens as they're implemented
-        // this.screenManager.registerScreen('deckbuilder', DeckBuilderScreen);
+        // Register deck builder screen
+        this.screenManager.registerScreen('deck-builder', window.DeckBuilderScreen);
+        // Register deck list screen
+        this.screenManager.registerScreen('deck-list', window.DeckListScreen);
         // this.screenManager.registerScreen('options', OptionsScreen);
         // this.screenManager.registerScreen('achievements', AchievementsScreen);
         // this.screenManager.registerScreen('credits', CreditsScreen);
@@ -331,6 +334,11 @@ class SpellCasterApp {
         
         this.initialized = false;
         console.log('🗑️ Spell Caster App destroyed');
+    }
+
+    async openDeckBuilder() {
+        this.playButtonSound();
+        await this.navigateTo('deck-list');
     }
 }
 

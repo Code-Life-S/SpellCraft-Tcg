@@ -1,0 +1,109 @@
+/* Deck List Screen Styles */
+.deck-list-screen {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    color: #fff;
+}
+.deck-list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.2rem 2rem 1.2rem 2rem;
+    background: rgba(0,0,0,0.3);
+    border-bottom: 2px solid rgba(255,215,0,0.2);
+    gap: 1rem;
+}
+.screen-title {
+    font-size: 1.6rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.title-icon {
+    font-size: 2rem;
+}
+.header-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.2rem;
+    background: rgba(255,255,255,0.08);
+    border: 1.5px solid rgba(255,255,255,0.18);
+    border-radius: 8px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    transition: background 0.2s, border 0.2s;
+}
+.header-btn:hover {
+    background: rgba(100,149,237,0.18);
+    border-color: #FFD700;
+    color: #FFD700;
+}
+.deck-list-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 2rem 0.5rem 1rem 0.5rem;
+    overflow-y: auto;
+}
+.deck-list {
+    width: 100%;
+    max-width: 480px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+.deck-list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255,255,255,0.07);
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    border: 1.5px solid rgba(255,255,255,0.13);
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+}
+.deck-list-item:hover {
+    background: rgba(100,149,237,0.13);
+    transform: translateY(-2px) scale(1.01);
+}
+.deck-list-name {
+    font-size: 1.1rem;
+    font-weight: bold;
+    flex: 1;
+}
+.deck-list-count {
+    font-size: 0.95rem;
+    color: #FFD700;
+    margin-left: 1.2rem;
+    margin-right: 1.2rem;
+}
+.delete-deck-btn {
+    background: none;
+    border: none;
+    color: #DC143C;
+    font-size: 1.3rem;
+    cursor: pointer;
+    border-radius: 6px;
+    padding: 0.2rem 0.6rem;
+    transition: background 0.2s, color 0.2s;
+}
+.delete-deck-btn:hover {
+    background: rgba(220,20,60,0.13);
+    color: #fff;
+}
+.empty-deck-message {
+    color: #aaa;
+    font-size: 1.1rem;
+    margin-top: 2rem;
+    text-align: center;
+    display: none;
+} 

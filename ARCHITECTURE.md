@@ -29,6 +29,34 @@ We've successfully transformed Spell Caster from a single-file application into 
 - ✅ **YES** to CSS classes for state changes (add/remove classes, not direct style manipulation)
 - ✅ **YES** to template-based rendering with data binding
 
+### UI Design Process
+When creating new UI screens or components:
+
+1. **Create ASCII Layout Mockup**: Always start with a visual ASCII mockup showing the overall layout structure
+2. **Validate with User**: Present the mockup and ask for approval before implementation
+3. **Follow Template Architecture**: Implement using HTML templates, CSS modules, and JavaScript logic separation
+
+**Example Layout Mockup Format:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ [Header Elements] SCREEN TITLE [Action Buttons]            │ Header
+├─────────────────┬───────────────────────────────────────────┤
+│                 │                                           │
+│   LEFT PANEL    │        MAIN CONTENT AREA                 │
+│                 │                                           │
+│ ┌─────────────┐ │  ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌───┐    │
+│ │Component A  │ │  │ A │ │ B │ │ C │ │ D │ │ E │ │ F │    │
+│ │[Details]    │ │  └───┘ └───┘ └───┘ └───┘ └───┘ └───┘    │
+│ └─────────────┘ │                                           │
+│                 │                                           │
+│ ┌─Component B─┐ │                                           │
+│ │ Data/Stats  │ │                                           │
+│ └─────────────┘ │                                           │
+└─────────────────┴───────────────────────────────────────────┘
+```
+
+**Required Validation Step**: Always ask "Does this UI design capture what you're looking for? Would you like me to adjust any specific aspects?" before proceeding with implementation.
+
 ## 📁 New File Structure
 
 ```

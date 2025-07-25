@@ -551,9 +551,7 @@ class MainMenuScreen extends BaseScreen {
 
     async openDeckBuilder() {
         this.playButtonSound();
-        this.showMessage('Deck Builder coming soon!', 'info');
-        // TODO: Navigate to deck builder when implemented
-        // await this.navigateTo('deckbuilder');
+        await this.navigateTo('deck-list');
     }
 
     async openOptions() {
