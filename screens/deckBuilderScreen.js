@@ -57,16 +57,15 @@ class DeckBuilderScreen extends BaseScreen {
     async onBeforeShow(data) {
         // If a deckId is provided, load that deck
         if (data && data.deckId) {
-            const decks = this.getStoredDecks();
-            const found = decks.find(d => d.id === data.deckId);
-            if (found) {
-                this.currentDeck = { ...found };
-            } else {
-                this.createNewDeck();
-            }
+            await this.loadDeckById(data.deckId);
         } else {
             this.createNewDeck();
         }
+        
+        // Update UI after loading deck
+        this.updateDeckInfo();
+        this.updateDeckCardsList();
+        this.updateManaChart();
     }
 
     bindEvents() {
@@ -76,7 +75,7 @@ class DeckBuilderScreen extends BaseScreen {
         this.addEventListenerSafe(
             this.element.querySelector('.back-btn'),
             'click',
-            () => this.navigateTo('mainmenu')
+            () => this.navigateTo('deck-list')
         );
         this.addEventListenerSafe(
             this.element.querySelector('.save-deck-btn'),
@@ -364,6 +363,60 @@ class DeckBuilderScreen extends BaseScreen {
         } catch {
             return [];
         }
+    }
+
+    async loadDeckById(deckId) {
+        // First check stored decks (custom user decks)
+        const storedDecks = this.getStoredDecks();
+        let foundDeck = storedDecks.find(d => d.id === deckId);
+        
+        if (foundDeck) {
+            // Load custom deck
+            this.currentDeck = { ...foundDeck };
+            console.log(`Loaded custom deck: ${foundDeck.name}`);
+            return;
+        }
+        
+        // Check predefined decks from CardManager
+        if (this.cardManager) {
+            const predefinedDecks = this.cardManager.getAvailableDecks();
+            foundDeck = predefinedDecks.find(d => d.id === deckId);
+            
+            if (foundDeck) {
+                // Convert predefined deck format to deck builder format
+                this.currentDeck = this.convertPredefinedDeck(foundDeck);
+                console.log(`Loaded predefined deck: ${foundDeck.name}`);
+                return;
+            }
+        }
+        
+        // If no deck found, create new deck
+        console.warn(`Deck with ID ${deckId} not found, creating new deck`);
+        this.createNewDeck();
+    }
+
+    convertPredefinedDeck(predefinedDeck) {
+        const convertedDeck = {
+            id: predefinedDeck.id,
+            name: predefinedDeck.name,
+            cards: [],
+            maxCards: 30
+        };
+        
+        // Convert card definitions to actual card objects
+        predefinedDeck.cards.forEach(cardDef => {
+            const spell = this.availableSpells.find(s => s.id === cardDef.id);
+            if (spell) {
+                // Add the specified number of copies
+                for (let i = 0; i < cardDef.count; i++) {
+                    convertedDeck.cards.push({ ...spell });
+                }
+            } else {
+                console.warn(`Spell ${cardDef.id} not found in available spells`);
+            }
+        });
+        
+        return convertedDeck;
     }
 
     getScreenClass() {

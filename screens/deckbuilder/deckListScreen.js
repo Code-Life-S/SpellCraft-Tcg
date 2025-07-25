@@ -9,7 +9,9 @@ class DeckListScreen extends BaseScreen {
         // Load decks from CardManager
         this.cardManager = new CardManager();
         await this.cardManager.loadCards();
-        this.decks = this.cardManager.getAvailableDecks();
+        
+        // Combine predefined decks and custom decks
+        this.loadAllDecks();
 
         // Load HTML template
         const html = await window.templateLoader.loadScreenTemplate('screens/deckbuilder', 'deckListScreen');
@@ -25,6 +27,31 @@ class DeckListScreen extends BaseScreen {
         }
 
         this.renderDecks();
+    }
+
+    loadAllDecks() {
+        // Get predefined decks from CardManager
+        const predefinedDecks = this.cardManager.getAvailableDecks();
+        
+        // Get custom decks from localStorage
+        const customDecks = this._getStoredDecks();
+        
+        // Combine both, with custom decks taking precedence if same ID
+        this.decks = [...predefinedDecks];
+        
+        // Add custom decks that don't override predefined ones
+        customDecks.forEach(customDeck => {
+            const existingIndex = this.decks.findIndex(d => d.id === customDeck.id);
+            if (existingIndex !== -1) {
+                // Replace predefined deck with custom version
+                this.decks[existingIndex] = customDeck;
+            } else {
+                // Add new custom deck
+                this.decks.push(customDeck);
+            }
+        });
+        
+        console.log(`Loaded ${this.decks.length} decks (${predefinedDecks.length} predefined, ${customDecks.length} custom)`);
     }
 
     renderDecks() {
@@ -50,18 +77,36 @@ class DeckListScreen extends BaseScreen {
 
             const count = document.createElement('span');
             count.className = 'deck-list-count';
-            count.textContent = `${deck.cards.length} cards`;
+            // Calculate total cards for predefined decks
+            const totalCards = this.calculateDeckSize(deck);
+            count.textContent = `${totalCards} cards`;
             item.appendChild(count);
 
-            const delBtn = document.createElement('button');
-            delBtn.className = 'delete-deck-btn';
-            delBtn.title = 'Delete Deck';
-            delBtn.dataset.deckId = deck.id;
-            delBtn.textContent = '🗑️';
-            item.appendChild(delBtn);
+            // Only show delete button for custom decks (not predefined ones)
+            const isPredefined = this.cardManager.getAvailableDecks().some(d => d.id === deck.id);
+            if (!isPredefined) {
+                const delBtn = document.createElement('button');
+                delBtn.className = 'delete-deck-btn';
+                delBtn.title = 'Delete Deck';
+                delBtn.dataset.deckId = deck.id;
+                delBtn.textContent = '🗑️';
+                item.appendChild(delBtn);
+            }
 
             deckList.appendChild(item);
         });
+    }
+
+    calculateDeckSize(deck) {
+        if (deck.cards && Array.isArray(deck.cards)) {
+            // For custom decks, cards is an array of card objects
+            if (deck.cards.length > 0 && deck.cards[0].id) {
+                return deck.cards.length;
+            }
+            // For predefined decks, cards is an array of {id, count} objects
+            return deck.cards.reduce((total, cardDef) => total + (cardDef.count || 1), 0);
+        }
+        return 0;
     }
 
     bindEvents() {
@@ -118,7 +163,7 @@ class DeckListScreen extends BaseScreen {
         const decks = this._getStoredDecks();
         decks.push(newDeck);
         localStorage.setItem('spellcaster_decks', JSON.stringify(decks));
-        this.decks = this.cardManager.getAvailableDecks();
+        this.loadAllDecks();
         this.renderDecks();
         this.showMessage('New deck created!', 'success');
     }
@@ -128,7 +173,7 @@ class DeckListScreen extends BaseScreen {
         let decks = this._getStoredDecks();
         decks = decks.filter(d => d.id !== deckId);
         localStorage.setItem('spellcaster_decks', JSON.stringify(decks));
-        this.decks = this.cardManager.getAvailableDecks();
+        this.loadAllDecks();
         this.renderDecks();
         this.showMessage('Deck deleted!', 'info');
     }
@@ -144,4 +189,4 @@ class DeckListScreen extends BaseScreen {
         return 'deck-list';
     }
 }
-window.DeckListScreen = DeckListScreen; 
+window.DeckListScreen = DeckListScreen;

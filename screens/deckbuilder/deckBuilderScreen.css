@@ -249,11 +249,13 @@
     padding: 1rem;
     min-width: 300px;
     overflow: hidden;
+    height: 100%;
 }
 
 /* Deck Info */
 .deck-info {
     margin-bottom: 1rem;
+    flex-shrink: 0;
 }
 
 .deck-name-container {
@@ -312,8 +314,9 @@
 }
 
 /* Mana Curve */
-.mana-curve-container {
+.mana-curve-section {
     margin-bottom: 1rem;
+    flex-shrink: 0;
 }
 
 .section-title {
@@ -660,13 +663,23 @@
     }
 }
 
+/* Current Deck Cards Section */
+.deck-cards-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+}
+
 /* 1. Deck card layout in deck-cards-list */
 .deck-cards-list {
-    max-height: 320px;
+    flex: 1;
     overflow-y: auto;
     padding: 0.5rem;
     scrollbar-width: thin;
     scrollbar-color: #FFD700 #222;
+    min-height: 0;
 }
 .deck-cards-list::-webkit-scrollbar {
     width: 8px;
