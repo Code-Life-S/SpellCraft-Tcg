@@ -1875,6 +1875,12 @@ class GameScreen extends BaseScreen {
 
     // Mulligan System
     startMulliganPhase() {
+        // Prevent duplicate mulligan phases (only check for existing overlay)
+        if (this.element.querySelector('#mulligan-overlay')) {
+            console.log('🎴 Mulligan overlay already exists, skipping');
+            return;
+        }
+        
         console.log('🎴 Starting mulligan phase');
         this.gameState = 'mulligan';
         this.isPlayerTurn = false;
