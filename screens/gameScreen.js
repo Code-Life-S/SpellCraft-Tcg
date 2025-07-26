@@ -1676,10 +1676,10 @@ class GameScreen extends BaseScreen {
                     cardItem.className = 'deck-card-item';
                     
                     cardItem.innerHTML = `
-                        <span class="deck-card-mana">${card.mana}</span>
-                        <span class="deck-card-art">${card.art}</span>
-                        <span class="deck-card-name">${card.name}</span>
-                        <span class="deck-card-count">×${count}</span>
+                        <span class="game-deck-card-mana">${card.mana}</span>
+                        <span class="game-deck-card-art">${card.art}</span>
+                        <span class="game-deck-card-name">${card.name}</span>
+                        <span class="game-deck-card-count">×${count}</span>
                     `;
                     
                     deckCardsElement.appendChild(cardItem);

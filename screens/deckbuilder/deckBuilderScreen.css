@@ -447,25 +447,20 @@
     transform: translateX(4px);
 }
 
-.deck-card-art {
+.builder-deck-card-art {
     font-size: 1.5rem;
 }
 
-.deck-card-info {
+.builder-deck-card-info {
     flex: 1;
 }
 
-.deck-card-name {
+.builder-deck-card-name {
     font-weight: bold;
     font-size: 0.9rem;
 }
 
-.deck-card-mana {
-    font-size: 0.8rem;
-    color: rgba(100, 149, 237, 0.9);
-}
-
-.deck-card-count {
+.builder-deck-card-count {
     background: rgba(34, 197, 94, 0.8);
     color: white;
     border-radius: 50%;
@@ -738,15 +733,15 @@
     background: rgba(100,149,237,0.13);
     transform: translateX(4px);
 }
-.deck-card-art {
+.builder-deck-list-art {
     font-size: 1.5rem;
 }
-.deck-card-name {
+.builder-deck-list-name {
     font-weight: bold;
     font-size: 1rem;
     flex: 1;
 }
-.deck-card-count {
+.builder-deck-list-count {
     background: rgba(34,197,94,0.8);
     color: white;
     border-radius: 50%;
@@ -758,7 +753,7 @@
     font-size: 0.9rem;
     font-weight: bold;
 }
-.deck-card-mana {
+.builder-deck-card-mana {
     font-size: 0.9rem;
     color: #64b5f6;
     margin-left: 0.5rem;

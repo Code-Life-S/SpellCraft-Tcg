@@ -131,7 +131,7 @@
     background: rgba(255, 215, 0, 0.2);
 }
 
-.deck-card-mana {
+.game-deck-card-mana {
     background: linear-gradient(135deg, #4169E1, #1E90FF);
     color: white;
     border-radius: 50%;
@@ -147,12 +147,12 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-.deck-card-art {
+.game-deck-card-art {
     font-size: 12px;
     flex-shrink: 0;
 }
 
-.deck-card-name {
+.game-deck-card-name {
     color: #E6E6FA;
     font-size: 10px;
     flex: 1;
@@ -162,7 +162,7 @@
     min-width: 0;
 }
 
-.deck-card-count {
+.game-deck-card-count {
     color: #FFD700;
     font-weight: bold;
     font-size: 10px;
