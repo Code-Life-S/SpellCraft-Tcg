@@ -1,11 +1,10 @@
 class CardManager {
     constructor() {
         this.allSpells = [];
-        this.allDecks = [];
         this.currentDeck = [];
         this.remainingDeck = [];
         this.loaded = false;
-        this.decksLoaded = false;
+        this.deckStorage = new DeckStorageManager();
     }
 
     async loadCards() {
@@ -19,8 +18,11 @@ class CardManager {
             this.validateCards();
             this.loaded = true;
             
-            // Also load decks
-            await this.loadDecks();
+            // Initialize deck storage (loads defaults on first run)
+            await this.deckStorage.initialize();
+            
+            // Load default starter deck
+            this.loadDeck('starter_deck');
         } catch (error) {
             console.error('Error loading cards:', error);
             // Fallback to hardcoded cards if JSON fails
@@ -28,24 +30,7 @@ class CardManager {
         }
     }
 
-    async loadDecks() {
-        try {
-            const response = await fetch('cards/decks.json');
-            if (!response.ok) {
-                throw new Error(`Failed to load decks: ${response.status}`);
-            }
-            const data = await response.json();
-            this.allDecks = data.decks;
-            this.decksLoaded = true;
-            
-            // Load default starter deck
-            this.loadDeck('starter_deck');
-        } catch (error) {
-            console.error('Error loading decks:', error);
-            // Fallback to creating a basic deck from available cards
-            this.createFallbackDeck();
-        }
-    }
+    // Removed - now handled by DeckStorageManager
 
     validateCards() {
         // Basic validation - could be expanded for development mode
@@ -157,7 +142,7 @@ class CardManager {
 
     // Deck Management Methods
     loadDeck(deckId) {
-        const deck = this.allDecks.find(d => d.id === deckId);
+        const deck = this.deckStorage.getDeck(deckId);
         if (!deck) {
             console.error(`Deck ${deckId} not found!`);
             return false;
@@ -269,12 +254,12 @@ class CardManager {
 
     // Get all available decks
     getAvailableDecks() {
-        return [...this.allDecks];
+        return this.deckStorage.getAllDecks();
     }
 
     // Check if cards and decks are loaded
     isLoaded() {
-        return this.loaded && this.decksLoaded;
+        return this.loaded && this.deckStorage.initialized;
     }
 }
 

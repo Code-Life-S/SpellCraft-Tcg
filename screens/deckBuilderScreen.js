@@ -334,34 +334,46 @@ class DeckBuilderScreen extends BaseScreen {
     }
 
     saveDeck() {
-        // Save deck to localStorage
-        const decks = this.getStoredDecks();
-        const deckIndex = decks.findIndex(d => d.name === this.currentDeck.name);
-        
-        if (deckIndex !== -1) {
-            decks[deckIndex] = { ...this.currentDeck };
-        } else {
-            decks.push({ ...this.currentDeck });
+        try {
+            // Convert deck format for storage
+            const deckToSave = {
+                id: this.currentDeck.id || 'deck_' + Date.now(),
+                name: this.currentDeck.name,
+                description: this.currentDeck.description || '',
+                cards: this.convertCardsToStorageFormat(this.currentDeck.cards),
+                isDefault: false
+            };
+            
+            this.cardManager.deckStorage.saveDeck(deckToSave);
+            this.currentDeck.id = deckToSave.id; // Update current deck with ID
+            this.showMessage(`Deck "${this.currentDeck.name}" saved!`, 'success');
+        } catch (error) {
+            this.showMessage(`Error saving deck: ${error.message}`, 'error');
         }
-        
-        localStorage.setItem('spellcaster_decks', JSON.stringify(decks));
-        this.showMessage(`Deck "${this.currentDeck.name}" saved!`, 'success');
     }
 
     deleteDeck() {
+        if (!this.currentDeck.id) {
+            this.showMessage('Cannot delete unsaved deck', 'warning');
+            return;
+        }
+        
         if (confirm(`Are you sure you want to delete "${this.currentDeck.name}"?`)) {
-            const decks = this.getStoredDecks();
-            const filteredDecks = decks.filter(d => d.name !== this.currentDeck.name);
-            localStorage.setItem('spellcaster_decks', JSON.stringify(filteredDecks));
-            
-            this.createNewDeck();
-            this.showMessage('Deck deleted!', 'info');
+            try {
+                this.cardManager.deckStorage.deleteDeck(this.currentDeck.id);
+                this.createNewDeck();
+                this.showMessage('Deck deleted!', 'info');
+            } catch (error) {
+                this.showMessage(`Error deleting deck: ${error.message}`, 'error');
+            }
         }
     }
 
     createNewDeck() {
         this.currentDeck = {
+            id: null, // Will be assigned when saved
             name: "New Deck",
+            description: "",
             cards: [],
             maxCards: 30
         };
@@ -374,43 +386,21 @@ class DeckBuilderScreen extends BaseScreen {
     }
 
     loadDecks() {
-        const decks = this.getStoredDecks();
+        const decks = this.cardManager.deckStorage.getAllDecks();
         if (decks.length > 0) {
-            this.currentDeck = { ...decks[0] };
-        }
-    }
-
-    getStoredDecks() {
-        try {
-            return JSON.parse(localStorage.getItem('spellcaster_decks') || '[]');
-        } catch {
-            return [];
+            // Load first available deck
+            this.loadDeckById(decks[0].id);
         }
     }
 
     async loadDeckById(deckId) {
-        // First check stored decks (custom user decks)
-        const storedDecks = this.getStoredDecks();
-        let foundDeck = storedDecks.find(d => d.id === deckId);
+        const foundDeck = this.cardManager.deckStorage.getDeck(deckId);
         
         if (foundDeck) {
-            // Load custom deck
-            this.currentDeck = { ...foundDeck };
-            console.log(`Loaded custom deck: ${foundDeck.name}`);
+            // Convert storage format to deck builder format
+            this.currentDeck = this.convertStorageDeckToBuilder(foundDeck);
+            console.log(`Loaded deck: ${foundDeck.name}`);
             return;
-        }
-        
-        // Check predefined decks from CardManager
-        if (this.cardManager) {
-            const predefinedDecks = this.cardManager.getAvailableDecks();
-            foundDeck = predefinedDecks.find(d => d.id === deckId);
-            
-            if (foundDeck) {
-                // Convert predefined deck format to deck builder format
-                this.currentDeck = this.convertPredefinedDeck(foundDeck);
-                console.log(`Loaded predefined deck: ${foundDeck.name}`);
-                return;
-            }
         }
         
         // If no deck found, create new deck
@@ -418,16 +408,17 @@ class DeckBuilderScreen extends BaseScreen {
         this.createNewDeck();
     }
 
-    convertPredefinedDeck(predefinedDeck) {
+    convertStorageDeckToBuilder(storageDeck) {
         const convertedDeck = {
-            id: predefinedDeck.id,
-            name: predefinedDeck.name,
+            id: storageDeck.id,
+            name: storageDeck.name,
+            description: storageDeck.description || '',
             cards: [],
             maxCards: 30
         };
         
         // Convert card definitions to actual card objects
-        predefinedDeck.cards.forEach(cardDef => {
+        storageDeck.cards.forEach(cardDef => {
             const spell = this.availableSpells.find(s => s.id === cardDef.id);
             if (spell) {
                 // Add the specified number of copies
@@ -440,6 +431,20 @@ class DeckBuilderScreen extends BaseScreen {
         });
         
         return convertedDeck;
+    }
+
+    convertCardsToStorageFormat(cards) {
+        // Group cards by ID and count
+        const cardCounts = {};
+        cards.forEach(card => {
+            cardCounts[card.id] = (cardCounts[card.id] || 0) + 1;
+        });
+        
+        // Convert to storage format
+        return Object.keys(cardCounts).map(cardId => ({
+            id: cardId,
+            count: cardCounts[cardId]
+        }));
     }
 
     getScreenClass() {

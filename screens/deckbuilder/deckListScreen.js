@@ -30,28 +30,9 @@ class DeckListScreen extends BaseScreen {
     }
 
     loadAllDecks() {
-        // Get predefined decks from CardManager
-        const predefinedDecks = this.cardManager.getAvailableDecks();
-        
-        // Get custom decks from localStorage
-        const customDecks = this._getStoredDecks();
-        
-        // Combine both, with custom decks taking precedence if same ID
-        this.decks = [...predefinedDecks];
-        
-        // Add custom decks that don't override predefined ones
-        customDecks.forEach(customDeck => {
-            const existingIndex = this.decks.findIndex(d => d.id === customDeck.id);
-            if (existingIndex !== -1) {
-                // Replace predefined deck with custom version
-                this.decks[existingIndex] = customDeck;
-            } else {
-                // Add new custom deck
-                this.decks.push(customDeck);
-            }
-        });
-        
-        console.log(`Loaded ${this.decks.length} decks (${predefinedDecks.length} predefined, ${customDecks.length} custom)`);
+        // Get all decks from unified storage
+        this.decks = this.cardManager.deckStorage.getAllDecks();
+        console.log(`Loaded ${this.decks.length} decks from unified storage`);
     }
 
     renderDecks() {
@@ -82,9 +63,8 @@ class DeckListScreen extends BaseScreen {
             count.textContent = `${totalCards} cards`;
             item.appendChild(count);
 
-            // Only show delete button for custom decks (not predefined ones)
-            const isPredefined = this.cardManager.getAvailableDecks().some(d => d.id === deck.id);
-            if (!isPredefined) {
+            // Only show delete button for custom decks (not default ones)
+            if (!deck.isDefault) {
                 const delBtn = document.createElement('button');
                 delBtn.className = 'delete-deck-btn';
                 delBtn.title = 'Delete Deck';
@@ -142,40 +122,31 @@ class DeckListScreen extends BaseScreen {
         );
     }
 
-    _getStoredDecks() {
-        try {
-            return JSON.parse(localStorage.getItem('spellcaster_decks') || '[]');
-        } catch {
-            return [];
-        }
-    }
-
     createNewDeck() {
         const name = prompt('Enter a name for your new deck:', 'New Deck');
         if (!name) return;
-        const newDeck = {
-            id: 'deck_' + Date.now(),
-            name,
-            cards: [],
-            maxCards: 30
-        };
-        // Save to localStorage
-        const decks = this._getStoredDecks();
-        decks.push(newDeck);
-        localStorage.setItem('spellcaster_decks', JSON.stringify(decks));
-        this.loadAllDecks();
-        this.renderDecks();
-        this.showMessage('New deck created!', 'success');
+        
+        try {
+            const newDeck = this.cardManager.deckStorage.createNewDeck(name);
+            this.loadAllDecks();
+            this.renderDecks();
+            this.showMessage('New deck created!', 'success');
+        } catch (error) {
+            this.showMessage(`Error creating deck: ${error.message}`, 'error');
+        }
     }
 
     deleteDeck(deckId) {
         if (!confirm('Are you sure you want to delete this deck?')) return;
-        let decks = this._getStoredDecks();
-        decks = decks.filter(d => d.id !== deckId);
-        localStorage.setItem('spellcaster_decks', JSON.stringify(decks));
-        this.loadAllDecks();
-        this.renderDecks();
-        this.showMessage('Deck deleted!', 'info');
+        
+        try {
+            this.cardManager.deckStorage.deleteDeck(deckId);
+            this.loadAllDecks();
+            this.renderDecks();
+            this.showMessage('Deck deleted!', 'info');
+        } catch (error) {
+            this.showMessage(`Error deleting deck: ${error.message}`, 'error');
+        }
     }
 
     openDeck(deckId) {
