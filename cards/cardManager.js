@@ -257,6 +257,25 @@ class CardManager {
         return this.deckStorage.getAllDecks();
     }
 
+    // Put cards back into the deck (for mulligan)
+    returnCardsToDeck(cards) {
+        if (!Array.isArray(cards)) return;
+        
+        cards.forEach(card => {
+            // Remove the instanceId to match deck format
+            const deckCard = { ...card };
+            delete deckCard.instanceId;
+            
+            // Add back to remaining deck
+            this.remainingDeck.push(deckCard);
+        });
+        
+        // Shuffle the deck to randomize the returned cards
+        this.shuffleDeck();
+        
+        console.log(`🔄 Returned ${cards.length} cards to deck. Deck now has ${this.remainingDeck.length} cards.`);
+    }
+
     // Check if cards and decks are loaded
     isLoaded() {
         return this.loaded && this.deckStorage.initialized;

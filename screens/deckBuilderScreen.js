@@ -232,7 +232,7 @@ class DeckBuilderScreen extends BaseScreen {
             deckCardCounts[card.id] = (deckCardCounts[card.id] || 0) + 1;
         });
 
-        // Filter spells
+        // Filter and sort spells
         let filteredSpells = this.availableSpells.filter(spell => {
             const matchesSearch = !this.filters.search || 
                 spell.name.toLowerCase().includes(this.filters.search) ||
@@ -245,6 +245,13 @@ class DeckBuilderScreen extends BaseScreen {
                 spell.rarity === this.filters.rarity;
 
             return matchesSearch && matchesMana && matchesRarity;
+        }).sort((a, b) => {
+            // First sort by mana cost
+            if (a.mana !== b.mana) {
+                return a.mana - b.mana;
+            }
+            // Then sort by name
+            return a.name.localeCompare(b.name);
         });
 
         // Generate spell cards HTML
@@ -275,10 +282,17 @@ class DeckBuilderScreen extends BaseScreen {
             cardCounts[card.id] = (cardCounts[card.id] || 0) + 1;
         });
 
-        // Generate deck cards HTML
+        // Generate deck cards HTML and sort by mana cost, then by name
         const uniqueCards = Object.keys(cardCounts).map(cardId => {
             const card = this.currentDeck.cards.find(c => c.id === cardId);
             return { ...card, count: cardCounts[cardId] };
+        }).sort((a, b) => {
+            // First sort by mana cost
+            if (a.mana !== b.mana) {
+                return a.mana - b.mana;
+            }
+            // Then sort by name
+            return a.name.localeCompare(b.name);
         });
 
         deckCardsList.innerHTML = uniqueCards.map(card => `

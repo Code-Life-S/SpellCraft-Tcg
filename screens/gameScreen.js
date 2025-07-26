@@ -58,8 +58,7 @@ class GameScreen extends BaseScreen {
         // Initialize game
         await this.initializeGame();
         
-        // Start mulligan phase after initialization
-        this.startMulliganPhase();
+        // Don't start mulligan yet - wait for deck to be loaded in onBeforeShow
     }
 
     loadFallbackHTML() {
@@ -179,6 +178,12 @@ class GameScreen extends BaseScreen {
             console.log('🎯 No deck specified, using starter deck');
             this.cardManager.loadDeck('starter_deck');
         }
+        
+        // Now that deck is loaded, create cards and start mulligan
+        this.createSpellCards();
+        this.renderPlayerHand();
+        this.updateDeckTracker();
+        this.startMulliganPhase();
     }
 
     async initializeGame() {
@@ -188,14 +193,9 @@ class GameScreen extends BaseScreen {
         // Initialize audio preferences
         this.initializeAudioPreferences();
         
-        // Create initial game state
-        this.createSpellCards();
+        // Initialize game state (but don't create cards yet - wait for deck selection)
         this.spawnInitialEnemies();
-        this.renderPlayerHand();
         this.updateUI();
-        
-        // Initialize deck tracker
-        this.updateDeckTracker();
         
         // Initialize history display
         this.updateHistoryDisplay();
@@ -1653,13 +1653,18 @@ class GameScreen extends BaseScreen {
         if (deckCardsElement) {
             deckCardsElement.innerHTML = '';
             
-            // Group cards by ID and sort by mana cost
+            // Group cards by ID and sort by mana cost, then by name
             const cardEntries = Object.entries(remainingCounts);
             cardEntries.sort((a, b) => {
                 const cardA = this.cardManager.getCardById(a[0]);
                 const cardB = this.cardManager.getCardById(b[0]);
                 if (cardA && cardB) {
-                    return cardA.mana - cardB.mana;
+                    // First sort by mana cost
+                    if (cardA.mana !== cardB.mana) {
+                        return cardA.mana - cardB.mana;
+                    }
+                    // Then sort by name
+                    return cardA.name.localeCompare(cardB.name);
                 }
                 return 0;
             });
@@ -2019,7 +2024,16 @@ class GameScreen extends BaseScreen {
         // Show replacement animation
         this.showMessage(`Replacing ${indicesToReplace.length} cards...`, 'info');
         
-        // Replace cards with new ones from deck
+        // Store the cards being replaced
+        const replacedCards = [];
+        indicesToReplace.forEach(index => {
+            replacedCards.push(this.playerHand[index]);
+        });
+        
+        // Put the replaced cards back into the deck first
+        this.cardManager.returnCardsToDeck(replacedCards);
+        
+        // Now draw new cards from deck
         const newCards = [];
         indicesToReplace.forEach(index => {
             const newCard = this.cardManager.getRandomCard();
@@ -2027,6 +2041,8 @@ class GameScreen extends BaseScreen {
                 newCards.push({ index, card: newCard });
             }
         });
+        
+        console.log(`🎴 Mulligan: Returned ${replacedCards.length} cards to deck, drew ${newCards.length} new cards`);
         
         // Apply replacements with animation
         this.animateMulliganReplacements(newCards);
@@ -2050,6 +2066,7 @@ class GameScreen extends BaseScreen {
             });
             
             this.renderPlayerHand();
+            this.updateDeckTracker(); // Update deck tracker to reflect mulligan changes
             this.showMessage(`✅ Replaced ${replacements.length} cards!`, 'success');
             
             // End mulligan phase
