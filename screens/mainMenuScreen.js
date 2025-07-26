@@ -7,6 +7,7 @@ class MainMenuScreen extends BaseScreen {
         super(screenManager);
         this.soundManager = null;
         this.backgroundMusicStarted = false;
+        this.cardManager = null;
     }
 
     async setupContent() {
@@ -543,10 +544,239 @@ class MainMenuScreen extends BaseScreen {
     // Menu Action Methods
     async startAdventure() {
         this.playButtonSound();
-        this.showMessage('Starting adventure...', 'info', 1000);
         
-        // Navigate to game screen
-        await this.navigateTo('game');
+        // Show deck selection dialog
+        await this.showDeckSelectionDialog();
+    }
+
+    async showDeckSelectionDialog() {
+        // Initialize card manager to get available decks
+        if (!this.cardManager) {
+            this.cardManager = new CardManager();
+            await this.cardManager.loadCards();
+        }
+        
+        const availableDecks = this.cardManager.deckStorage.getAllDecks();
+        
+        if (availableDecks.length === 0) {
+            this.showMessage('No decks available! Please create a deck first.', 'error');
+            await this.navigateTo('deck-list');
+            return;
+        }
+        
+        // Create deck selection overlay
+        const overlay = document.createElement('div');
+        overlay.className = 'deck-selection-overlay';
+        overlay.innerHTML = `
+            <div class="deck-selection-panel">
+                <h2>Choose Your Deck</h2>
+                <div class="deck-selection-list" id="deck-selection-list">
+                    ${availableDecks.map(deck => `
+                        <div class="deck-selection-item" data-deck-id="${deck.id}">
+                            <div class="deck-selection-name">${deck.name}</div>
+                            <div class="deck-selection-info">
+                                ${this.calculateDeckSize(deck)} cards
+                                ${deck.isDefault ? '(Default)' : '(Custom)'}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="deck-selection-buttons">
+                    <button class="deck-selection-btn cancel" id="cancel-deck-selection">Cancel</button>
+                    <button class="deck-selection-btn confirm" id="confirm-deck-selection" disabled>Start Adventure</button>
+                </div>
+            </div>
+        `;
+        
+        // Add styles
+        this.addDeckSelectionStyles();
+        
+        // Add to page
+        document.body.appendChild(overlay);
+        
+        // Bind events
+        this.bindDeckSelectionEvents(overlay, availableDecks);
+    }
+
+    calculateDeckSize(deck) {
+        if (deck.cards && Array.isArray(deck.cards)) {
+            return deck.cards.reduce((total, cardDef) => total + (cardDef.count || 1), 0);
+        }
+        return 0;
+    }
+
+    addDeckSelectionStyles() {
+        if (document.getElementById('deck-selection-styles')) return;
+        
+        const style = document.createElement('style');
+        style.id = 'deck-selection-styles';
+        style.textContent = `
+            .deck-selection-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.8);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+                animation: fadeIn 0.3s ease-out;
+            }
+            
+            .deck-selection-panel {
+                background: linear-gradient(145deg, #1a1a2e, #16213e);
+                border: 2px solid #FFD700;
+                border-radius: 15px;
+                padding: 30px;
+                max-width: 500px;
+                width: 90%;
+                max-height: 80vh;
+                overflow-y: auto;
+            }
+            
+            .deck-selection-panel h2 {
+                color: #FFD700;
+                text-align: center;
+                margin: 0 0 20px 0;
+                font-size: 24px;
+            }
+            
+            .deck-selection-list {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                margin-bottom: 20px;
+                max-height: 300px;
+                overflow-y: auto;
+            }
+            
+            .deck-selection-item {
+                background: rgba(255, 255, 255, 0.1);
+                border: 2px solid transparent;
+                border-radius: 8px;
+                padding: 15px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+            
+            .deck-selection-item:hover {
+                background: rgba(255, 255, 255, 0.2);
+                border-color: rgba(255, 215, 0, 0.5);
+            }
+            
+            .deck-selection-item.selected {
+                background: rgba(255, 215, 0, 0.2);
+                border-color: #FFD700;
+            }
+            
+            .deck-selection-name {
+                color: #fff;
+                font-size: 18px;
+                font-weight: bold;
+                margin-bottom: 5px;
+            }
+            
+            .deck-selection-info {
+                color: #ccc;
+                font-size: 14px;
+            }
+            
+            .deck-selection-buttons {
+                display: flex;
+                gap: 15px;
+                justify-content: center;
+            }
+            
+            .deck-selection-btn {
+                padding: 12px 24px;
+                border: 2px solid;
+                border-radius: 8px;
+                background: transparent;
+                color: #fff;
+                font-size: 16px;
+                font-weight: bold;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+            
+            .deck-selection-btn.cancel {
+                border-color: #DC143C;
+                color: #DC143C;
+            }
+            
+            .deck-selection-btn.cancel:hover {
+                background: #DC143C;
+                color: #fff;
+            }
+            
+            .deck-selection-btn.confirm {
+                border-color: #32CD32;
+                color: #32CD32;
+            }
+            
+            .deck-selection-btn.confirm:hover:not(:disabled) {
+                background: #32CD32;
+                color: #fff;
+            }
+            
+            .deck-selection-btn:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+            
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    bindDeckSelectionEvents(overlay, availableDecks) {
+        let selectedDeckId = null;
+        
+        // Deck item selection
+        overlay.querySelectorAll('.deck-selection-item').forEach(item => {
+            item.addEventListener('click', () => {
+                // Remove previous selection
+                overlay.querySelectorAll('.deck-selection-item').forEach(i => i.classList.remove('selected'));
+                
+                // Select this item
+                item.classList.add('selected');
+                selectedDeckId = item.dataset.deckId;
+                
+                // Enable confirm button
+                overlay.querySelector('#confirm-deck-selection').disabled = false;
+                
+                this.playButtonSound();
+            });
+        });
+        
+        // Cancel button
+        overlay.querySelector('#cancel-deck-selection').addEventListener('click', () => {
+            document.body.removeChild(overlay);
+            this.playButtonSound();
+        });
+        
+        // Confirm button
+        overlay.querySelector('#confirm-deck-selection').addEventListener('click', async () => {
+            if (selectedDeckId) {
+                document.body.removeChild(overlay);
+                this.showMessage('Starting adventure...', 'info', 1000);
+                
+                // Navigate to game with selected deck
+                await this.navigateTo('game', { deckId: selectedDeckId });
+            }
+        });
+        
+        // Close on overlay click
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                document.body.removeChild(overlay);
+            }
+        });
     }
 
     async openDeckBuilder() {

@@ -9,9 +9,6 @@ class DeckListScreen extends BaseScreen {
         // Load decks from CardManager
         this.cardManager = new CardManager();
         await this.cardManager.loadCards();
-        
-        // Combine predefined decks and custom decks
-        this.loadAllDecks();
 
         // Load HTML template
         const html = await window.templateLoader.loadScreenTemplate('screens/deckbuilder', 'deckListScreen');
@@ -26,6 +23,15 @@ class DeckListScreen extends BaseScreen {
             document.head.appendChild(style);
         }
 
+        // Initial load of decks and render
+        this.loadAllDecks();
+        this.renderDecks();
+    }
+
+    async onBeforeShow(data) {
+        // Refresh deck data every time we show this screen
+        // This ensures we see any changes made in the deck builder
+        this.loadAllDecks();
         this.renderDecks();
     }
 
@@ -79,11 +85,7 @@ class DeckListScreen extends BaseScreen {
 
     calculateDeckSize(deck) {
         if (deck.cards && Array.isArray(deck.cards)) {
-            // For custom decks, cards is an array of card objects
-            if (deck.cards.length > 0 && deck.cards[0].id) {
-                return deck.cards.length;
-            }
-            // For predefined decks, cards is an array of {id, count} objects
+            // With unified storage, all decks use {id, count} format
             return deck.cards.reduce((total, cardDef) => total + (cardDef.count || 1), 0);
         }
         return 0;

@@ -113,6 +113,90 @@
     display: none;
 }
 
+/* Deck Tracker Compact Design */
+.deck-card-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 4px;
+    margin: 1px 0;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    font-size: 11px;
+    transition: background 0.2s ease;
+    min-height: 24px;
+}
+
+.deck-card-item:hover {
+    background: rgba(255, 215, 0, 0.2);
+}
+
+.deck-card-mana {
+    background: linear-gradient(135deg, #4169E1, #1E90FF);
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 11px;
+    flex-shrink: 0;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.deck-card-art {
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.deck-card-name {
+    color: #E6E6FA;
+    font-size: 10px;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+
+.deck-card-count {
+    color: #FFD700;
+    font-weight: bold;
+    font-size: 10px;
+    flex-shrink: 0;
+}
+
+.deck-tracker h3 {
+    color: #FFD700;
+    margin: 0 0 10px 0;
+    font-size: 16px;
+    text-align: center;
+}
+
+.deck-info {
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.deck-count {
+    color: #87CEEB;
+    font-size: 14px;
+}
+
+.deck-remaining {
+    color: #FFD700;
+    font-weight: bold;
+}
+
+.deck-cards {
+    flex: 1;
+    overflow-y: auto;
+    max-height: calc(100% - 80px);
+}
+
 /* Enemy Cards */
 .enemy {
     width: 140px;
@@ -1206,6 +1290,7 @@ div.hero-stats {
 
 .deck-cards {
     flex: 1;
+    overflow-x: hidden;
     overflow-y: auto;
     min-height: 0;
 }
@@ -1222,8 +1307,8 @@ div.hero-stats {
 }
 
 .deck-card-mana {
-    color: #4169E1;
-    font-weight: bold;
+    color: #ffffff;
+    font-weight: 500;
     min-width: 20px;
     text-align: center;
     flex-shrink: 0;

@@ -164,6 +164,23 @@ class GameScreen extends BaseScreen {
         }
     }
 
+    async onBeforeShow(data) {
+        // Load the selected deck if provided
+        if (data && data.deckId) {
+            const success = this.cardManager.loadDeck(data.deckId);
+            if (success) {
+                console.log(`✅ Loaded deck for game: ${data.deckId}`);
+            } else {
+                console.warn(`⚠️ Failed to load deck ${data.deckId}, using default`);
+                this.cardManager.loadDeck('starter_deck');
+            }
+        } else {
+            // Fallback to starter deck if no deck specified
+            console.log('🎯 No deck specified, using starter deck');
+            this.cardManager.loadDeck('starter_deck');
+        }
+    }
+
     async initializeGame() {
         // Initialize UI toggles
         this.initializeUIToggles();
@@ -1656,7 +1673,7 @@ class GameScreen extends BaseScreen {
                     cardItem.innerHTML = `
                         <span class="deck-card-mana">${card.mana}</span>
                         <span class="deck-card-art">${card.art}</span>
-                        <span class="deck-card-name" title="${card.name}">${card.name}</span>
+                        <span class="deck-card-name">${card.name}</span>
                         <span class="deck-card-count">×${count}</span>
                     `;
                     
