@@ -297,10 +297,10 @@ class DeckBuilderScreen extends BaseScreen {
 
         deckCardsList.innerHTML = uniqueCards.map(card => `
             <div class="deck-card" data-spell-id="${card.id}">
+                <span class="builder-deck-list-mana">${card.mana}</span>
                 <span class="builder-deck-list-art">${card.art}</span>
                 <span class="builder-deck-list-name">${card.name}</span>
-                <span class="builder-deck-list-count">x${card.count}</span>
-                <span class="builder-deck-card-mana">${card.mana}</span>
+                <span class="builder-deck-list-count">×${card.count}</span>
             </div>
         `).join('');
     }

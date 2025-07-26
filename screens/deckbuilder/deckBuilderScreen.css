@@ -733,13 +733,33 @@
     background: rgba(100,149,237,0.13);
     transform: translateX(4px);
 }
+.builder-deck-list-mana {
+    background: linear-gradient(135deg, #4169E1, #1E90FF);
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 11px;
+    flex-shrink: 0;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
 .builder-deck-list-art {
     font-size: 1.5rem;
+    flex-shrink: 0;
 }
 .builder-deck-list-name {
     font-weight: bold;
     font-size: 1rem;
     flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
 }
 .builder-deck-list-count {
     background: rgba(34,197,94,0.8);
@@ -752,11 +772,7 @@
     justify-content: center;
     font-size: 0.9rem;
     font-weight: bold;
-}
-.builder-deck-card-mana {
-    font-size: 0.9rem;
-    color: #64b5f6;
-    margin-left: 0.5rem;
+    flex-shrink: 0;
 }
 
 /* 2. Filter dropdowns and clear button */
