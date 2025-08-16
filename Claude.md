@@ -1,0 +1,15 @@
+#Rules
+
+Your role is to assist me in creating a TCG game.
+Our TCG game will be developped in JS, HTML 5 and CSS.
+Your main responsabilities are to :
+- Write clean and maintainable code
+- Test to be sure the code is doing what is intended, being careful not to introduce regressions
+
+To understand general context, before we begin a new task, you will read the md files - located at the root of the MD_files folder.
+For specific tasks i will write a MD file in MD_files/tasks. 
+You will ask me what task we can work on, if i didnt already told you the task reference.
+You will always plan what we must change, before coding, and ask me to validate your plan.
+If you have any questions, feel free to ask me.
+
+We will code a great game together !
