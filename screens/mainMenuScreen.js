@@ -382,6 +382,12 @@ class MainMenuScreen extends BaseScreen {
         );
 
         this.addEventListenerSafe(
+            this.element.querySelector('#arena-mode'),
+            'click',
+            () => this.openArenaMode()
+        );
+
+        this.addEventListenerSafe(
             this.element.querySelector('#deck-builder'),
             'click',
             () => this.openDeckBuilder()
@@ -399,11 +405,6 @@ class MainMenuScreen extends BaseScreen {
             () => this.openAchievements()
         );
 
-        this.addEventListenerSafe(
-            this.element.querySelector('#credits'),
-            'click',
-            () => this.openCredits()
-        );
 
         this.addEventListenerSafe(
             this.element.querySelector('#exit-game'),
@@ -779,6 +780,13 @@ class MainMenuScreen extends BaseScreen {
         });
     }
 
+    async openArenaMode() {
+        this.playButtonSound();
+        this.showMessage('Arena Mode coming soon!', 'info');
+        // TODO: Navigate to arena builder when implemented
+        // await this.navigateTo('arena-builder');
+    }
+
     async openDeckBuilder() {
         this.playButtonSound();
         await this.navigateTo('deck-list');
@@ -798,12 +806,6 @@ class MainMenuScreen extends BaseScreen {
         // await this.navigateTo('achievements');
     }
 
-    async openCredits() {
-        this.playButtonSound();
-        this.showMessage('Credits coming soon!', 'info');
-        // TODO: Navigate to credits when implemented
-        // await this.navigateTo('credits');
-    }
 
     exitGame() {
         this.playButtonSound();

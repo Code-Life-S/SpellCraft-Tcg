@@ -32,4 +32,44 @@ For now the "Start Arena" button does nothing, but in a next task we will make i
 Note that we may later (in another task, no to be done for now) :
 - Alternate between arenaBuilder and arenaAdventure phases : Player may choose new cards to add (or maybe remove) to the arena deck after a battle (defeating enemy phase called "arenaAdventure").
 - Display "bonus" cards that will give passive bonuses in the arenaAdventure phase, for example : "Fire spell damage * 2", or "Every spell also heals 2 HP".
-- ... and maybe other mechanics to come.
+- and maybe other mechanics to come.
+
+---
+
+## Implementation Progress
+
+### Phase 1: Main Menu Updates (COMPLETED)
+**What was implemented:**
+- Replaced "Credits" button with "Arena Mode" button in `screens/mainmenu/mainMenuScreen.html`
+- Positioned Arena Mode button between "Start Adventure" and "Deck Builder" as requested
+- Updated event handlers in `screens/mainMenuScreen.js`:
+  - Removed credits event listener and `openCredits()` method
+  - Added arena mode event listener and `openArenaMode()` method
+  - Added placeholder message "Arena Mode coming soon!" for testing
+- Arena Mode button uses arena icon with description "Draft cards and battle in the arena"
+
+**Status:** COMPLETED - Main menu now has Arena Mode button in correct position with proper event handling
+
+### Phase 2: Arena Builder Screen Creation (NEXT)
+**To be implemented:**
+- Create `screens/arena/arenaBuilderScreen.html` - UI structure
+- Create `screens/arena/arenaBuilderScreen.css` - Styling  
+- Create `screens/arena/arenaBuilderScreen.js` - Logic and functionality
+- Arena Builder Features:
+  - Display 3 random cards for selection
+  - Track arena deck progress (0/10 cards)
+  - Add selected cards to arena deck
+  - Show "Start Arena" button when deck is complete (10 cards)
+  - Handle resume/new arena logic
+
+### Phase 3: Arena Deck Management (PENDING)
+**To be implemented:**
+- Extend DeckStorageManager to handle arena decks
+- Add arena deck constants (ARENA_DECK_SIZE = 10)
+- Implement arena state persistence
+
+### Phase 4: Screen Manager Integration (PENDING)
+**To be implemented:**
+- Register arenaBuilder screen in ScreenManager
+- Add navigation logic from main menu to arena builder
+- Update `openArenaMode()` method to navigate to arena builder
