@@ -50,7 +50,7 @@ Note that we may later (in another task, no to be done for now) :
 
 **Status:** COMPLETED - Main menu now has Arena Mode button in correct position with proper event handling
 
-### Phase 2: Arena Builder Screen Creation (NEXT)
+### Phase 2: Arena Builder Screen Creation (COMPLETED)
 **UI Layout Mockup:**
 ```
 +-------------------------------------------------------------------------------+
@@ -84,25 +84,37 @@ Note that we may later (in another task, no to be done for now) :
 +-------------------------------------------+-----------------------------------+
 ```
 
-**To be implemented:**
-- Create `screens/arena/arenaBuilderScreen.html` - UI structure
-- Create `screens/arena/arenaBuilderScreen.css` - Styling  
-- Create `screens/arena/arenaBuilderScreen.js` - Logic and functionality
-- Arena Builder Features:
-  - Display 3 random cards for selection
-  - Track arena deck progress (0/10 cards)
-  - Add selected cards to arena deck
+**What was implemented:**
+- Created `screens/arena/arenaBuilderScreen.html` - Complete UI structure following approved mockup
+- Created `screens/arena/arenaBuilderScreen.css` - Full styling with responsive design and animations
+- Created `screens/arena/arenaBuilderScreen.js` - Complete logic extending BaseScreen class
+- Arena Builder Features implemented:
+  - Display 3 random cards for selection with card choice UI
+  - Track arena deck progress (0/10 cards) with progress bar and counter
+  - Add selected cards to arena deck with visual feedback
   - Show "Start Arena" button when deck is complete (10 cards)
-  - Handle resume/new arena logic
+  - Handle resume/new arena logic with localStorage persistence
+  - Mana curve visualization and current cards list
+  - Configurable ARENA_DECK_SIZE constant (set to 10)
+- Registered arena-builder screen in ScreenManager (app.js)
+- Updated mainMenuScreen.js to navigate to arena builder
 
-### Phase 3: Arena Deck Management (PENDING)
-**To be implemented:**
-- Extend DeckStorageManager to handle arena decks
-- Add arena deck constants (ARENA_DECK_SIZE = 10)
-- Implement arena state persistence
+**Status:** COMPLETED - Arena Builder screen fully functional with card drafting, progress tracking, and state persistence
 
-### Phase 4: Screen Manager Integration (PENDING)
-**To be implemented:**
-- Register arenaBuilder screen in ScreenManager
-- Add navigation logic from main menu to arena builder
-- Update `openArenaMode()` method to navigate to arena builder
+### Phase 3: Arena Deck Management (COMPLETED)
+**What was implemented:**
+- Arena deck constants added (ARENA_DECK_SIZE = 10, CARDS_PER_CHOICE = 3)
+- Arena state persistence implemented using localStorage with ARENA_STATE_KEY
+- Arena deck management with arenaCards array and progress tracking
+- Save/load arena state functionality for resume/new arena logic
+
+**Status:** COMPLETED - Arena deck management fully implemented with state persistence
+
+### Phase 4: Screen Manager Integration (COMPLETED)
+**What was implemented:**
+- Registered arenaBuilder screen in ScreenManager (app.js)
+- Added navigation logic from main menu to arena builder
+- Updated `openArenaMode()` method to navigate to arena-builder screen
+- Arena builder properly integrated into screen management system
+
+**Status:** COMPLETED - Arena Builder fully integrated into application

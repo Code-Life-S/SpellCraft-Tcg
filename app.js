@@ -161,6 +161,7 @@ class SpellCasterApp {
             { name: 'Base Screen', check: () => window.BaseScreen },
             { name: 'Main Menu Screen', check: () => window.MainMenuScreen },
             { name: 'Game Screen', check: () => window.GameScreen },
+            { name: 'Arena Builder Screen', check: () => window.ArenaBuilderScreen },
             { name: 'Deck Builder Screen', check: () => window.DeckBuilderScreen },
             { name: 'Card Manager', check: () => window.CardManager },
             { name: 'Sound Manager', check: () => window.SoundManager }
@@ -205,6 +206,9 @@ class SpellCasterApp {
         
         // Register game screen
         this.screenManager.registerScreen('game', GameScreen);
+        
+        // Register arena builder screen
+        this.screenManager.registerScreen('arena-builder', window.ArenaBuilderScreen);
         
         // Register deck builder screen
         this.screenManager.registerScreen('deck-builder', window.DeckBuilderScreen);

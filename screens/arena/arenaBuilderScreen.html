@@ -1,0 +1,83 @@
+<div class="arena-builder">
+    <!-- Header -->
+    <div class="arena-builder-header">
+        <button class="header-btn back-btn" title="Back to Main Menu">
+            <span class="btn-icon">🏠</span>
+            <span class="btn-text">Back</span>
+        </button>
+        
+        <h1 class="screen-title">
+            <span class="title-icon">🏟️</span>
+            Arena Builder
+        </h1>
+        
+        <div class="header-actions">
+            <button class="header-btn new-arena-btn" title="Start New Arena">
+                <span class="btn-icon">🔄</span>
+                <span class="btn-text">New Arena</span>
+            </button>
+            <button class="header-btn resume-arena-btn" title="Resume Arena" style="display: none;">
+                <span class="btn-icon">▶️</span>
+                <span class="btn-text">Resume Arena</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="arena-builder-content">
+        <!-- Card Selection Area (Left) -->
+        <div class="card-selection-area">
+            <!-- Card Selection Panel -->
+            <div class="card-selection-panel" id="card-selection-panel">
+                <h2 class="selection-title">Choose Your Card</h2>
+                <div class="card-choices" id="card-choices">
+                    <!-- 3 cards will be populated by JavaScript -->
+                </div>
+                <p class="selection-instruction">Click a card to add it to your arena deck</p>
+            </div>
+
+            <!-- Arena Complete Panel (Hidden by default) -->
+            <div class="arena-complete-panel" id="arena-complete-panel" style="display: none;">
+                <h2 class="complete-title">Arena Deck Complete!</h2>
+                <div class="complete-content">
+                    <p class="complete-message">Your arena deck is ready for battle!</p>
+                    <button class="start-arena-btn" id="start-arena-btn">
+                        <span class="btn-icon">🏟️</span>
+                        <span class="btn-text">START ARENA</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Arena Deck Panel (Right) -->
+        <div class="arena-deck-panel">
+            <!-- Arena Progress -->
+            <div class="arena-progress">
+                <h3 class="section-title">Arena Progress</h3>
+                <div class="progress-info">
+                    <span class="progress-text">Cards: </span>
+                    <span class="progress-count" id="arena-card-count">0/10</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+            </div>
+
+            <!-- Current Cards -->
+            <div class="arena-cards-section">
+                <h3 class="section-title">Current Cards</h3>
+                <div class="arena-cards-list" id="arena-cards-list">
+                    <!-- Arena cards will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Mana Curve Chart -->
+            <div class="mana-curve-section">
+                <h3 class="section-title">Mana Curve</h3>
+                <div class="mana-chart" id="mana-chart">
+                    <!-- Mana distribution bars will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

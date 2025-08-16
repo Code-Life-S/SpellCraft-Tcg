@@ -1,0 +1,421 @@
+.arena-builder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    color: #fff;
+    overflow: hidden;
+}
+
+/* Header Styles */
+.arena-builder-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 30px;
+    background: rgba(0, 0, 0, 0.3);
+    border-bottom: 2px solid rgba(255, 215, 0, 0.3);
+    min-height: 80px;
+}
+
+.header-btn {
+    background: linear-gradient(145deg, rgba(30, 30, 50, 0.9), rgba(50, 50, 80, 0.9));
+    border: 2px solid rgba(255, 215, 0, 0.6);
+    border-radius: 8px;
+    color: #fff;
+    padding: 10px 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: inherit;
+    font-size: 14px;
+}
+
+.header-btn:hover {
+    background: linear-gradient(145deg, rgba(50, 50, 80, 0.9), rgba(70, 70, 100, 0.9));
+    border-color: #FFD700;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+}
+
+.header-btn .btn-icon {
+    font-size: 16px;
+}
+
+.header-btn .btn-text {
+    font-weight: bold;
+}
+
+.screen-title {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin: 0;
+    font-size: 28px;
+    font-weight: bold;
+    color: #FFD700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.title-icon {
+    font-size: 32px;
+}
+
+.header-actions {
+    display: flex;
+    gap: 15px;
+}
+
+/* Main Content */
+.arena-builder-content {
+    display: flex;
+    flex: 1;
+    gap: 20px;
+    padding: 20px;
+    overflow: hidden;
+}
+
+/* Card Selection Area (Left) */
+.card-selection-area {
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 15px;
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    padding: 30px;
+    overflow: hidden;
+}
+
+.card-selection-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+
+.selection-title {
+    font-size: 24px;
+    color: #FFD700;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.card-choices {
+    display: flex;
+    gap: 30px;
+    justify-content: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.selection-instruction {
+    color: #ccc;
+    font-size: 16px;
+    text-align: center;
+    margin: 0;
+}
+
+/* Arena Complete Panel */
+.arena-complete-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+}
+
+.complete-title {
+    font-size: 32px;
+    color: #FFD700;
+    margin-bottom: 20px;
+    text-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+}
+
+.complete-message {
+    font-size: 18px;
+    color: #ccc;
+    margin-bottom: 30px;
+}
+
+.start-arena-btn {
+    background: linear-gradient(145deg, rgba(255, 215, 0, 0.2), rgba(255, 165, 0, 0.2));
+    border: 3px solid #FFD700;
+    border-radius: 12px;
+    color: #FFD700;
+    padding: 20px 40px;
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-family: inherit;
+}
+
+.start-arena-btn:hover {
+    background: linear-gradient(145deg, rgba(255, 215, 0, 0.3), rgba(255, 165, 0, 0.3));
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
+}
+
+.start-arena-btn .btn-icon {
+    font-size: 24px;
+}
+
+/* Arena Deck Panel (Right) */
+.arena-deck-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 15px;
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    padding: 20px;
+    overflow: hidden;
+}
+
+.section-title {
+    font-size: 18px;
+    color: #FFD700;
+    margin: 0 0 15px 0;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+    padding-bottom: 10px;
+}
+
+/* Arena Progress */
+.arena-progress {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 15px;
+}
+
+.progress-info {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 10px;
+    font-size: 16px;
+}
+
+.progress-text {
+    color: #ccc;
+}
+
+.progress-count {
+    color: #FFD700;
+    font-weight: bold;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #FFD700, #FFA500);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+    width: 0%;
+}
+
+/* Arena Cards List */
+.arena-cards-section {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 15px;
+    overflow: hidden;
+}
+
+.arena-cards-list {
+    max-height: 300px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.arena-card-item {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background 0.2s ease;
+}
+
+.arena-card-item:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.arena-card-icon {
+    font-size: 16px;
+    min-width: 20px;
+    text-align: center;
+}
+
+.arena-card-name {
+    flex: 1;
+    font-size: 14px;
+    color: #fff;
+}
+
+.arena-card-mana {
+    font-size: 12px;
+    color: #87CEEB;
+    background: rgba(135, 206, 235, 0.2);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+/* Mana Curve */
+.mana-curve-section {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 15px;
+}
+
+.mana-chart {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    height: 80px;
+    gap: 4px;
+}
+
+.mana-bar {
+    flex: 1;
+    background: linear-gradient(to top, #FFD700, #FFA500);
+    border-radius: 2px 2px 0 0;
+    min-height: 4px;
+    position: relative;
+    transition: height 0.3s ease;
+}
+
+.mana-bar-label {
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: #ccc;
+    text-align: center;
+}
+
+.mana-bar-count {
+    position: absolute;
+    top: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: #FFD700;
+    font-weight: bold;
+}
+
+/* Card Choice Styles */
+.card-choice {
+    background: linear-gradient(145deg, rgba(30, 30, 50, 0.9), rgba(50, 50, 80, 0.9));
+    border: 2px solid rgba(255, 215, 0, 0.6);
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    min-width: 150px;
+    max-width: 180px;
+}
+
+.card-choice:hover {
+    border-color: #FFD700;
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(255, 215, 0, 0.3);
+}
+
+.card-choice-icon {
+    font-size: 32px;
+    margin-bottom: 5px;
+}
+
+.card-choice-name {
+    font-size: 16px;
+    font-weight: bold;
+    color: #fff;
+    text-align: center;
+}
+
+.card-choice-mana {
+    font-size: 14px;
+    color: #87CEEB;
+    background: rgba(135, 206, 235, 0.2);
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+.card-choice-effect {
+    font-size: 12px;
+    color: #ccc;
+    text-align: center;
+    line-height: 1.3;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .arena-builder-content {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .card-selection-area {
+        flex: none;
+        min-height: 400px;
+    }
+    
+    .arena-deck-panel {
+        flex: none;
+        flex-direction: row;
+        gap: 15px;
+    }
+    
+    .arena-deck-panel > div {
+        flex: 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .arena-builder-header {
+        padding: 15px 20px;
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .header-actions {
+        gap: 10px;
+    }
+    
+    .card-choices {
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+    }
+    
+    .arena-deck-panel {
+        flex-direction: column;
+    }
+}

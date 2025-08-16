@@ -782,9 +782,7 @@ class MainMenuScreen extends BaseScreen {
 
     async openArenaMode() {
         this.playButtonSound();
-        this.showMessage('Arena Mode coming soon!', 'info');
-        // TODO: Navigate to arena builder when implemented
-        // await this.navigateTo('arena-builder');
+        await this.navigateTo('arena-builder');
     }
 
     async openDeckBuilder() {
