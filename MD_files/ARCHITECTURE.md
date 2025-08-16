@@ -40,19 +40,19 @@ When creating new UI screens or components:
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ [Header Elements] SCREEN TITLE [Action Buttons]            │ Header
-├─────────────────┬───────────────────────────────────────────┤
-│                 │                                           │
-│   LEFT PANEL    │        MAIN CONTENT AREA                 │
-│                 │                                           │
-│ ┌─────────────┐ │  ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌───┐    │
-│ │Component A  │ │  │ A │ │ B │ │ C │ │ D │ │ E │ │ F │    │
-│ │[Details]    │ │  └───┘ └───┘ └───┘ └───┘ └───┘ └───┘    │
-│ └─────────────┘ │                                           │
-│                 │                                           │
-│ ┌─Component B─┐ │                                           │
-│ │ Data/Stats  │ │                                           │
-│ └─────────────┘ │                                           │
-└─────────────────┴───────────────────────────────────────────┘
+├───────────────────────────────────────────┬─────────────────┤
+│                                           │                 │
+│        MAIN CONTENT AREA                  │   RIGHT PANEL   │
+│                                           │                 │
+│  ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌───┐    │ ┌─────────────┐ │
+│  │ A │ │ B │ │ C │ │ D │ │ E │ │ F │    │ │Component A  │ │
+│  └───┘ └───┘ └───┘ └───┘ └───┘ └───┘    │ │[Details]    │ │
+│                                           │ └─────────────┘ │
+│                                           │                 │
+│                                           │ ┌─Component B─┐ │
+│                                           │ │ Data/Stats  │ │
+│                                           │ └─────────────┘ │
+└───────────────────────────────────────────┴─────────────────┘
 ```
 
 **Required Validation Step**: Always ask "Does this UI design capture what you're looking for? Would you like me to adjust any specific aspects?" before proceeding with implementation.
