@@ -1384,7 +1384,19 @@ class GameScreen extends BaseScreen {
             const enemy = this.enemies[attackIndex];
             let damage = enemy.attack;
             let shieldAbsorbed = 0;
-            
+
+            // Trigger enemy attack animation
+            const enemyElement = this.element.querySelector(`[data-enemy-id="${enemy.id}"]`);
+            if (enemyElement) {
+                enemyElement.classList.add('attacking');
+                // Remove the class after animation completes (600ms)
+                setTimeout(() => {
+                    if (enemyElement) {
+                        enemyElement.classList.remove('attacking');
+                    }
+                }, 600);
+            }
+
             // Apply shield protection
             if (this.playerShield > 0) {
                 shieldAbsorbed = Math.min(this.playerShield, damage);

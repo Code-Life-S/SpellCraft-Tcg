@@ -875,6 +875,33 @@
     animation: enemyDamageFlash 0.6s ease-out;
 }
 
+/* Enemy Attack Animation - Lunge toward player with shake */
+@keyframes enemyAttackLunge {
+    0% {
+        transform: translateY(0) rotate(0deg);
+    }
+    20% {
+        transform: translateY(-10px) rotate(-5deg);
+    }
+    40% {
+        transform: translateY(30px) rotate(5deg) scale(1.1);
+    }
+    60% {
+        transform: translateY(20px) rotate(-3deg) scale(1.05);
+    }
+    80% {
+        transform: translateY(-5px) rotate(2deg);
+    }
+    100% {
+        transform: translateY(0) rotate(0deg);
+    }
+}
+
+.enemy.attacking {
+    animation: enemyAttackLunge 0.6s ease-in-out;
+    z-index: 100;
+}
+
 /* Enhanced Targeting Animations for Single-Target Spells */
 .enemy.targetable {
     animation: targetablePulse 1.5s ease-in-out infinite !important;
