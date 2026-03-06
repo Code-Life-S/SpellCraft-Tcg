@@ -806,12 +806,19 @@ class GameScreen extends BaseScreen {
         // Apply spell effect with delay for animation
         setTimeout(() => {
             this.applySpellEffect(card, targetEnemyId);
-            
+
             // Remove card from hand after effect
             this.playerHand.splice(handIndex, 1);
             this.renderPlayerHand();
             this.updateUI();
             this.updateDeckTracker();
+
+            // Auto-end turn if player has no mana left and game is still active
+            if (this.currentMana === 0 && this.isPlayerTurn && this.gameState === 'playing') {
+                setTimeout(() => {
+                    this.endTurn();
+                }, 1000);
+            }
         }, 500);
     }
 
