@@ -291,18 +291,29 @@ class ArenaBuilderScreen extends BaseScreen {
         const listElement = this.element.querySelector('#arena-cards-list');
         if (!listElement) return;
         
-        listElement.innerHTML = '';
-        
+        // Group cards by ID and count
+        const cardCounts = {};
         this.arenaCards.forEach(card => {
-            const cardItem = document.createElement('div');
-            cardItem.className = 'arena-card-item';
-            cardItem.innerHTML = `
+            cardCounts[card.id] = (cardCounts[card.id] || 0) + 1;
+        });
+        
+        // Unique cards sorted by mana then name
+        const uniqueCards = Object.keys(cardCounts).map(cardId => {
+            const card = this.arenaCards.find(c => c.id === cardId);
+            return { ...card, count: cardCounts[cardId] };
+        }).sort((a, b) => {
+            if (a.mana !== b.mana) return a.mana - b.mana;
+            return a.name.localeCompare(b.name);
+        });
+        
+        listElement.innerHTML = uniqueCards.map(card => `
+            <div class="arena-card-item">
                 <span class="arena-card-icon">${card.art}</span>
                 <span class="arena-card-name">${card.name}</span>
-                <span class="arena-card-mana">${card.mana}M</span>
-            `;
-            listElement.appendChild(cardItem);
-        });
+                <span class="arena-card-count">x${card.count}</span>
+                <span class="arena-card-mana">${card.mana} Mana</span>
+            </div>
+        `).join('');
     }
 
     updateManaCurve() {

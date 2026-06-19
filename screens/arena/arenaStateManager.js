@@ -81,9 +81,9 @@ class ArenaStateManager {
         if (upgrades.damageBonus) upgraded.damage = (upgraded.damage || 0) + upgrades.damageBonus;
         if (upgrades.healBonus) upgraded.healing = (upgraded.healing || 0) + upgrades.healBonus;
         if (upgrades.shieldBonus) upgraded.shield = (upgraded.shield || 0) + upgrades.shieldBonus;
-        if (upgrades.manaReduction) upgraded.mana = Math.max(1, (upgraded.mana || 1) - upgrades.manaReduction);
+        if (upgrades.manaReduction) upgraded.mana = Math.max(0, (upgraded.mana || 1) - upgrades.manaReduction);
         if (upgrades.cardDrawBonus) upgraded.cardDraw = (upgraded.cardDraw || 0) + upgrades.cardDrawBonus;
-        if (upgrades.bonusHealEffect) upgraded.healing = (upgraded.healing || 0) + 2;
+        if (upgrades.bonusHealEffect) upgraded.healing = (upgraded.healing || 0) + upgrades.bonusHealEffect;
         if (upgrades.extraHitBonus) upgraded.hits = (upgraded.hits || 1) + upgrades.extraHitBonus;
         upgraded.text = this.getCardDisplayText(upgraded);
         return upgraded;
@@ -95,7 +95,7 @@ class ArenaStateManager {
             healBoost: '+X healing',
             shieldBoost: '+X shield',
             manaReduction: '-1 mana cost',
-            cardDrawBonus: 'Also draw 1 card',
+            cardDrawBonus: '+X draw',
             bonusHealEffect: 'Also heal 2 HP',
             extraHitBonus: '+1 hit'
         };
@@ -121,7 +121,7 @@ class ArenaStateManager {
             case 'damageBoost': preview.damage = (preview.damage || 0) + upgradeValue; break;
             case 'healBoost': preview.healing = (preview.healing || 0) + upgradeValue; break;
             case 'shieldBonus': preview.shield = (preview.shield || 0) + upgradeValue; break;
-            case 'manaReduction': preview.mana = Math.max(1, (preview.mana || 1) - upgradeValue); break;
+            case 'manaReduction': preview.mana = Math.max(0, (preview.mana || 1) - upgradeValue); break;
             case 'cardDrawBonus': preview.cardDraw = (preview.cardDraw || 0) + upgradeValue; break;
             case 'bonusHealEffect': preview.healing = (preview.healing || 0) + upgradeValue; break;
             case 'extraHitBonus': preview.hits = (preview.hits || 1) + upgradeValue; break;
@@ -148,7 +148,7 @@ class ArenaStateManager {
             const existingUpgrades = deckUpgrades[card.id] || {};
             const possibleEffects = this.getPossibleUpgrades(card, existingUpgrades);
             const effect = possibleEffects[Math.floor(Math.random() * possibleEffects.length)];
-            const value = effect === 'manaReduction' ? 1 : (effect === 'extraHitBonus' ? 1 : 2);
+            const value = effect === 'manaReduction' ? 1 : (effect === 'extraHitBonus' || effect === 'cardDrawBonus' ? 1 : 2);
             const effectDesc = this.getUpgradeEffectDescription(effect).replace('X', value);
             const upgradedCard = this.getUpgradedCard(card, deckUpgrades);
             const previewCard = this.buildPreviewCard(upgradedCard, effect, value);
@@ -182,7 +182,7 @@ class ArenaStateManager {
                 if (availableEffects.length === 0) continue;
 
                 const effect = availableEffects[Math.floor(Math.random() * availableEffects.length)];
-                const value = effect === 'manaReduction' ? 1 : (effect === 'extraHitBonus' ? 1 : 2);
+                const value = effect === 'manaReduction' ? 1 : (effect === 'extraHitBonus' || effect === 'cardDrawBonus' ? 1 : 2);
                 const effectDesc = this.getUpgradeEffectDescription(effect).replace('X', value);
                 const upgradedCard = this.getUpgradedCard(card, deckUpgrades);
                 const previewCard = this.buildPreviewCard(upgradedCard, effect, value);
@@ -219,31 +219,18 @@ class ArenaStateManager {
         return choices.slice(0, 3);
     }
 
-    static generateAddCardChoices(arenaCards, allSpells) {
+    static generateAddCardChoices(arenaCards, allSpells, deckUpgrades) {
         const choices = [];
-        const usedCardIds = new Set(arenaCards.map(c => c.id));
 
-        // Shuffle all available spells for variety
-        const shuffled = [...allSpells];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
-
-        // Prefer cards not already in deck
-        const notInDeck = shuffled.filter(s => !usedCardIds.has(s.id));
-        const pool = notInDeck.length > 0 ? notInDeck : shuffled;
-
-        // Pick unique cards (by id) up to 3 choices
-        const addedIds = new Set();
-        for (const spell of pool) {
-            if (choices.length >= 3) break;
-            if (addedIds.has(spell.id)) continue;
-            addedIds.add(spell.id);
+        // Pick 3 random spells from all available (allow duplicates)
+        for (let i = 0; i < 3 && allSpells.length > 0; i++) {
+            const spell = allSpells[Math.floor(Math.random() * allSpells.length)];
+            const previewCard = this.getUpgradedCard(spell, deckUpgrades);
             choices.push({
                 type: 'add_card',
-                description: 'Add ' + spell.name + ' to your deck',
+                description: spell.name,
                 card: spell,
+                previewCard: previewCard,
                 icon: spell.art || 'sparkle'
             });
         }

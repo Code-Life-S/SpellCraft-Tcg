@@ -683,19 +683,21 @@ class ArenaAdventureScreen extends BaseScreen {
                     const heroEl = this.element.querySelector('.hero-portrait');
                     this.visualEffects.showShieldNumber(heroEl, card.shield);
                 }
-                if (card.cardDraw) {
-                    const drawn = this.drawCards(card.cardDraw);
-                    if (drawn.length > 0) {
-                        this.playerHand = this.playerHand.concat(drawn);
-                    }
-                    this.renderPlayerHand();
-                    this.updateUI();
-                }
-                if (card.manaBoost) {
-                    this.currentMana = Math.min(this.currentMana + card.manaBoost, 10);
-                    this.updateUI();
-                }
                 break;
+        }
+
+        // Draw and mana boost apply regardless of target type
+        if (card.cardDraw) {
+            const drawn = this.drawCards(card.cardDraw);
+            if (drawn.length > 0) {
+                this.playerHand = this.playerHand.concat(drawn);
+            }
+            this.renderPlayerHand();
+            this.updateUI();
+        }
+        if (card.manaBoost) {
+            this.currentMana = Math.min(this.currentMana + card.manaBoost, 10);
+            this.updateUI();
         }
     }
 
@@ -851,6 +853,13 @@ class ArenaAdventureScreen extends BaseScreen {
         }
 
         this.saveState();
+
+        // Skip upgrade/add card phases on the final round
+        if (round >= 12) {
+            this.showVictory();
+            return;
+        }
+
         this.showAddCardPhase(healAmount, hpIncrease);
     }
 
@@ -875,7 +884,8 @@ class ArenaAdventureScreen extends BaseScreen {
         const allSpells = this.cardManager?.allSpells || [];
         const choices = ArenaStateManager.generateAddCardChoices(
             this.arenaState.arenaCards,
-            allSpells
+            allSpells,
+            this.arenaState.deckUpgrades
         );
 
         this.renderChoiceCards('#upgrade-choices', choices, 'add_card');
@@ -910,13 +920,8 @@ class ArenaAdventureScreen extends BaseScreen {
             wrapper.dataset.index = i;
             wrapper.dataset.phase = phase;
 
-            // Card preview
-            let cardData = null;
-            if (phase === 'upgrade') {
-                cardData = choice.previewCard;
-            } else if (phase === 'add_card') {
-                cardData = choice.card;
-            }
+            // Card preview (use previewCard which includes existing upgrades)
+            const cardData = choice.previewCard;
 
             if (cardData) {
                 const cardEl = SpellCardComponent.createCardElement(cardData);
@@ -929,7 +934,7 @@ class ArenaAdventureScreen extends BaseScreen {
             if (phase === 'upgrade') {
                 const desc = document.createElement('div');
                 desc.className = 'upgrade-choice-desc';
-                desc.textContent = choice.card.name + ': ' + choice.description;
+                desc.textContent = choice.description;
                 wrapper.appendChild(desc);
             }
 
