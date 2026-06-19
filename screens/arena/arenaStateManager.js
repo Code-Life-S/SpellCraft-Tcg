@@ -42,33 +42,29 @@ class ArenaStateManager {
         const manaBoost = card.manaBoost || 0;
         const hits = card.hits || 0;
 
-        if (card.targetType === 'single' && damage > 0) {
-            return 'Target enemy takes ' + damage + ' damage.';
-        }
-        if (card.targetType === 'all' && damage > 0) {
-            return 'Deal ' + damage + ' damage to all enemies.';
-        }
-        if (card.targetType === 'random' && damage > 0 && hits > 0) {
-            return 'Deal ' + damage + ' damage ' + hits + ' times randomly.';
-        }
-        if (healing > 0 && cardDraw > 0 && manaBoost > 0) {
-            return 'Restore ' + healing + ' health. Draw ' + cardDraw + ' cards. Gain +' + manaBoost + ' mana.';
+        const parts = [];
+        if (damage > 0) {
+            if (card.targetType === 'all') {
+                parts.push(damage + ' damage to All');
+            } else if (card.targetType === 'random' && hits > 0) {
+                parts.push(damage + ' damage ' + hits + ' times');
+            } else {
+                parts.push(damage + ' damage to Target');
+            }
         }
         if (healing > 0) {
-            return 'Restore ' + healing + ' health.';
+            parts.push('Heal ' + healing);
         }
         if (shield > 0) {
-            return 'Protect from ' + shield + ' damage.';
-        }
-        if (cardDraw > 0 && manaBoost > 0) {
-            return 'Draw ' + cardDraw + ' cards. Gain +' + manaBoost + ' mana.';
+            parts.push('Shield ' + shield);
         }
         if (cardDraw > 0) {
-            return 'Draw ' + cardDraw + ' cards.';
+            parts.push('Draw ' + cardDraw);
         }
         if (manaBoost > 0) {
-            return 'Gain +' + manaBoost + ' mana.';
+            parts.push('+' + manaBoost + ' mana');
         }
+        if (parts.length > 0) return parts.join('\n');
         return card.text || '';
     }
 
@@ -134,7 +130,7 @@ class ArenaStateManager {
         return preview;
     }
 
-    static generatePhase1UpgradeChoices(arenaCards, deckUpgrades) {
+    static generateUpgradeChoices(arenaCards, deckUpgrades) {
         const choices = [];
         const usedCardIds = new Set();
 
@@ -154,7 +150,8 @@ class ArenaStateManager {
             const effect = possibleEffects[Math.floor(Math.random() * possibleEffects.length)];
             const value = effect === 'manaReduction' ? 1 : (effect === 'extraHitBonus' ? 1 : 2);
             const effectDesc = this.getUpgradeEffectDescription(effect).replace('X', value);
-            const previewCard = this.buildPreviewCard(card, effect, value);
+            const upgradedCard = this.getUpgradedCard(card, deckUpgrades);
+            const previewCard = this.buildPreviewCard(upgradedCard, effect, value);
 
             choices.push({
                 type: 'upgrade_card',
@@ -187,7 +184,8 @@ class ArenaStateManager {
                 const effect = availableEffects[Math.floor(Math.random() * availableEffects.length)];
                 const value = effect === 'manaReduction' ? 1 : (effect === 'extraHitBonus' ? 1 : 2);
                 const effectDesc = this.getUpgradeEffectDescription(effect).replace('X', value);
-                const previewCard = this.buildPreviewCard(card, effect, value);
+                const upgradedCard = this.getUpgradedCard(card, deckUpgrades);
+                const previewCard = this.buildPreviewCard(upgradedCard, effect, value);
 
                 choices.push({
                     type: 'upgrade_card',
@@ -205,13 +203,14 @@ class ArenaStateManager {
         // Fallback: if still no choices, create generic choices
         while (choices.length < 3 && arenaCards.length > 0) {
             const card = arenaCards[Math.floor(Math.random() * arenaCards.length)];
+            const upgradedCard = this.getUpgradedCard(card, deckUpgrades);
             choices.push({
                 type: 'upgrade_card',
                 subType: 'damageBoost',
                 value: 2,
                 description: '+2 damage',
                 card: card,
-                previewCard: this.buildPreviewCard(card, 'damageBoost', 2),
+                previewCard: this.buildPreviewCard(upgradedCard, 'damageBoost', 2),
                 cardId: card.id,
                 icon: card.art || 'sparkle'
             });
@@ -220,7 +219,7 @@ class ArenaStateManager {
         return choices.slice(0, 3);
     }
 
-    static generatePhase2AddCardChoices(arenaCards, allSpells) {
+    static generateAddCardChoices(arenaCards, allSpells) {
         const choices = [];
         const usedCardIds = new Set(arenaCards.map(c => c.id));
 

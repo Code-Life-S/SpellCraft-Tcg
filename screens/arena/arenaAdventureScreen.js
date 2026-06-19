@@ -851,12 +851,12 @@ class ArenaAdventureScreen extends BaseScreen {
         }
 
         this.saveState();
-        this.showPhase1UpgradeChoices(healAmount, hpIncrease);
+        this.showAddCardPhase(healAmount, hpIncrease);
     }
 
-    showPhase1UpgradeChoices(healAmount, hpIncrease) {
+    showAddCardPhase(healAmount, hpIncrease) {
         this.roundTransitioning = true;
-        this.phase = 'upgrade';
+        this.phase = 'add_card';
         const overlay = this.element.querySelector('#round-overlay');
         overlay.classList.remove('hidden');
         overlay.style.display = '';
@@ -871,23 +871,9 @@ class ArenaAdventureScreen extends BaseScreen {
             hpDisplay.classList.add('hidden');
         }
 
-        // Generate Phase 1: upgrade existing cards
-        const choices = ArenaStateManager.generatePhase1UpgradeChoices(
-            this.arenaState.arenaCards,
-            this.arenaState.deckUpgrades
-        );
-
-        this.renderChoiceCards('#upgrade-choices', choices, 'upgrade');
-        const phaseTitle = this.element.querySelector('#phase-title');
-        if (phaseTitle) phaseTitle.textContent = 'Upgrade a Card';
-        this.pendingPhase1Choices = choices;
-        this.pendingPhase2Choices = null;
-    }
-
-    showPhase2AddCardChoices() {
-        this.phase = 'add_card';
+        // Phase 1: add a new card to deck
         const allSpells = this.cardManager?.allSpells || [];
-        const choices = ArenaStateManager.generatePhase2AddCardChoices(
+        const choices = ArenaStateManager.generateAddCardChoices(
             this.arenaState.arenaCards,
             allSpells
         );
@@ -895,7 +881,23 @@ class ArenaAdventureScreen extends BaseScreen {
         this.renderChoiceCards('#upgrade-choices', choices, 'add_card');
         const phaseTitle = this.element.querySelector('#phase-title');
         if (phaseTitle) phaseTitle.textContent = 'Add a Card to Your Deck';
-        this.pendingPhase2Choices = choices;
+        this.pendingAddCardChoices = choices;
+        this.pendingUpgradeChoices = null;
+    }
+
+    showUpgradePhase() {
+        this.phase = 'upgrade';
+
+        // Phase 2: upgrade an existing card (including newly added ones)
+        const choices = ArenaStateManager.generateUpgradeChoices(
+            this.arenaState.arenaCards,
+            this.arenaState.deckUpgrades
+        );
+
+        this.renderChoiceCards('#upgrade-choices', choices, 'upgrade');
+        const phaseTitle = this.element.querySelector('#phase-title');
+        if (phaseTitle) phaseTitle.textContent = 'Upgrade a Card';
+        this.pendingUpgradeChoices = choices;
     }
 
     renderChoiceCards(containerSelector, choices, phase) {
@@ -923,48 +925,47 @@ class ArenaAdventureScreen extends BaseScreen {
                 wrapper.appendChild(cardEl);
             }
 
-            // Description
-            const desc = document.createElement('div');
-            desc.className = 'upgrade-choice-desc';
+            // Description (only for upgrade phase - add_card is obvious)
             if (phase === 'upgrade') {
+                const desc = document.createElement('div');
+                desc.className = 'upgrade-choice-desc';
                 desc.textContent = choice.card.name + ': ' + choice.description;
-            } else {
-                desc.textContent = choice.description;
+                wrapper.appendChild(desc);
             }
-            wrapper.appendChild(desc);
 
             container.appendChild(wrapper);
         });
     }
 
     handleChoiceClick(index) {
-        if (this.phase === 'upgrade' && this.pendingPhase1Choices) {
-            this.pickUpgrade(index);
-        } else if (this.phase === 'add_card' && this.pendingPhase2Choices) {
+        if (this.phase === 'add_card' && this.pendingAddCardChoices) {
             this.pickAddCard(index);
+        } else if (this.phase === 'upgrade' && this.pendingUpgradeChoices) {
+            this.pickUpgrade(index);
         }
     }
 
-    pickUpgrade(index) {
-        if (!this.pendingPhase1Choices) return;
-        const choice = this.pendingPhase1Choices[index];
+    pickAddCard(index) {
+        if (!this.pendingAddCardChoices) return;
+        const choice = this.pendingAddCardChoices[index];
         if (!choice) return;
 
         this.arenaState = ArenaStateManager.applyUpgradeChoice(this.arenaState, choice);
         this.saveState();
-        this.pendingPhase1Choices = null;
+        this.pendingAddCardChoices = null;
 
-        this.showPhase2AddCardChoices();
+        // Phase 1 done, move to Phase 2: upgrade
+        this.showUpgradePhase();
     }
 
-    pickAddCard(index) {
-        if (!this.pendingPhase2Choices) return;
-        const choice = this.pendingPhase2Choices[index];
+    pickUpgrade(index) {
+        if (!this.pendingUpgradeChoices) return;
+        const choice = this.pendingUpgradeChoices[index];
         if (!choice) return;
 
         this.arenaState = ArenaStateManager.applyUpgradeChoice(this.arenaState, choice);
         this.saveState();
-        this.pendingPhase2Choices = null;
+        this.pendingUpgradeChoices = null;
 
         // Hide overlay and start next round
         const overlay = this.element.querySelector('#round-overlay');

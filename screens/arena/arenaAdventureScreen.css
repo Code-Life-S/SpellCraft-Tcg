@@ -575,6 +575,9 @@
     flex-direction: column;
     align-items: center;
     gap: 8px;
+    flex: 1 1 0;
+    min-width: 140px;
+    max-width: 200px;
 }
 
 .upgrade-choice:hover {
@@ -719,7 +722,8 @@
 
     .player-hand .card .card-text {
         font-size: 9px;
-        height: 30px;
+        min-height: 30px;
+        height: auto;
     }
 
     .main-game-area.sidebars-hidden {

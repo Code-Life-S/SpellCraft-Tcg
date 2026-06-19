@@ -9,7 +9,7 @@ class CardManager {
 
     async loadCards() {
         try {
-            const response = await fetch('cards/spells.json');
+            const response = await fetch('cards/spells.json?v=' + Date.now());
             if (!response.ok) {
                 throw new Error(`Failed to load cards: ${response.status}`);
             }
@@ -53,7 +53,7 @@ class CardManager {
                 type: "spell",
                 mana: 1,
                 rarity: "common",
-                text: "Deal 3 damage to target enemy.",
+                text: "3 damage to Target",
                 art: "🔥",
                 damage: 3,
                 targetType: "single"
@@ -64,7 +64,7 @@ class CardManager {
                 type: "spell",
                 mana: 2,
                 rarity: "common",
-                text: "Restore 5 health to yourself.",
+                text: "Heal 5",
                 art: "✨",
                 healing: 5,
                 targetType: "self"
