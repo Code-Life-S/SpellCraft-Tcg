@@ -1,4 +1,12 @@
 class ArenaAdventureScreen extends BaseScreen {
+    // Enemy scaling constants (easy to tweak)
+    static ENEMY_BASE_COUNT = 2;
+    static ENEMY_COUNT_PER_ROUNDS = 3; // +1 enemy every N rounds
+    static ENEMY_BASE_HP = 2;
+    static ENEMY_HP_PER_ROUND = 0.8;
+    static ENEMY_BASE_ATTACK = 1;
+    static ENEMY_ATTACK_PER_ROUND = 0.5;
+
     constructor(screenManager) {
         super(screenManager);
         this.cardManager = null;
@@ -20,6 +28,8 @@ class ArenaAdventureScreen extends BaseScreen {
         this.actionHistory = [];
         this.deckTracker = null;
         this.actionHistoryComp = null;
+        this.mulliganActive = false;
+        this.selectedCardsForMulligan = null;
     }
 
     async setupContent() {
@@ -34,7 +44,8 @@ class ArenaAdventureScreen extends BaseScreen {
         // Load shared component CSS
         const componentCSS = [
             'screens/components/visual-effects/visualEffectsComponent.css',
-            'screens/components/enemy-board/enemyBoardComponent.css'
+            'screens/components/enemy-board/enemyBoardComponent.css',
+            'screens/components/mulligan/mulligan.css'
         ];
         for (const cssPath of componentCSS) {
             try {
@@ -201,7 +212,7 @@ class ArenaAdventureScreen extends BaseScreen {
         this.gameState = 'playing';
         this.isPlayerTurn = true;
         this.roundTransitioning = false;
-        this.currentTurn = 0;
+        this.currentTurn = 1;
         this.currentMana = 1;
         this.maxMana = 1;
         this.playerShield = 0;
@@ -221,6 +232,11 @@ class ArenaAdventureScreen extends BaseScreen {
         el.querySelector('#round-number').textContent = round;
         el.querySelector('#concede-btn').style.display = '';
         el.querySelector('#end-turn-btn').disabled = false;
+
+        // Mulligan at the start of round 1
+        if (round === 1) {
+            this.startMulliganPhase();
+        }
     }
 
     buildShuffledDeck() {
@@ -249,7 +265,7 @@ class ArenaAdventureScreen extends BaseScreen {
     spawnEnemies(round) {
         this.enemies = [];
         this.enemyIdCounter = 1;
-        const count = 2 + Math.floor(round / 3);
+        const count = ArenaAdventureScreen.ENEMY_BASE_COUNT + Math.floor(round / ArenaAdventureScreen.ENEMY_COUNT_PER_ROUNDS);
 
         const enemyTypes = [
             { name: 'Goblin', art: '👹' },
@@ -267,8 +283,8 @@ class ArenaAdventureScreen extends BaseScreen {
         ];
 
         for (let i = 0; i < count; i++) {
-            const baseHp = Math.round(2 + (round * 1.5) + (Math.random() * 3 - 1));
-            const baseAttack = Math.max(1, Math.round(1 + (round * 0.8) + (Math.random() * 2 - 1)));
+            const baseHp = Math.round(ArenaAdventureScreen.ENEMY_BASE_HP + (round * ArenaAdventureScreen.ENEMY_HP_PER_ROUND) + (Math.random() * 3 - 1));
+            const baseAttack = Math.max(1, Math.round(ArenaAdventureScreen.ENEMY_BASE_ATTACK + (round * ArenaAdventureScreen.ENEMY_ATTACK_PER_ROUND) + (Math.random() * 2 - 1)));
             const type = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
             this.enemies.push({
                 id: this.enemyIdCounter++,
@@ -324,6 +340,9 @@ class ArenaAdventureScreen extends BaseScreen {
             }
         }
 
+        // Update end turn button state
+        this.updateEndTurnButton();
+
         // Update deck tracker
         if (this.deckTracker) this.deckTracker.update();
     }
@@ -340,6 +359,176 @@ class ArenaAdventureScreen extends BaseScreen {
         if (this.actionHistoryComp) {
             this.actionHistoryComp.addEntry(action, isPlayerAction, this.currentTurn || 1);
             this.actionHistory = this.actionHistoryComp.entries;
+        }
+    }
+
+    /* ------ MULLIGAN SYSTEM ------ */
+
+    startMulliganPhase() {
+        if (this.element.querySelector('#mulligan-overlay')) return;
+
+        this.mulliganActive = true;
+        this.gameState = 'mulligan';
+        this.selectedCardsForMulligan = new Set();
+
+        this.showMulliganInterface();
+        this.renderPlayerHand();
+    }
+
+    showMulliganInterface() {
+        const overlay = document.createElement('div');
+        overlay.id = 'mulligan-overlay';
+        overlay.className = 'mulligan-overlay';
+        overlay.innerHTML =
+            '<div class="mulligan-panel">' +
+                '<div class="mulligan-hand" id="mulligan-hand"></div>' +
+                '<div class="mulligan-bottom">' +
+                    '<h2 class="mulligan-title">Choose cards to replace (click to toggle)</h2>' +
+                    '<button class="mulligan-confirm-btn" id="confirm-mulligan">Confirm</button>' +
+                '</div>' +
+            '</div>';
+
+        const gameBoard = this.element.querySelector('.game-board');
+        if (gameBoard) {
+            gameBoard.appendChild(overlay);
+        } else {
+            this.element.appendChild(overlay);
+        }
+
+        this.renderMulliganCards();
+        this.bindMulliganEvents();
+    }
+
+    renderMulliganCards() {
+        const container = this.element.querySelector('#mulligan-hand');
+        if (!container) return;
+        container.innerHTML = '';
+        this.playerHand.forEach((card, index) => {
+            const el = this.createMulliganCardElement(card, index);
+            container.appendChild(el);
+        });
+    }
+
+    createMulliganCardElement(card, index) {
+        const div = document.createElement('div');
+        div.className = 'mulligan-card ' + (card.rarity || 'common');
+        div.dataset.handIndex = index;
+        div.onclick = () => this.handleMulliganCardClick(div);
+
+        const mana = document.createElement('div');
+        mana.className = 'card-mana';
+        mana.textContent = card.mana;
+
+        const art = document.createElement('div');
+        art.className = 'card-art';
+        art.textContent = card.art;
+
+        const name = document.createElement('div');
+        name.className = 'card-name';
+        name.textContent = card.name;
+
+        const text = document.createElement('div');
+        text.className = 'card-text';
+        text.textContent = card.text;
+
+        div.appendChild(mana);
+        div.appendChild(art);
+        div.appendChild(name);
+        div.appendChild(text);
+
+        return div;
+    }
+
+    bindMulliganEvents() {
+        const btn = this.element.querySelector('#confirm-mulligan');
+        if (btn) {
+            btn.onclick = () => this.confirmMulligan();
+        }
+    }
+
+    handleMulliganCardClick(el) {
+        if (!this.mulliganActive) return;
+        const index = parseInt(el.dataset.handIndex);
+        if (this.selectedCardsForMulligan.has(index)) {
+            this.selectedCardsForMulligan.delete(index);
+            el.classList.remove('mulligan-selected');
+        } else {
+            this.selectedCardsForMulligan.add(index);
+            el.classList.add('mulligan-selected');
+        }
+        this.soundManager?.play('card_select');
+    }
+
+    confirmMulligan() {
+        if (this.selectedCardsForMulligan.size === 0) {
+            this.endMulliganPhase();
+            return;
+        }
+        this.performMulligan(Array.from(this.selectedCardsForMulligan));
+    }
+
+    performMulligan(indicesToReplace) {
+        // Sort descending to splice safely
+        const sorted = [...indicesToReplace].sort((a, b) => b - a);
+        const replacedCards = [];
+        sorted.forEach(idx => {
+            replacedCards.push(this.playerHand[idx]);
+            this.playerHand.splice(idx, 1);
+        });
+
+        // Return replaced cards to deck
+        replacedCards.forEach(card => this.arenaDeck.push(card));
+        this.shuffleArray(this.arenaDeck);
+
+        // Draw new cards
+        for (let i = 0; i < replacedCards.length; i++) {
+            const drawn = this.drawCards(1);
+            if (drawn.length > 0) {
+                this.playerHand.push(drawn[0]);
+            }
+        }
+
+        this.renderPlayerHand();
+        this.updateUI();
+        this.endMulliganPhase();
+    }
+
+    endMulliganPhase() {
+        this.mulliganActive = false;
+        this.gameState = 'playing';
+        this.isPlayerTurn = true;
+        this.selectedCardsForMulligan = null;
+
+        const overlay = this.element.querySelector('#mulligan-overlay');
+        if (overlay && overlay.parentNode) {
+            overlay.parentNode.removeChild(overlay);
+        }
+
+        this.renderPlayerHand();
+        this.updateUI();
+        this.addToHistory('Mulligan complete - Round ' + this.arenaState.currentRound + ' begins!', true);
+    }
+
+    shuffleArray(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
+    updateEndTurnButton() {
+        const endTurnButton = this.element.querySelector('#end-turn-btn');
+        if (!endTurnButton) return;
+        const hasPlayableCards = this.playerHand.some(card => card.mana <= this.currentMana);
+        if (hasPlayableCards) {
+            endTurnButton.classList.remove('no-plays-available');
+            endTurnButton.style.backgroundColor = '';
+            endTurnButton.style.borderColor = '';
+        } else {
+            endTurnButton.classList.add('no-plays-available');
+            endTurnButton.style.backgroundColor = 'rgba(34, 139, 34, 0.8)';
+            endTurnButton.style.borderColor = '#32CD32';
         }
     }
 
@@ -447,8 +636,13 @@ class ArenaAdventureScreen extends BaseScreen {
     }
 
     applySpellEffect(card, targetEnemyId) {
+        // Guard against stale effects after round transition
+        if (this.roundTransitioning || this.gameState !== 'playing') return;
+
         this.soundManager?.playSpellSound(card.id, 'impact');
         const spellType = VisualEffectsComponent.getSpellEffectType(card.id);
+
+        const guard = () => this.roundTransitioning || this.gameState !== 'playing';
 
         switch (card.targetType) {
             case 'single':
@@ -463,6 +657,7 @@ class ArenaAdventureScreen extends BaseScreen {
                 this.visualEffects.createScreenShake(battlefieldEl);
                 [...this.enemies].forEach((enemy, i) => {
                     setTimeout(() => {
+                        if (guard()) return;
                         const enemyEl = this.element.querySelector(`[data-enemy-id="${enemy.id}"]`);
                         this.visualEffects.createSpellImpact(enemyEl, spellType);
                         this.damageEnemy(enemy.id, card.damage || 0);
@@ -472,6 +667,7 @@ class ArenaAdventureScreen extends BaseScreen {
             case 'random':
                 for (let i = 0; i < (card.hits || 3); i++) {
                     setTimeout(() => {
+                        if (guard()) return;
                         const alive = this.enemies.filter(e => e.health > 0);
                         if (alive.length > 0) {
                             const target = alive[Math.floor(Math.random() * alive.length)];
@@ -501,6 +697,9 @@ class ArenaAdventureScreen extends BaseScreen {
                 }
                 if (card.cardDraw) {
                     const drawn = this.drawCards(card.cardDraw);
+                    if (drawn.length > 0) {
+                        this.playerHand = this.playerHand.concat(drawn);
+                    }
                     this.renderPlayerHand();
                     this.updateUI();
                 }
@@ -541,7 +740,6 @@ class ArenaAdventureScreen extends BaseScreen {
         if (actual > 0) {
             const heroEl = this.element.querySelector('.hero-portrait');
             this.visualEffects.showHealingNumber(heroEl, actual);
-            this.addToHistory('Healed for ' + actual + ' HP', true);
             this.updateUI();
         }
     }
@@ -590,7 +788,6 @@ class ArenaAdventureScreen extends BaseScreen {
             }
             if (remainingDamage > 0) {
                 this.arenaState.playerHealth -= remainingDamage;
-                this.addToHistory(enemy.name + ' dealt ' + remainingDamage + ' damage', false);
                 this.soundManager?.play('player_hurt');
                 const heroEl = this.element.querySelector('.hero-portrait');
                 this.visualEffects.showDamageNumber(heroEl, remainingDamage);

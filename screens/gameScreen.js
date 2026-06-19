@@ -55,7 +55,8 @@ class GameScreen extends BaseScreen {
         // Load shared component CSS
         const componentCSS = [
             'screens/components/visual-effects/visualEffectsComponent.css',
-            'screens/components/enemy-board/enemyBoardComponent.css'
+            'screens/components/enemy-board/enemyBoardComponent.css',
+            'screens/components/mulligan/mulligan.css'
         ];
         for (const cssPath of componentCSS) {
             try {
@@ -759,7 +760,6 @@ class GameScreen extends BaseScreen {
                     setTimeout(() => {
                         this.soundManager?.playSpellSound(card.id, 'impact');
                     }, 800);
-                    this.showMessage(`${card.name} deals ${card.damage} damage!`);
                 }
                 break;
                 
@@ -781,7 +781,6 @@ class GameScreen extends BaseScreen {
                 const gameBoard = this.element.querySelector('.game-board');
                 this.visualEffects.createScreenShake(gameBoard);
                 this.soundManager?.play('screen_shake');
-                this.showMessage(`${card.name} deals ${card.damage} damage to all enemies!`);
                 break;
                 
             case 'random':
@@ -818,7 +817,6 @@ class GameScreen extends BaseScreen {
                         }
                     }, i * 200);
                 }
-                this.showMessage(`${card.name} hits ${card.hits} times!`);
                 break;
                 
             case 'self':
@@ -965,13 +963,8 @@ class GameScreen extends BaseScreen {
                 damage -= shieldAbsorbed;
                 
                 if (shieldAbsorbed > 0) {
-                    this.showMessage(`${enemy.name} attacks for ${enemy.attack} damage! Shield absorbs ${shieldAbsorbed}!`, 'error');
                     this.soundManager?.play('shield_block');
-                } else {
-                    this.showMessage(`${enemy.name} attacks for ${enemy.attack} damage!`, 'error');
                 }
-            } else {
-                this.showMessage(`${enemy.name} attacks for ${enemy.attack} damage!`, 'error');
             }
             
             // Apply remaining damage
@@ -1401,9 +1394,12 @@ class GameScreen extends BaseScreen {
             </div>
         `;
         
-        // Add to game container
-        const gameContainer = this.element.querySelector('.game-container');
-        gameContainer.appendChild(mulliganOverlay);
+        const gameBoard = this.element.querySelector('.game-board');
+        if (gameBoard) {
+            gameBoard.appendChild(mulliganOverlay);
+        } else {
+            this.element.appendChild(mulliganOverlay);
+        }
         
         // Render mulligan cards
         this.renderMulliganCards();
@@ -1499,7 +1495,6 @@ class GameScreen extends BaseScreen {
         // If no cards selected, skip mulligan
         if (this.selectedCardsForMulligan.size === 0) {
             console.log('🎴 No cards selected - keeping all cards');
-            this.showMessage('Keeping all cards!', 'info');
             this.endMulliganPhase();
             return;
         }
@@ -1511,15 +1506,11 @@ class GameScreen extends BaseScreen {
 
     skipMulligan() {
         console.log('🎴 Skipping mulligan - keeping all cards');
-        this.showMessage('Keeping all cards!', 'info');
         this.endMulliganPhase();
     }
 
     performMulligan(indicesToReplace) {
         console.log('🎴 Performing mulligan for indices:', indicesToReplace);
-        
-        // Show replacement animation
-        this.showMessage(`Replacing ${indicesToReplace.length} cards...`, 'info');
         
         // Store the cards being replaced
         const replacedCards = [];
@@ -1564,7 +1555,6 @@ class GameScreen extends BaseScreen {
             
             this.renderPlayerHand();
             this.updateDeckTracker(); // Update deck tracker to reflect mulligan changes
-            this.showMessage(`✅ Replaced ${replacements.length} cards!`, 'success');
             
             // End mulligan phase
             setTimeout(() => {
@@ -1596,9 +1586,6 @@ class GameScreen extends BaseScreen {
         this.updateGameStatus('Your Turn');
         this.renderPlayerHand(); // Remove mulligan styling
         this.updateUI();
-        
-        // Show game start message
-        this.showMessage('🎮 Game begins! Good luck!', 'success');
         
         // Add to history
         this.addToHistory('🎴 Mulligan complete - Game begins!', true);

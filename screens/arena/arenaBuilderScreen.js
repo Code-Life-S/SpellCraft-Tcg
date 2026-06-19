@@ -179,7 +179,6 @@ class ArenaBuilderScreen extends BaseScreen {
         
         this.generateNewChoices();
         this.updateUI();
-        this.showMessage('New arena started! Choose your cards wisely.', 'info');
     }
 
     resumeArena() {
@@ -189,7 +188,6 @@ class ArenaBuilderScreen extends BaseScreen {
             this.generateNewChoices();
             this.updateUI();
         }
-        this.showMessage('Arena resumed!', 'info');
     }
 
     generateNewChoices() {
@@ -246,8 +244,6 @@ class ArenaBuilderScreen extends BaseScreen {
             this.generateNewChoices();
             this.renderCardChoices();
         }
-        
-        this.showMessage(`Added ${selectedCard.name} to your arena deck!`, 'success');
     }
 
     updateUI() {

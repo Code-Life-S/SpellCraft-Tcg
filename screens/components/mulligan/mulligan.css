@@ -1,0 +1,178 @@
+/* Mulligan Modal Overlay - shared by game screen and arena */
+.mulligan-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: mulliganFadeIn 0.3s ease-out;
+}
+
+.mulligan-panel {
+    background: linear-gradient(145deg, #1a1a2e, #16213e);
+    border: 3px solid #FFD700;
+    border-radius: 20px;
+    padding: 30px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+    max-width: 95vw;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.mulligan-hand {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.mulligan-bottom {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.mulligan-title {
+    font-size: 1.4em;
+    color: #FFD700;
+    margin: 0;
+    text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.8);
+}
+
+.mulligan-confirm-btn {
+    padding: 14px 40px;
+    background: linear-gradient(145deg, #32CD32, #228B22);
+    color: white;
+    border: 3px solid #32CD32;
+    border-radius: 12px;
+    font-size: 1.2em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+    font-family: inherit;
+}
+
+.mulligan-confirm-btn:hover {
+    background: linear-gradient(145deg, #228B22, #006400);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(50, 205, 50, 0.5);
+}
+
+.mulligan-card {
+    width: 140px;
+    height: 200px;
+    background: linear-gradient(145deg, #f0f0f0, #d0d0d0);
+    border-radius: 15px;
+    border: 3px solid #32CD32;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    transform-style: preserve-3d;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.3), 0 0 15px rgba(50, 205, 50, 0.4);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+.mulligan-card.legendary { border-color: #FF8C00; }
+.mulligan-card.epic { border-color: #9932CC; }
+.mulligan-card.rare { border-color: #0080FF; }
+
+.mulligan-card:hover {
+    transform: translateY(-8px) scale(1.05);
+    box-shadow: 0 12px 25px rgba(0,0,0,0.4), 0 0 25px rgba(50, 205, 50, 0.7);
+}
+
+.mulligan-card.mulligan-selected {
+    border-color: #DC143C;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.3), 0 0 15px rgba(220, 20, 60, 0.4);
+}
+
+.mulligan-card.mulligan-selected:hover {
+    transform: translateY(-8px) scale(1.05);
+    box-shadow: 0 12px 25px rgba(0,0,0,0.4), 0 0 25px rgba(220, 20, 60, 0.7);
+}
+
+.mulligan-card .card-mana {
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    width: 35px;
+    height: 35px;
+    background: radial-gradient(circle, #4169E1, #191970);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 18px;
+    color: white;
+    border: 3px solid #FFD700;
+    z-index: 2;
+}
+
+.mulligan-card .card-art {
+    width: 110px;
+    height: 80px;
+    margin: 30px auto 8px;
+    background: linear-gradient(45deg, #87CEEB, #4682B4);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    border: 2px solid #333;
+}
+
+.mulligan-card .card-name {
+    text-align: center;
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+    margin: 5px 8px;
+}
+
+.mulligan-card .card-text {
+    text-align: center;
+    font-size: 11px;
+    color: #555;
+    margin: 0 8px 8px;
+    line-height: 1.3;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.card.mulligan-replacing {
+    animation: mulliganReplace 0.8s ease-in-out;
+}
+
+@keyframes mulliganReplace {
+    0% { transform: scale(1) rotateY(0deg); opacity: 1; }
+    50% { transform: scale(1.1) rotateY(90deg); opacity: 0.5; }
+    100% { transform: scale(1) rotateY(180deg); opacity: 1; }
+}
+
+@keyframes mulliganFadeIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes mulliganFadeOut {
+    from { opacity: 1; transform: scale(1); }
+    to { opacity: 0; transform: scale(0.9); }
+}
