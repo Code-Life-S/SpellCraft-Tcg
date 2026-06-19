@@ -52,9 +52,38 @@ class GameScreen extends BaseScreen {
 
         // CSS should now be loaded automatically by template loader
 
+        // Load shared component CSS
+        const componentCSS = [
+            'screens/components/visual-effects/visualEffectsComponent.css',
+            'screens/components/enemy-board/enemyBoardComponent.css'
+        ];
+        for (const cssPath of componentCSS) {
+            try {
+                if (window.templateLoader && typeof window.templateLoader.loadCSS === 'function') {
+                    await window.templateLoader.loadCSS(cssPath, cssPath.replace(/[\/\.]/g, '-'));
+                }
+            } catch (error) {
+                console.warn('Failed to load component CSS:', error);
+            }
+        }
+
+        // Create shared component instances
+        this.visualEffects = new VisualEffectsComponent(this.element);
+        this.enemyBoard = new EnemyBoardComponent(this.element, '#enemy-battlefield');
+        this.playerHandComp = new PlayerHandComponent(this.element, '#player-hand');
+        this.deckTracker = new DeckTrackerComponent(this.element, '.deck-tracker');
+        this.actionHistoryComp = new ActionHistoryComponent(this.element, '#action-history');
+
         // Initialize managers
         await this.initializeManagers();
         
+        // Set up deck tracker data sources
+        this.deckTracker.setDataSources(
+            () => this.cardManager.getDeckInfo(),
+            () => this.cardManager.getRemainingCardCounts(),
+            (id) => this.cardManager.getCardById(id)
+        );
+
         // Initialize game
         await this.initializeGame();
         
@@ -336,118 +365,24 @@ class GameScreen extends BaseScreen {
     }
 
     renderPlayerHand() {
-        const handContainer = this.element.querySelector('#player-hand');
-        handContainer.innerHTML = '';
-
-        this.playerHand.forEach((card, index) => {
-            const cardElement = this.createCardElement(card, index);
-            handContainer.appendChild(cardElement);
-        });
-    }
-
-    createCardElement(card, index) {
-        const cardDiv = document.createElement('div');
-        cardDiv.className = `card ${card.type} ${card.rarity}`;
-        cardDiv.dataset.cardId = card.id;
-        cardDiv.dataset.handIndex = index;
-
-        // Check if card is playable
-        if (card.mana > this.currentMana) {
-            cardDiv.style.opacity = '0.5';
-            cardDiv.style.cursor = 'not-allowed';
-        }
-
-        // Mana cost
-        const manaDiv = document.createElement('div');
-        manaDiv.className = 'card-mana';
-        manaDiv.textContent = card.mana;
-
-        // Card art
-        const artDiv = document.createElement('div');
-        artDiv.className = 'card-art';
-        artDiv.textContent = card.art;
-
-        // Card name
-        const nameDiv = document.createElement('div');
-        nameDiv.className = 'card-name';
-        nameDiv.textContent = card.name;
-
-        // Card text
-        const textDiv = document.createElement('div');
-        textDiv.className = 'card-text';
-        textDiv.textContent = card.text;
-
-        // Assemble card
-        cardDiv.appendChild(manaDiv);
-        cardDiv.appendChild(artDiv);
-        cardDiv.appendChild(nameDiv);
-        cardDiv.appendChild(textDiv);
-
-        return cardDiv;
-    }
-
-    createEnemyElement(enemy) {
-        const enemyDiv = document.createElement('div');
-        enemyDiv.className = 'enemy';
-        enemyDiv.dataset.enemyId = enemy.id;
-
-        const artDiv = document.createElement('div');
-        artDiv.className = 'enemy-art';
-        artDiv.textContent = enemy.art;
-
-        const nameDiv = document.createElement('div');
-        nameDiv.className = 'enemy-name';
-        nameDiv.textContent = enemy.name;
-
-        const statsDiv = document.createElement('div');
-        statsDiv.className = 'enemy-stats';
-
-        const attackDiv = document.createElement('div');
-        attackDiv.className = 'enemy-attack';
-        attackDiv.textContent = enemy.attack;
-
-        const healthDiv = document.createElement('div');
-        healthDiv.className = 'enemy-health';
-        healthDiv.textContent = enemy.health;
-
-        statsDiv.appendChild(attackDiv);
-        statsDiv.appendChild(healthDiv);
-
-        enemyDiv.appendChild(artDiv);
-        enemyDiv.appendChild(nameDiv);
-        enemyDiv.appendChild(statsDiv);
-
-        return enemyDiv;
+        this.playerHandComp.render(this.playerHand, this.currentMana);
     }
 
     renderEnemies() {
-        const battlefield = this.element.querySelector('#enemy-battlefield');
-        
-        // Only clear and re-render if no enemies are currently dying
         const dyingEnemies = this.enemies.filter(e => e.isDying);
         if (dyingEnemies.length === 0) {
-            battlefield.innerHTML = '';
-            this.enemies.forEach(enemy => {
-                if (!enemy.isDying) {
-                    const enemyElement = this.createEnemyElement(enemy);
-                    battlefield.appendChild(enemyElement);
-                }
-            });
+            this.enemyBoard.renderEnemies(this.enemies);
         } else {
             // Selective update: only update non-dying enemies
             this.enemies.forEach(enemy => {
                 if (!enemy.isDying) {
-                    const existingElement = battlefield.querySelector(`[data-enemy-id="${enemy.id}"]`);
+                    const existingElement = this.enemyBoard.container.querySelector(`[data-enemy-id="${enemy.id}"]`);
                     if (existingElement) {
-                        // Update existing element stats
                         const healthDiv = existingElement.querySelector('.enemy-health');
-                        if (healthDiv) {
-                            healthDiv.textContent = enemy.health;
-                        }
+                        if (healthDiv) healthDiv.textContent = enemy.health;
                     } else {
-                        // Add new enemy element if it doesn't exist
-                        const enemyElement = this.createEnemyElement(enemy);
-                        battlefield.appendChild(enemyElement);
+                        const el = this.enemyBoard.createEnemyElement(enemy);
+                        this.enemyBoard.container.appendChild(el);
                     }
                 }
             });
@@ -693,10 +628,7 @@ class GameScreen extends BaseScreen {
         if (card.mana <= this.currentMana) {
             this.selectedCard = card;
             this.selectedCardIndex = handIndex;
-            
-            // Highlight card selection
-            this.element.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
-            cardElement.classList.add('selected');
+            this.playerHandComp.selectCard(handIndex);
             
             // Play card selection sound
             this.soundManager?.play('card_select');
@@ -717,15 +649,11 @@ class GameScreen extends BaseScreen {
     handleEnemyClick(enemyElement) {
         if (this.selectedCard && (this.selectedCard.targetType === 'single')) {
             const enemyId = parseInt(enemyElement.dataset.enemyId);
-            
-            // Add target selection confirmation effect
-            enemyElement.style.animation = 'targetSelected 0.5s ease-out';
-            
-            console.log('🎯 Target selected for', this.selectedCard.name);
+            this.enemyBoard.addTargetSelectionEffect(enemyId);
             
             // Disable targeting and clear selection
             this.disableEnemyTargeting();
-            this.element.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+            this.playerHandComp.deselectAll();
             
             // Cast spell with slight delay for visual feedback
             setTimeout(() => {
@@ -735,21 +663,11 @@ class GameScreen extends BaseScreen {
     }
 
     enableEnemyTargeting() {
-        console.log('🎯 Enabling enemy targeting with enhanced animations');
-        // Add targetable class to all enemies with staggered animation
-        this.element.querySelectorAll('.enemy').forEach((enemy, index) => {
-            setTimeout(() => {
-                enemy.classList.add('targetable');
-            }, index * 100);
-        });
+        this.enemyBoard.enableTargeting();
     }
 
     disableEnemyTargeting() {
-        console.log('🎯 Disabling enemy targeting');
-        // Remove targetable class from all enemies
-        this.element.querySelectorAll('.enemy').forEach(enemy => {
-            enemy.classList.remove('targetable');
-        });
+        this.enemyBoard.disableTargeting();
         this.hideTargetingInstruction();
     }
 
@@ -779,20 +697,21 @@ class GameScreen extends BaseScreen {
     castSpell(card, handIndex, targetEnemyId = null) {
         // Add casting animation to card
         const cardElement = this.element.querySelector(`[data-hand-index="${handIndex}"]`);
-        if (cardElement) {
-            cardElement.classList.add('casting');
+        this.playerHandComp.addCastingEffect(handIndex);
             
             // Play spell casting sound
             this.soundManager?.playSpellSound(card.id, 'cast');
             this.soundManager?.play('card_play');
             
             // Create particle trail from card to target
+            const spellType = VisualEffectsComponent.getSpellEffectType(card.id);
             if (targetEnemyId) {
-                this.createParticleTrail(cardElement, targetEnemyId, this.getSpellEffectType(card.id));
+                const targetElement = this.element.querySelector(`[data-enemy-id="${targetEnemyId}"]`);
+                this.visualEffects.createParticleTrail(cardElement, targetElement, spellType);
             } else if (card.targetType === 'all') {
-                this.createAOEParticles(this.getSpellEffectType(card.id));
+                const battlefield = this.element.querySelector('#enemy-battlefield');
+                this.visualEffects.createAOEParticles(battlefield, spellType);
             }
-        }
         
         // Deduct mana
         this.currentMana -= card.mana;
@@ -800,7 +719,7 @@ class GameScreen extends BaseScreen {
         // Clear selection
         this.selectedCard = null;
         this.selectedCardIndex = null;
-        this.element.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+        this.playerHandComp.deselectAll();
         this.disableEnemyTargeting();
 
         // Apply spell effect with delay for animation
@@ -824,13 +743,14 @@ class GameScreen extends BaseScreen {
 
     applySpellEffect(card, targetEnemyId) {
         // Get spell effect type for visual effects
-        const spellType = this.getSpellEffectType(card.id);
+        const spellType = VisualEffectsComponent.getSpellEffectType(card.id);
         
         switch(card.targetType) {
             case 'single':
                 if (targetEnemyId) {
                     const enemy = this.enemies.find(e => e.id === targetEnemyId);
-                    this.createSpellImpact(targetEnemyId, spellType);
+                    const enemyEl = this.element.querySelector(`[data-enemy-id="${targetEnemyId}"]`);
+                    this.visualEffects.createSpellImpact(enemyEl, spellType);
                     this.damageEnemyWithEffects(targetEnemyId, card.damage);
                     if (enemy) {
                         this.addToHistory(`${card.art} - ${card.damage} ${enemy.art}`, true);
@@ -849,7 +769,8 @@ class GameScreen extends BaseScreen {
                 const enemiesSnapshot = [...this.enemies];
                 enemiesSnapshot.forEach((enemy, index) => {
                     setTimeout(() => {
-                        this.createSpellImpact(enemy.id, spellType);
+                        const enemyEl = this.element.querySelector(`[data-enemy-id="${enemy.id}"]`);
+                        this.visualEffects.createSpellImpact(enemyEl, spellType);
                         this.damageEnemyWithEffects(enemy.id, card.damage);
                         // Play impact sounds with slight delay
                         setTimeout(() => {
@@ -857,7 +778,8 @@ class GameScreen extends BaseScreen {
                         }, 300);
                     }, index * 150); // Stagger the damage application
                 });
-                this.createScreenShake();
+                const gameBoard = this.element.querySelector('.game-board');
+                this.visualEffects.createScreenShake(gameBoard);
                 this.soundManager?.play('screen_shake');
                 this.showMessage(`${card.name} deals ${card.damage} damage to all enemies!`);
                 break;
@@ -874,7 +796,8 @@ class GameScreen extends BaseScreen {
                         const aliveEnemies = this.enemies.filter(e => e.health > 0);
                         if (aliveEnemies.length > 0) {
                             const randomEnemy = aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)];
-                            this.createSpellImpact(randomEnemy.id, spellType);
+                            const enemyEl = this.element.querySelector(`[data-enemy-id="${randomEnemy.id}"]`);
+                            this.visualEffects.createSpellImpact(enemyEl, spellType);
                             
                             // Check if enemy will die from this hit
                             const enemy = this.enemies.find(e => e.id === randomEnemy.id);
@@ -904,8 +827,9 @@ class GameScreen extends BaseScreen {
                 // Handle healing
                 if (card.healing) {
                     this.playerHealth = Math.min(30, this.playerHealth + card.healing);
-                    this.createHealingEffect();
-                    this.showHealingNumber(card.healing);
+                    const playerHero = this.element.querySelector('.player-hero');
+                    this.visualEffects.createHealingEffect(playerHero);
+                    this.visualEffects.showHealingNumber(playerHero, card.healing);
                     this.addToHistory(`${card.art} - +${card.healing} ❤️`, true);
                     message += `${card.name} heals you for ${card.healing}! `;
                 }
@@ -920,7 +844,8 @@ class GameScreen extends BaseScreen {
                 // Handle mana boost
                 if (card.manaBoost) {
                     this.currentMana += card.manaBoost;
-                    this.showManaBoostEffect();
+                    const manaElement = this.element.querySelector('#current-mana');
+                    this.visualEffects.showManaBoostEffect(manaElement);
                     this.addToHistory(`${card.art} - +${card.manaBoost} 💎`, true);
                     message += `+${card.manaBoost} mana this turn! `;
                 }
@@ -928,8 +853,9 @@ class GameScreen extends BaseScreen {
                 // Handle shield
                 if (card.shield) {
                     this.playerShield += card.shield;
-                    this.createShieldEffect();
-                    this.showShieldNumber(card.shield);
+                    const playerHero = this.element.querySelector('.player-hero');
+                    this.visualEffects.createShieldEffect(playerHero);
+                    this.visualEffects.showShieldNumber(playerHero, card.shield);
                     this.addToHistory(`${card.art} - +${card.shield} 🛡️`, true);
                     message += `Gain ${card.shield} shield! `;
                 }
@@ -940,405 +866,32 @@ class GameScreen extends BaseScreen {
         }
     }
 
-    getSpellEffectType(spellId) {
-        // Map spell IDs to visual effect types
-        const spellEffects = {
-            'fire_bolt': 'fire',
-            'flame_burst': 'fire',
-            'meteor': 'fire',
-            'thunder_storm': 'lightning',
-            'divine_wrath': 'lightning',
-            'frost_nova': 'frost',
-            'arcane_missiles': 'arcane',
-            'magic_missile': 'arcane',
-            'healing_light': 'healing',
-            'minor_heal': 'healing'
-        };
-        return spellEffects[spellId] || 'arcane';
-    }
-
     damageEnemyWithEffects(enemyId, damage, skipDeathHistory = false) {
         const enemy = this.enemies.find(e => e.id === enemyId);
         if (enemy) {
-            // Show damage number
-            this.showDamageNumber(enemyId, damage);
-            
-            // Add damage animation to enemy
-            const enemyElement = this.element.querySelector(`[data-enemy-id="${enemyId}"]`);
-            if (enemyElement) {
-                enemyElement.classList.add('taking-damage');
-                setTimeout(() => {
-                    enemyElement.classList.remove('taking-damage');
-                }, 600);
-            }
-            
+            const enemyElement = this.enemyBoard.container.querySelector(`[data-enemy-id="${enemyId}"]`);
+            this.visualEffects.showDamageNumber(enemyElement, damage);
+            this.enemyBoard.addDamageEffect(enemyId);
             enemy.health -= damage;
             
             if (enemy.health <= 0) {
-                // Add enhanced dying animation with isolation
-                if (enemyElement) {
-                    // Choose random death animation for variety
-                    const deathAnimations = ['dying-spin', 'dying-dissolve', 'dying-explode', 'dying-fade'];
-                    const randomAnimation = deathAnimations[Math.floor(Math.random() * deathAnimations.length)];
-                    
-                    // Ensure no other death animations are active on this element
-                    deathAnimations.forEach(anim => enemyElement.classList.remove(anim));
-                    
-                    // Add unique identifier to prevent conflicts
-                    enemyElement.dataset.dyingAnimation = randomAnimation;
-                    enemyElement.dataset.dyingStartTime = Date.now();
-                    
-                    // Apply the animation
-                    enemyElement.classList.add(randomAnimation);
-                    
-                    console.log(`💀 Enemy ${enemyId} starting ${randomAnimation} at ${Date.now()}`);
-                }
-                // Play enemy death sound
                 this.soundManager?.play('enemy_death');
-                // Mark enemy as dying to prevent re-rendering flicker
                 enemy.isDying = true;
-                
-                // Remove dead enemy after animation completes
-                setTimeout(() => {
+                this.enemyBoard.startDeathAnimation(enemyId, 1800, () => {
                     if (!skipDeathHistory) {
                         this.addToHistory(`${enemy.art} dies`, true);
                     }
-                    // Only remove if enemy still exists (avoid double removal)
                     if (this.enemies.find(e => e.id === enemyId)) {
                         this.enemies = this.enemies.filter(e => e.id !== enemyId);
-                        // Remove DOM element directly to avoid flicker
-                        if (enemyElement && enemyElement.parentNode) {
-                            enemyElement.parentNode.removeChild(enemyElement);
-                        }
-                        // Check for victory after a small delay to let all animations finish
+                        this.enemyBoard.removeEnemyElement(enemyId);
                         setTimeout(() => this.checkGameEnd(), 100);
                     }
-                }, 1800); // Increased timeout to match longest animation duration
+                });
             } else {
-                // Only re-render if enemy is not dying
                 if (!enemy.isDying) {
                     this.renderEnemies();
                 }
             }
-        }
-    }
-
-    showDamageNumber(enemyId, damage) {
-        const enemyElement = this.element.querySelector(`[data-enemy-id="${enemyId}"]`);
-        if (enemyElement) {
-            const rect = enemyElement.getBoundingClientRect();
-            const damageDiv = document.createElement('div');
-            damageDiv.className = 'damage-number';
-            damageDiv.textContent = `-${damage}`;
-            damageDiv.style.left = `${rect.left + rect.width / 2}px`;
-            damageDiv.style.top = `${rect.top}px`;
-            
-            document.body.appendChild(damageDiv);
-            
-            // Remove damage number after animation
-            setTimeout(() => {
-                if (document.body.contains(damageDiv)) {
-                    document.body.removeChild(damageDiv);
-                }
-            }, 1500);
-        }
-    }
-
-    showHealingNumber(healing) {
-        const playerElement = this.element.querySelector('.player-hero');
-        if (playerElement) {
-            const rect = playerElement.getBoundingClientRect();
-            const healingDiv = document.createElement('div');
-            healingDiv.className = 'healing-number';
-            healingDiv.textContent = `+${healing}`;
-            healingDiv.style.left = `${rect.left + rect.width / 2}px`;
-            healingDiv.style.top = `${rect.top}px`;
-            
-            document.body.appendChild(healingDiv);
-            
-            // Remove healing number after animation
-            setTimeout(() => {
-                if (document.body.contains(healingDiv)) {
-                    document.body.removeChild(healingDiv);
-                }
-            }, 1500);
-        }
-    }
-
-    showShieldNumber(shield) {
-        const playerElement = this.element.querySelector('.player-hero');
-        if (playerElement) {
-            const rect = playerElement.getBoundingClientRect();
-            const shieldDiv = document.createElement('div');
-            shieldDiv.className = 'shield-number';
-            shieldDiv.textContent = `+${shield} 🛡️`;
-            shieldDiv.style.left = `${rect.left + rect.width / 2}px`;
-            shieldDiv.style.top = `${rect.top}px`;
-            
-            document.body.appendChild(shieldDiv);
-            
-            // Remove shield number after animation
-            setTimeout(() => {
-                if (document.body.contains(shieldDiv)) {
-                    document.body.removeChild(shieldDiv);
-                }
-            }, 1500);
-        }
-    }
-
-    createSpellImpact(enemyId, spellType) {
-        console.log('🎯 createSpellImpact called:', { enemyId, spellType });
-        
-        const enemyElement = this.element.querySelector(`[data-enemy-id="${enemyId}"]`);
-        console.log('🎯 Enemy element found:', enemyElement);
-        
-        if (enemyElement) {
-            const rect = enemyElement.getBoundingClientRect();
-            console.log('🎯 Enemy rect:', rect);
-            
-            const impact = document.createElement('div');
-            impact.className = `spell-impact ${spellType}`;
-            impact.style.left = `${rect.left + rect.width / 2 - 30}px`;
-            impact.style.top = `${rect.top + rect.height / 2 - 30}px`;
-            impact.style.position = 'fixed';
-            impact.style.zIndex = '9999';
-            
-            console.log('🎯 Impact element created:', impact);
-            console.log('🎯 Impact styles:', impact.style.cssText);
-            console.log('🎯 Impact className:', impact.className);
-            
-            document.body.appendChild(impact);
-            console.log('🎯 Impact added to body, total elements:', document.querySelectorAll('.spell-impact').length);
-            
-            // Remove impact after animation
-            setTimeout(() => {
-                if (document.body.contains(impact)) {
-                    document.body.removeChild(impact);
-                    console.log('🎯 Impact removed');
-                }
-            }, 1000);
-        } else {
-            console.error('🎯 Enemy element not found for ID:', enemyId);
-        }
-    }
-
-    createHealingEffect() {
-        const playerHero = this.element.querySelector('.player-hero');
-        if (playerHero) {
-            playerHero.classList.add('healing');
-            setTimeout(() => {
-                playerHero.classList.remove('healing');
-            }, 1000);
-        }
-    }
-
-    createShieldEffect() {
-        const playerHero = this.element.querySelector('.player-hero');
-        if (playerHero) {
-            playerHero.classList.add('shield-effect');
-            setTimeout(() => {
-                playerHero.classList.remove('shield-effect');
-            }, 1000);
-        }
-    }
-
-    createScreenShake() {
-        const gameBoard = this.element.querySelector('.game-board');
-        if (gameBoard) {
-            gameBoard.classList.add('screen-shake');
-            setTimeout(() => {
-                gameBoard.classList.remove('screen-shake');
-            }, 500);
-        }
-    }
-
-    createCardDrawEffect(count) {
-        // Visual effect for drawing cards
-        const handElement = this.element.querySelector('#player-hand');
-        if (handElement) {
-            handElement.classList.add('card-draw-effect');
-            setTimeout(() => {
-                handElement.classList.remove('card-draw-effect');
-            }, 1000);
-        }
-    }
-
-    showManaBoostEffect() {
-        const manaElement = this.element.querySelector('#current-mana');
-        if (manaElement) {
-            manaElement.classList.add('mana-boost-effect');
-            setTimeout(() => {
-                manaElement.classList.remove('mana-boost-effect');
-            }, 1000);
-        }
-    }
-
-    createParticleTrail(cardElement, targetEnemyId, spellType) {
-        const cardRect = cardElement.getBoundingClientRect();
-        const targetElement = this.element.querySelector(`[data-enemy-id="${targetEnemyId}"]`);
-        
-        if (!targetElement) return;
-        
-        const targetRect = targetElement.getBoundingClientRect();
-        
-        // Calculate trajectory
-        const startX = cardRect.left + cardRect.width / 2;
-        const startY = cardRect.top + cardRect.height / 2;
-        const endX = targetRect.left + targetRect.width / 2;
-        const endY = targetRect.top + targetRect.height / 2;
-        
-        // Create particle projectile
-        const projectile = document.createElement('div');
-        projectile.className = `spell-projectile ${spellType}`;
-        projectile.style.cssText = `
-            position: fixed;
-            left: ${startX}px;
-            top: ${startY}px;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            z-index: 1000;
-            pointer-events: none;
-            transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        `;
-        
-        // Set projectile appearance based on spell type
-        switch(spellType) {
-            case 'fire':
-                projectile.style.background = 'radial-gradient(circle, #ff4500 0%, #ff8c00 50%, #ffa500 100%)';
-                projectile.style.boxShadow = '0 0 20px #ff4500, 0 0 40px #ff4500';
-                break;
-            case 'lightning':
-                projectile.style.background = 'radial-gradient(circle, #ffff00 0%, #87ceeb 50%, #4169e1 100%)';
-                projectile.style.boxShadow = '0 0 20px #ffff00, 0 0 40px #87ceeb';
-                break;
-            case 'frost':
-                projectile.style.background = 'radial-gradient(circle, #add8e6 0%, #b0e0e6 50%, #87ceeb 100%)';
-                projectile.style.boxShadow = '0 0 20px #add8e6, 0 0 40px #b0e0e6';
-                break;
-            case 'arcane':
-                projectile.style.background = 'radial-gradient(circle, #8a2be2 0%, #9370db 50%, #dda0dd 100%)';
-                projectile.style.boxShadow = '0 0 20px #8a2be2, 0 0 40px #9370db';
-                break;
-        }
-        
-        document.body.appendChild(projectile);
-        
-        // Create particle trail
-        this.createTrailParticles(startX, startY, endX, endY, spellType);
-        
-        // Animate projectile to target
-        setTimeout(() => {
-            projectile.style.left = `${endX}px`;
-            projectile.style.top = `${endY}px`;
-            projectile.style.transform = 'scale(1.5)';
-        }, 50);
-        
-        // Remove projectile after animation
-        setTimeout(() => {
-            if (document.body.contains(projectile)) {
-                document.body.removeChild(projectile);
-            }
-        }, 900);
-    }
-
-    createTrailParticles(startX, startY, endX, endY, spellType) {
-        const particleCount = 15;
-        const deltaX = (endX - startX) / particleCount;
-        const deltaY = (endY - startY) / particleCount;
-        
-        for (let i = 0; i < particleCount; i++) {
-            setTimeout(() => {
-                const particle = document.createElement('div');
-                particle.className = 'trail-particle';
-                particle.style.cssText = `
-                    position: fixed;
-                    left: ${startX + deltaX * i + (Math.random() - 0.5) * 20}px;
-                    top: ${startY + deltaY * i + (Math.random() - 0.5) * 20}px;
-                    width: ${4 + Math.random() * 6}px;
-                    height: ${4 + Math.random() * 6}px;
-                    border-radius: 50%;
-                    z-index: 999;
-                    pointer-events: none;
-                    opacity: 0.8;
-                    animation: trailParticle 1s ease-out forwards;
-                `;
-                
-                // Set particle color based on spell type
-                switch(spellType) {
-                    case 'fire':
-                        particle.style.background = `hsl(${Math.random() * 60}, 100%, ${50 + Math.random() * 30}%)`;
-                        break;
-                    case 'lightning':
-                        particle.style.background = `hsl(${180 + Math.random() * 60}, 100%, ${70 + Math.random() * 30}%)`;
-                        break;
-                    case 'frost':
-                        particle.style.background = `hsl(${180 + Math.random() * 40}, 60%, ${70 + Math.random() * 30}%)`;
-                        break;
-                    case 'arcane':
-                        particle.style.background = `hsl(${270 + Math.random() * 60}, 70%, ${50 + Math.random() * 30}%)`;
-                        break;
-                }
-                
-                document.body.appendChild(particle);
-                
-                setTimeout(() => {
-                    if (document.body.contains(particle)) {
-                        document.body.removeChild(particle);
-                    }
-                }, 1000);
-            }, i * 40);
-        }
-    }
-
-    createAOEParticles(spellType) {
-        const battlefield = this.element.querySelector('#enemy-battlefield');
-        const battlefieldRect = battlefield.getBoundingClientRect();
-        
-        // Create area effect particles
-        const particleCount = 30;
-        
-        for (let i = 0; i < particleCount; i++) {
-            setTimeout(() => {
-                const particle = document.createElement('div');
-                particle.className = 'aoe-particle';
-                particle.style.cssText = `
-                    position: fixed;
-                    left: ${battlefieldRect.left + Math.random() * battlefieldRect.width}px;
-                    top: ${battlefieldRect.top + Math.random() * battlefieldRect.height}px;
-                    width: ${6 + Math.random() * 10}px;
-                    height: ${6 + Math.random() * 10}px;
-                    border-radius: 50%;
-                    z-index: 999;
-                    pointer-events: none;
-                    opacity: 0.9;
-                    animation: aoeParticle 2s ease-out forwards;
-                `;
-                
-                // Set particle appearance based on spell type
-                switch(spellType) {
-                    case 'lightning':
-                        particle.style.background = 'radial-gradient(circle, #ffff00 0%, #87ceeb 100%)';
-                        particle.style.boxShadow = '0 0 10px #ffff00';
-                        break;
-                    case 'frost':
-                        particle.style.background = 'radial-gradient(circle, #add8e6 0%, #ffffff 100%)';
-                        particle.style.boxShadow = '0 0 8px #add8e6';
-                        break;
-                    case 'fire':
-                        particle.style.background = 'radial-gradient(circle, #ff4500 0%, #ffa500 100%)';
-                        particle.style.boxShadow = '0 0 12px #ff4500';
-                        break;
-                }
-                
-                document.body.appendChild(particle);
-                
-                setTimeout(() => {
-                    if (document.body.contains(particle)) {
-                        document.body.removeChild(particle);
-                    }
-                }, 2000);
-            }, i * 50);
         }
     }
 
@@ -1352,7 +905,8 @@ class GameScreen extends BaseScreen {
             }
         }
         this.renderPlayerHand();
-        this.createCardDrawEffect(count);
+        const handElement = this.element.querySelector('#player-hand');
+        this.visualEffects.createCardDrawEffect(handElement);
     }
 
     endTurn() {
@@ -1552,6 +1106,7 @@ class GameScreen extends BaseScreen {
         this.selectedCard = null;
         this.selectedCardIndex = null;
         this.actionHistory = [];
+        this.actionHistoryComp.clear();
         
         // Reset the deck to full state
         if (this.cardManager) {
@@ -1593,19 +1148,8 @@ class GameScreen extends BaseScreen {
     }
 
     addToHistory(action, isPlayerAction = true) {
-        this.actionHistory.unshift({
-            turn: this.currentTurn,
-            action: action,
-            isPlayerAction: isPlayerAction,
-            timestamp: Date.now()
-        });
-        
-        // Keep only last 25 actions to prevent overflow
-        if (this.actionHistory.length > 25) {
-            this.actionHistory = this.actionHistory.slice(0, 25);
-        }
-        
-        this.updateHistoryDisplay();
+        this.actionHistoryComp.addEntry(action, isPlayerAction, this.currentTurn);
+        this.actionHistory = this.actionHistoryComp.entries;
     }
 
     updateUI() {
@@ -1656,83 +1200,11 @@ class GameScreen extends BaseScreen {
     }
 
     updateDeckTracker() {
-        if (!this.cardManager) return;
-        
-        const deckInfo = this.cardManager.getDeckInfo();
-        const remainingCounts = this.cardManager.getRemainingCardCounts();
-        
-        // Update deck count
-        const deckRemainingElement = this.element.querySelector('#deck-remaining');
-        if (deckRemainingElement) {
-            deckRemainingElement.textContent = deckInfo.remainingCards;
-        }
-        
-        // Update deck cards list
-        const deckCardsElement = this.element.querySelector('#deck-cards');
-        if (deckCardsElement) {
-            deckCardsElement.innerHTML = '';
-            
-            // Group cards by ID and sort by mana cost, then by name
-            const cardEntries = Object.entries(remainingCounts);
-            cardEntries.sort((a, b) => {
-                const cardA = this.cardManager.getCardById(a[0]);
-                const cardB = this.cardManager.getCardById(b[0]);
-                if (cardA && cardB) {
-                    // First sort by mana cost
-                    if (cardA.mana !== cardB.mana) {
-                        return cardA.mana - cardB.mana;
-                    }
-                    // Then sort by name
-                    return cardA.name.localeCompare(cardB.name);
-                }
-                return 0;
-            });
-            
-            cardEntries.forEach(([cardId, count]) => {
-                const card = this.cardManager.getCardById(cardId);
-                if (card) {
-                    const cardItem = document.createElement('div');
-                    cardItem.className = 'deck-card-item';
-                    
-                    cardItem.innerHTML = `
-                        <span class="game-deck-card-mana">${card.mana}</span>
-                        <span class="game-deck-card-art">${card.art}</span>
-                        <span class="game-deck-card-name">${card.name}</span>
-                        <span class="game-deck-card-count">×${count}</span>
-                    `;
-                    
-                    deckCardsElement.appendChild(cardItem);
-                }
-            });
-            
-            // Show message if deck is empty
-            if (deckInfo.remainingCards === 0) {
-                const emptyMessage = document.createElement('div');
-                emptyMessage.className = 'deck-empty-message';
-                emptyMessage.style.cssText = `
-                    text-align: center;
-                    color: #FF6B6B;
-                    font-style: italic;
-                    padding: 10px;
-                `;
-                emptyMessage.textContent = 'Deck is empty!';
-                deckCardsElement.appendChild(emptyMessage);
-            }
-        }
+        this.deckTracker.update();
     }
 
     updateHistoryDisplay() {
-        const historyElement = this.element.querySelector('#action-history');
-        if (!historyElement) return;
-        
-        historyElement.innerHTML = '';
-        
-        this.actionHistory.forEach(entry => {
-            const historyItem = document.createElement('div');
-            historyItem.className = `history-item ${entry.isPlayerAction ? 'player-action' : 'enemy-action'}`;
-            historyItem.textContent = `T${entry.turn} ${entry.action}`;
-            historyElement.appendChild(historyItem);
-        });
+        this.actionHistoryComp.setEntries(this.actionHistory, this.currentTurn);
     }
 
     showCardDetails(cardElement) {

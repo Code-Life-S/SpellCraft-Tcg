@@ -70,7 +70,12 @@ class ArenaBuilderScreen extends BaseScreen {
         await this.initializeCardManager();
         
         // Load arena state or start new arena
-        this.loadArenaState();
+        try {
+            this.loadArenaState();
+        } catch (e) {
+            // Redirect happens inside loadArenaState
+            return;
+        }
         
         // Update UI
         this.updateUI();
@@ -112,18 +117,26 @@ class ArenaBuilderScreen extends BaseScreen {
     }
 
     loadArenaState() {
-        console.log('Loading arena state...');
         const savedState = localStorage.getItem(this.ARENA_STATE_KEY);
-        console.log('Saved state:', savedState);
         
         if (savedState) {
             try {
                 const state = JSON.parse(savedState);
+                
+                // If in adventure phase, redirect to adventure screen
+                if (state.phase === 'adventure') {
+                    this.navigateTo('arena-adventure');
+                    throw new Error('Redirecting to adventure screen');
+                }
+
+                // If completed, start fresh
+                if (state.phase === 'completed') {
+                    this.startNewArena();
+                    return;
+                }
+                
                 this.arenaCards = state.arenaCards || [];
                 this.isArenaComplete = this.arenaCards.length >= this.ARENA_DECK_SIZE;
-                
-                console.log('Loaded arena cards:', this.arenaCards);
-                console.log('Is arena complete:', this.isArenaComplete);
                 
                 // Show resume button if there's a saved arena
                 const resumeBtn = this.element.querySelector('.resume-arena-btn');
@@ -133,7 +146,6 @@ class ArenaBuilderScreen extends BaseScreen {
                 
                 // Generate new choices if arena is not complete
                 if (!this.isArenaComplete) {
-                    console.log('Arena not complete, generating new choices...');
                     this.generateNewChoices();
                 }
             } catch (error) {
@@ -141,7 +153,6 @@ class ArenaBuilderScreen extends BaseScreen {
                 this.startNewArena();
             }
         } else {
-            console.log('No saved state, starting new arena...');
             this.startNewArena();
         }
     }
@@ -149,13 +160,13 @@ class ArenaBuilderScreen extends BaseScreen {
     saveArenaState() {
         const state = {
             arenaCards: this.arenaCards,
+            phase: 'builder',
             timestamp: Date.now()
         };
         localStorage.setItem(this.ARENA_STATE_KEY, JSON.stringify(state));
     }
 
     startNewArena() {
-        console.log('Starting new arena...');
         this.arenaCards = [];
         this.isArenaComplete = false;
         this.saveArenaState();
@@ -166,9 +177,7 @@ class ArenaBuilderScreen extends BaseScreen {
             resumeBtn.style.display = 'none';
         }
         
-        console.log('About to generate new choices...');
         this.generateNewChoices();
-        console.log('About to update UI...');
         this.updateUI();
         this.showMessage('New arena started! Choose your cards wisely.', 'info');
     }
@@ -186,9 +195,6 @@ class ArenaBuilderScreen extends BaseScreen {
     generateNewChoices() {
         if (this.isArenaComplete) return;
         
-        console.log('Generating new choices...');
-        console.log('Card manager:', this.cardManager);
-        
         // Get spells from CardManager
         let allSpells = [];
         if (this.cardManager && this.cardManager.allSpells) {
@@ -202,7 +208,6 @@ class ArenaBuilderScreen extends BaseScreen {
             return;
         }
         
-        console.log('All spells:', allSpells);
         this.currentChoices = [];
         
         // Get 3 random unique spells
@@ -212,16 +217,18 @@ class ArenaBuilderScreen extends BaseScreen {
             const selectedSpell = availableSpells.splice(randomIndex, 1)[0];
             this.currentChoices.push(selectedSpell);
         }
-        
-        console.log('Current choices:', this.currentChoices);
     }
 
     selectCard(cardId) {
         const selectedCard = this.currentChoices.find(card => card.id === cardId);
         if (!selectedCard) return;
         
-        // Add card to arena deck
-        this.arenaCards.push(selectedCard);
+        // Add card to arena deck with unique instanceId for upgrade tracking
+        const cardWithId = {
+            ...selectedCard,
+            instanceId: selectedCard.id + '_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6)
+        };
+        this.arenaCards.push(cardWithId);
         
         // Check if arena is complete
         if (this.arenaCards.length >= this.ARENA_DECK_SIZE) {
@@ -360,9 +367,20 @@ class ArenaBuilderScreen extends BaseScreen {
     }
 
     startArena() {
-        this.showMessage('Arena adventure coming soon!', 'info');
-        // TODO: Navigate to arena adventure when implemented
-        // await this.navigateTo('arena-adventure', { deck: this.arenaCards });
+        // Mark state as adventure phase
+        const arenaState = {
+            arenaCards: this.arenaCards,
+            phase: 'adventure',
+            currentRound: 1,
+            playerHealth: 30,
+            maxHealth: 30,
+            deckUpgrades: {},
+            minHealBonus: 0,
+            runResult: null,
+            timestamp: Date.now()
+        };
+        localStorage.setItem(this.ARENA_STATE_KEY, JSON.stringify(arenaState));
+        this.navigateTo('arena-adventure');
     }
 
     getScreenClass() {

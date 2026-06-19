@@ -1,0 +1,174 @@
+/* Spell Impact */
+.spell-impact {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+}
+
+.spell-impact.fire {
+    background: radial-gradient(circle, rgba(255,69,0,0.8) 0%, rgba(255,140,0,0.4) 50%, transparent 100%);
+    animation: spellImpact 0.8s ease-out forwards;
+}
+
+.spell-impact.lightning {
+    background: radial-gradient(circle, rgba(255,255,0,0.9) 0%, rgba(135,206,250,0.6) 50%, transparent 100%);
+    animation: spellImpact 0.6s ease-out forwards;
+}
+
+.spell-impact.frost {
+    background: radial-gradient(circle, rgba(173,216,230,0.8) 0%, rgba(176,224,230,0.4) 50%, transparent 100%);
+    animation: spellImpact 1s ease-out forwards;
+}
+
+.spell-impact.arcane {
+    background: radial-gradient(circle, rgba(138,43,226,0.8) 0%, rgba(147,112,219,0.4) 50%, transparent 100%);
+    animation: spellImpact 0.7s ease-out forwards;
+}
+
+.spell-impact.healing {
+    background: radial-gradient(circle, rgba(76,175,80,0.8) 0%, rgba(129,199,132,0.4) 50%, transparent 100%);
+    animation: spellImpact 1.2s ease-out forwards;
+}
+
+@keyframes spellImpact {
+    0% { opacity: 0; transform: scale(0); }
+    20% { opacity: 1; transform: scale(1.2); }
+    80% { opacity: 0.8; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1.5); }
+}
+
+/* Floating numbers */
+.damage-number,
+.healing-number,
+.shield-number {
+    position: fixed;
+    font-size: 24px;
+    font-weight: bold;
+    pointer-events: none;
+    z-index: 10000;
+    animation: damageFloat 1.2s ease-out forwards;
+    text-shadow: 0 0 5px currentColor;
+}
+
+.damage-number {
+    color: #DC143C;
+    text-shadow: 0 0 5px rgba(220, 20, 60, 0.5);
+}
+
+.healing-number {
+    color: #4CAF50;
+    text-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+}
+
+.shield-number {
+    color: #4169E1;
+    text-shadow: 0 0 5px rgba(65, 105, 225, 0.5);
+}
+
+@keyframes damageFloat {
+    0% { transform: translateY(0) scale(1); opacity: 1; }
+    100% { transform: translateY(-50px) scale(1.2); opacity: 0; }
+}
+
+/* Screen shake */
+.screen-shake {
+    animation: screenShake 0.3s ease-in-out;
+}
+
+@keyframes screenShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    50% { transform: translateX(5px); }
+    75% { transform: translateX(-3px); }
+}
+
+/* Particle trail */
+.trail-particle {
+    position: fixed;
+    border-radius: 50%;
+    z-index: 999;
+    pointer-events: none;
+    opacity: 0.8;
+    animation: trailParticle 1s ease-out forwards;
+}
+
+@keyframes trailParticle {
+    0% { opacity: 0.8; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.2); }
+    100% { opacity: 0; transform: scale(0.5) translateY(-20px); }
+}
+
+/* AOE particles */
+.aoe-particle {
+    position: fixed;
+    border-radius: 50%;
+    z-index: 999;
+    pointer-events: none;
+    opacity: 0.9;
+    animation: aoeParticle 2s ease-out forwards;
+}
+
+@keyframes aoeParticle {
+    0% { opacity: 0.9; transform: scale(0) translateY(0); }
+    20% { opacity: 1; transform: scale(1.2) translateY(-10px); }
+    80% { opacity: 0.6; transform: scale(1) translateY(-30px); }
+    100% { opacity: 0; transform: scale(0.3) translateY(-60px); }
+}
+
+/* Spell projectile */
+.spell-projectile {
+    position: fixed;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    z-index: 1000;
+    pointer-events: none;
+    transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Healing glow */
+.healing {
+    animation: healGlow 1s ease-out;
+}
+
+@keyframes healGlow {
+    0% { box-shadow: 0 0 0 rgba(76, 175, 80, 0); }
+    30% { box-shadow: 0 0 30px rgba(76, 175, 80, 0.8); }
+    100% { box-shadow: 0 0 0 rgba(76, 175, 80, 0); }
+}
+
+/* Shield effect */
+.shield-effect {
+    animation: shieldFlash 1s ease-out;
+}
+
+@keyframes shieldFlash {
+    0% { box-shadow: 0 0 0 rgba(65, 105, 225, 0); }
+    30% { box-shadow: 0 0 30px rgba(65, 105, 225, 0.8); }
+    100% { box-shadow: 0 0 0 rgba(65, 105, 225, 0); }
+}
+
+/* Card draw effect */
+.card-draw-effect {
+    animation: cardDrawFlash 0.8s ease-out;
+}
+
+@keyframes cardDrawFlash {
+    0% { box-shadow: 0 0 0 rgba(255, 215, 0, 0); }
+    30% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.6); }
+    100% { box-shadow: 0 0 0 rgba(255, 215, 0, 0); }
+}
+
+/* Mana boost effect */
+.mana-boost-effect {
+    animation: manaPulse 0.8s ease-out;
+}
+
+@keyframes manaPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.3); color: #FFD700; }
+    100% { transform: scale(1); }
+}
