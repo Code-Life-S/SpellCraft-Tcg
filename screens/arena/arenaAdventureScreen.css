@@ -545,10 +545,16 @@
     margin-top: 20px;
 }
 
-.upgrade-title {
+.upgrade-title, .upgrade-phase-title {
     font-size: 22px;
     color: #FFD700;
     margin-bottom: 20px;
+}
+
+/* Moderate hover for upgrade choice cards (not the dramatic game screen hover) */
+.upgrade-choice .card:hover {
+    transform: translateY(-8px) scale(1.08);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.6);
 }
 
 .upgrade-choices {
@@ -559,11 +565,10 @@
 }
 
 .upgrade-choice {
-    width: 160px;
     background: linear-gradient(145deg, rgba(30, 30, 50, 0.9), rgba(50, 50, 80, 0.9));
     border: 2px solid rgba(255, 215, 0, 0.4);
     border-radius: 12px;
-    padding: 15px;
+    padding: 10px;
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
@@ -578,8 +583,8 @@
     box-shadow: 0 8px 25px rgba(255, 215, 0, 0.3);
 }
 
-.upgrade-choice-icon {
-    font-size: 36px;
+.choice-card-preview {
+    pointer-events: none;
 }
 
 .upgrade-choice-desc {
@@ -734,6 +739,6 @@
     }
 
     .upgrade-choice {
-        width: 130px;
+        padding: 6px;
     }
 }

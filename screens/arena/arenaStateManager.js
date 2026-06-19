@@ -34,10 +34,53 @@ class ArenaStateManager {
         return hp;
     }
 
+    static getCardDisplayText(card) {
+        const damage = card.damage || 0;
+        const healing = card.healing || 0;
+        const shield = card.shield || 0;
+        const cardDraw = card.cardDraw || 0;
+        const manaBoost = card.manaBoost || 0;
+        const hits = card.hits || 0;
+
+        if (card.targetType === 'single' && damage > 0) {
+            return 'Target enemy takes ' + damage + ' damage.';
+        }
+        if (card.targetType === 'all' && damage > 0) {
+            return 'Deal ' + damage + ' damage to all enemies.';
+        }
+        if (card.targetType === 'random' && damage > 0 && hits > 0) {
+            return 'Deal ' + damage + ' damage ' + hits + ' times randomly.';
+        }
+        if (healing > 0 && cardDraw > 0 && manaBoost > 0) {
+            return 'Restore ' + healing + ' health. Draw ' + cardDraw + ' cards. Gain +' + manaBoost + ' mana.';
+        }
+        if (healing > 0) {
+            return 'Restore ' + healing + ' health.';
+        }
+        if (shield > 0) {
+            return 'Protect from ' + shield + ' damage.';
+        }
+        if (cardDraw > 0 && manaBoost > 0) {
+            return 'Draw ' + cardDraw + ' cards. Gain +' + manaBoost + ' mana.';
+        }
+        if (cardDraw > 0) {
+            return 'Draw ' + cardDraw + ' cards.';
+        }
+        if (manaBoost > 0) {
+            return 'Gain +' + manaBoost + ' mana.';
+        }
+        return card.text || '';
+    }
+
     static getUpgradedCard(card, deckUpgrades) {
-        if (!card || !card.instanceId || !deckUpgrades) return card;
-        const upgrades = deckUpgrades[card.instanceId];
-        if (!upgrades) return card;
+        if (!card || !deckUpgrades) return card;
+        const upgrades = deckUpgrades[card.id];
+        if (!upgrades) {
+            // Still update text for the base card
+            const cardWithText = { ...card };
+            cardWithText.text = this.getCardDisplayText(card);
+            return cardWithText;
+        }
         const upgraded = { ...card };
         if (upgrades.damageBonus) upgraded.damage = (upgraded.damage || 0) + upgrades.damageBonus;
         if (upgrades.healBonus) upgraded.healing = (upgraded.healing || 0) + upgrades.healBonus;
@@ -46,6 +89,7 @@ class ArenaStateManager {
         if (upgrades.cardDrawBonus) upgraded.cardDraw = (upgraded.cardDraw || 0) + upgrades.cardDrawBonus;
         if (upgrades.bonusHealEffect) upgraded.healing = (upgraded.healing || 0) + 2;
         if (upgrades.extraHitBonus) upgraded.hits = (upgraded.hits || 1) + upgrades.extraHitBonus;
+        upgraded.text = this.getCardDisplayText(upgraded);
         return upgraded;
     }
 
@@ -62,84 +106,150 @@ class ArenaStateManager {
         return descriptions[upgradeType] || 'Unknown upgrade';
     }
 
-    static generateUpgradeChoices(arenaCards, allSpells, deckUpgrades, minHealBonus) {
-        const choices = [];
-        const usedTypes = new Set();
+    static getPossibleUpgrades(card, existingUpgrades) {
+        const possible = [];
+        if (card.damage > 0) possible.push('damageBoost');
+        if (card.healing > 0) possible.push('healBoost');
+        if (card.shield > 0) possible.push('shieldBonus');
+        if (!existingUpgrades.manaReduction) possible.push('manaReduction');
+        if (!existingUpgrades.cardDrawBonus) possible.push('cardDrawBonus');
+        if (card.healing > 0 && !existingUpgrades.bonusHealEffect) possible.push('bonusHealEffect');
+        if (card.targetType === 'random' && !existingUpgrades.extraHitBonus) possible.push('extraHitBonus');
+        if (possible.length === 0) possible.push('damageBoost');
+        return possible;
+    }
 
-        // Option 1: Add a new random card
-        if (!usedTypes.has('add_card') && allSpells.length > 0) {
-            const usedCardIds = new Set(arenaCards.map(c => c.id));
-            const availableNew = allSpells.filter(s => !usedCardIds.has(s.id));
-            const pool = availableNew.length > 0 ? availableNew : allSpells;
-            const newCard = pool[Math.floor(Math.random() * pool.length)];
-            if (newCard) {
-                choices.push({
-                    type: 'add_card',
-                    description: 'Add ' + newCard.name + ' to your deck',
-                    card: newCard,
-                    icon: newCard.art
-                });
-                usedTypes.add('add_card');
-            }
+    static buildPreviewCard(card, upgradeType, upgradeValue) {
+        const preview = { ...card };
+        switch (upgradeType) {
+            case 'damageBoost': preview.damage = (preview.damage || 0) + upgradeValue; break;
+            case 'healBoost': preview.healing = (preview.healing || 0) + upgradeValue; break;
+            case 'shieldBonus': preview.shield = (preview.shield || 0) + upgradeValue; break;
+            case 'manaReduction': preview.mana = Math.max(1, (preview.mana || 1) - upgradeValue); break;
+            case 'cardDrawBonus': preview.cardDraw = (preview.cardDraw || 0) + upgradeValue; break;
+            case 'bonusHealEffect': preview.healing = (preview.healing || 0) + upgradeValue; break;
+            case 'extraHitBonus': preview.hits = (preview.hits || 1) + upgradeValue; break;
+        }
+        preview.text = this.getCardDisplayText(preview);
+        return preview;
+    }
+
+    static generatePhase1UpgradeChoices(arenaCards, deckUpgrades) {
+        const choices = [];
+        const usedCardIds = new Set();
+
+        // Shuffle arena cards for variety
+        const shuffled = [...arenaCards];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
         }
 
-        // Option 2: Upgrade a random card in deck
-        if (!usedTypes.has('upgrade_card') && arenaCards.length > 0) {
-            const eligibleCards = arenaCards.filter(c => {
-                const upg = deckUpgrades[c.instanceId] || {};
-                return !upg.manaReduction || upg.manaReduction < 2;
+        for (const card of shuffled) {
+            if (choices.length >= 3) break;
+            if (usedCardIds.has(card.id)) continue;
+
+            const existingUpgrades = deckUpgrades[card.id] || {};
+            const possibleEffects = this.getPossibleUpgrades(card, existingUpgrades);
+            const effect = possibleEffects[Math.floor(Math.random() * possibleEffects.length)];
+            const value = effect === 'manaReduction' ? 1 : (effect === 'extraHitBonus' ? 1 : 2);
+            const effectDesc = this.getUpgradeEffectDescription(effect).replace('X', value);
+            const previewCard = this.buildPreviewCard(card, effect, value);
+
+            choices.push({
+                type: 'upgrade_card',
+                subType: effect,
+                value: value,
+                description: effectDesc,
+                card: card,
+                previewCard: previewCard,
+                cardId: card.id,
+                icon: card.art || 'sparkle'
             });
-            if (eligibleCards.length > 0) {
-                const targetCard = eligibleCards[Math.floor(Math.random() * eligibleCards.length)];
-                const possibleEffects = [];
-                const existingUpgrades = deckUpgrades[targetCard.instanceId] || {};
+            usedCardIds.add(card.id);
+        }
 
-                if (targetCard.damage > 0) possibleEffects.push('damageBoost');
-                if (targetCard.healing > 0) possibleEffects.push('healBoost');
-                if (targetCard.shield > 0) possibleEffects.push('shieldBonus');
-                if (!existingUpgrades.manaReduction) possibleEffects.push('manaReduction');
-                if (!existingUpgrades.cardDrawBonus) possibleEffects.push('cardDrawBonus');
-                if (targetCard.healing > 0 && !existingUpgrades.bonusHealEffect) possibleEffects.push('bonusHealEffect');
-                if (targetCard.targetType === 'random' && !existingUpgrades.extraHitBonus) possibleEffects.push('extraHitBonus');
+        // If fewer than 3 choices, rotate back through used cards with different upgrades
+        if (choices.length < 3) {
+            for (const card of shuffled) {
+                if (choices.length >= 3) break;
+                if (!usedCardIds.has(card.id)) continue;
 
-                if (possibleEffects.length === 0) {
-                    possibleEffects.push('damageBoost');
-                }
+                const existingUpgrades = deckUpgrades[card.id] || {};
+                const possibleEffects = this.getPossibleUpgrades(card, existingUpgrades);
+                const usedEffects = new Set();
+                choices.forEach(c => {
+                    if (c.cardId === card.id) usedEffects.add(c.subType);
+                });
+                const availableEffects = possibleEffects.filter(e => !usedEffects.has(e));
+                if (availableEffects.length === 0) continue;
 
-                const effect = possibleEffects[Math.floor(Math.random() * possibleEffects.length)];
+                const effect = availableEffects[Math.floor(Math.random() * availableEffects.length)];
                 const value = effect === 'manaReduction' ? 1 : (effect === 'extraHitBonus' ? 1 : 2);
                 const effectDesc = this.getUpgradeEffectDescription(effect).replace('X', value);
+                const previewCard = this.buildPreviewCard(card, effect, value);
 
                 choices.push({
                     type: 'upgrade_card',
                     subType: effect,
                     value: value,
-                    description: (targetCard.name || 'Card') + ': ' + effectDesc,
-                    card: targetCard,
-                    instanceId: targetCard.instanceId,
-                    icon: targetCard.art || '✨'
+                    description: effectDesc,
+                    card: card,
+                    previewCard: previewCard,
+                    cardId: card.id,
+                    icon: card.art || 'sparkle'
                 });
-                usedTypes.add('upgrade_card');
             }
         }
 
-        // Option 3: Bonus healing upgrade
-        if (!usedTypes.has('bonus_heal')) {
+        // Fallback: if still no choices, create generic choices
+        while (choices.length < 3 && arenaCards.length > 0) {
+            const card = arenaCards[Math.floor(Math.random() * arenaCards.length)];
             choices.push({
-                type: 'bonus_heal',
-                description: '+3 minimum between-round healing',
-                value: 3,
-                icon: '💚'
+                type: 'upgrade_card',
+                subType: 'damageBoost',
+                value: 2,
+                description: '+2 damage',
+                card: card,
+                previewCard: this.buildPreviewCard(card, 'damageBoost', 2),
+                cardId: card.id,
+                icon: card.art || 'sparkle'
             });
-            usedTypes.add('bonus_heal');
         }
 
-        // Shuffle and return up to 3
-        for (let i = choices.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [choices[i], choices[j]] = [choices[j], choices[i]];
-        }
         return choices.slice(0, 3);
+    }
+
+    static generatePhase2AddCardChoices(arenaCards, allSpells) {
+        const choices = [];
+        const usedCardIds = new Set(arenaCards.map(c => c.id));
+
+        // Shuffle all available spells for variety
+        const shuffled = [...allSpells];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+
+        // Prefer cards not already in deck
+        const notInDeck = shuffled.filter(s => !usedCardIds.has(s.id));
+        const pool = notInDeck.length > 0 ? notInDeck : shuffled;
+
+        // Pick unique cards (by id) up to 3 choices
+        const addedIds = new Set();
+        for (const spell of pool) {
+            if (choices.length >= 3) break;
+            if (addedIds.has(spell.id)) continue;
+            addedIds.add(spell.id);
+            choices.push({
+                type: 'add_card',
+                description: 'Add ' + spell.name + ' to your deck',
+                card: spell,
+                icon: spell.art || 'sparkle'
+            });
+        }
+
+        return choices;
     }
 
     static applyUpgradeChoice(arenaState, choice) {
@@ -153,8 +263,8 @@ class ArenaStateManager {
                 break;
             }
             case 'upgrade_card': {
-                if (!arenaState.deckUpgrades[choice.instanceId]) {
-                    arenaState.deckUpgrades[choice.instanceId] = {};
+                if (!arenaState.deckUpgrades[choice.cardId]) {
+                    arenaState.deckUpgrades[choice.cardId] = {};
                 }
                 const upgradeMap = {
                     damageBoost: 'damageBonus',
@@ -166,11 +276,7 @@ class ArenaStateManager {
                     extraHitBonus: 'extraHitBonus'
                 };
                 const key = upgradeMap[choice.subType] || choice.subType;
-                arenaState.deckUpgrades[choice.instanceId][key] = (arenaState.deckUpgrades[choice.instanceId][key] || 0) + choice.value;
-                break;
-            }
-            case 'bonus_heal': {
-                arenaState.minHealBonus = (arenaState.minHealBonus || 0) + choice.value;
+                arenaState.deckUpgrades[choice.cardId][key] = (arenaState.deckUpgrades[choice.cardId][key] || 0) + choice.value;
                 break;
             }
         }

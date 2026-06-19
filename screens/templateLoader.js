@@ -49,7 +49,8 @@ class TemplateLoader {
      */
     async loadHTML(htmlPath) {
         try {
-            const response = await fetch(htmlPath);
+            const cacheBuster = `?v=${Date.now()}`;
+            const response = await fetch(htmlPath + cacheBuster);
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
