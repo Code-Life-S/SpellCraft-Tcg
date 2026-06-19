@@ -617,7 +617,8 @@ class ArenaAdventureScreen extends BaseScreen {
             const targetText = targetEnemyId ? ' on enemy ' + targetEnemyId : '';
             this.addToHistory('Cast ' + card.name + targetText, true);
 
-            if (this.currentMana === 0 && this.isPlayerTurn && this.gameState === 'playing') {
+            const hasPlayableCards = this.playerHand.some(c => c.mana <= this.currentMana);
+            if (!hasPlayableCards && this.isPlayerTurn && this.gameState === 'playing') {
                 setTimeout(() => this.endPlayerTurn(), 800);
             }
         }, 400);
