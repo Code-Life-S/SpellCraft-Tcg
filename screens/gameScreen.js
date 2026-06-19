@@ -54,6 +54,7 @@ class GameScreen extends BaseScreen {
 
         // Load shared component CSS
         const componentCSS = [
+            'screens/components/spell-card/spellCardComponent.css',
             'screens/components/visual-effects/visualEffectsComponent.css',
             'screens/components/enemy-board/enemyBoardComponent.css',
             'screens/components/mulligan/mulligan.css'
@@ -1419,37 +1420,13 @@ class GameScreen extends BaseScreen {
     }
 
     createMulliganCardElement(card, index) {
-        const cardDiv = document.createElement('div');
-        cardDiv.className = `mulligan-card ${card.type} ${card.rarity}`;
+        const cardDiv = SpellCardComponent.createCardElement(card, {
+            baseClass: 'mulligan-card',
+            extraClasses: [card.type]
+        });
         cardDiv.dataset.cardId = card.id;
         cardDiv.dataset.handIndex = index;
         cardDiv.onclick = () => this.handleMulliganCardClick(cardDiv);
-
-        // Mana cost
-        const manaDiv = document.createElement('div');
-        manaDiv.className = 'card-mana';
-        manaDiv.textContent = card.mana;
-
-        // Card art
-        const artDiv = document.createElement('div');
-        artDiv.className = 'card-art';
-        artDiv.textContent = card.art;
-
-        // Card name
-        const nameDiv = document.createElement('div');
-        nameDiv.className = 'card-name';
-        nameDiv.textContent = card.name;
-
-        // Card text
-        const textDiv = document.createElement('div');
-        textDiv.className = 'card-text';
-        textDiv.textContent = card.text;
-
-        // Assemble card
-        cardDiv.appendChild(manaDiv);
-        cardDiv.appendChild(artDiv);
-        cardDiv.appendChild(nameDiv);
-        cardDiv.appendChild(textDiv);
 
         return cardDiv;
     }

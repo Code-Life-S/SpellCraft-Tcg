@@ -20,9 +20,7 @@ class PlayerHandComponent {
     }
 
     createCardElement(card, index, currentMana) {
-        const cardDiv = document.createElement('div');
-        const rarity = card.rarity || 'common';
-        cardDiv.className = 'card ' + rarity;
+        const cardDiv = SpellCardComponent.createCardElement(card);
         cardDiv.dataset.handIndex = index;
         cardDiv.dataset.instanceId = card.instanceId || '';
 
@@ -30,27 +28,6 @@ class PlayerHandComponent {
             cardDiv.style.opacity = '0.5';
             cardDiv.style.cursor = 'not-allowed';
         }
-
-        const manaDiv = document.createElement('div');
-        manaDiv.className = 'card-mana';
-        manaDiv.textContent = card.mana;
-
-        const artDiv = document.createElement('div');
-        artDiv.className = 'card-art';
-        artDiv.textContent = card.art;
-
-        const nameDiv = document.createElement('div');
-        nameDiv.className = 'card-name';
-        nameDiv.textContent = card.name;
-
-        const textDiv = document.createElement('div');
-        textDiv.className = 'card-text';
-        textDiv.textContent = card.text;
-
-        cardDiv.appendChild(manaDiv);
-        cardDiv.appendChild(artDiv);
-        cardDiv.appendChild(nameDiv);
-        cardDiv.appendChild(textDiv);
 
         return cardDiv;
     }

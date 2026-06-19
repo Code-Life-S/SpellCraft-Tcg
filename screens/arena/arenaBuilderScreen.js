@@ -23,6 +23,20 @@ class ArenaBuilderScreen extends BaseScreen {
             // Load HTML template from external file
             const html = await window.templateLoader.loadScreenTemplate('screens/arena', 'arenaBuilderScreen');
             this.element.innerHTML = html;
+
+            // Load shared component CSS
+            const componentCSS = [
+                'screens/components/spell-card/spellCardComponent.css'
+            ];
+            for (const cssPath of componentCSS) {
+                try {
+                    if (window.templateLoader && typeof window.templateLoader.loadCSS === 'function') {
+                        await window.templateLoader.loadCSS(cssPath, cssPath.replace(/[\/\.]/g, '-'));
+                    }
+                } catch (error) {
+                    console.warn('Failed to load component CSS:', error);
+                }
+            }
         } catch (error) {
             console.error('Failed to load arena builder template:', error);
             // Fallback to basic HTML if template loading fails
@@ -340,21 +354,13 @@ class ArenaBuilderScreen extends BaseScreen {
     renderCardChoices() {
         const choicesElement = this.element.querySelector('#card-choices');
         if (!choicesElement) return;
-        
+
         choicesElement.innerHTML = '';
-        
+
         this.currentChoices.forEach(card => {
-            const cardChoice = document.createElement('div');
-            cardChoice.className = 'card-choice';
-            cardChoice.innerHTML = `
-                <div class="card-choice-icon">${card.art}</div>
-                <div class="card-choice-name">${card.name}</div>
-                <div class="card-choice-mana">${card.mana} Mana</div>
-                <div class="card-choice-effect">${card.text}</div>
-            `;
-            
-            cardChoice.addEventListener('click', () => this.selectCard(card.id));
-            choicesElement.appendChild(cardChoice);
+            const cardEl = SpellCardComponent.createCardElement(card);
+            cardEl.addEventListener('click', () => this.selectCard(card.id));
+            choicesElement.appendChild(cardEl);
         });
     }
 

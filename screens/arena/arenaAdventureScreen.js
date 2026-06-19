@@ -1,11 +1,11 @@
 class ArenaAdventureScreen extends BaseScreen {
     // Enemy scaling constants (easy to tweak)
-    static ENEMY_BASE_COUNT = 2;
-    static ENEMY_COUNT_PER_ROUNDS = 3; // +1 enemy every N rounds
-    static ENEMY_BASE_HP = 2;
-    static ENEMY_HP_PER_ROUND = 0.8;
+    static ENEMY_BASE_COUNT = 1;
+    static ENEMY_COUNT_PER_ROUNDS = 4; // +1 enemy every N rounds
+    static ENEMY_BASE_HP = 1;
+    static ENEMY_HP_PER_ROUND = 0.5;
     static ENEMY_BASE_ATTACK = 1;
-    static ENEMY_ATTACK_PER_ROUND = 0.5;
+    static ENEMY_ATTACK_PER_ROUND = 0.3;
 
     constructor(screenManager) {
         super(screenManager);
@@ -43,6 +43,7 @@ class ArenaAdventureScreen extends BaseScreen {
 
         // Load shared component CSS
         const componentCSS = [
+            'screens/components/spell-card/spellCardComponent.css',
             'screens/components/visual-effects/visualEffectsComponent.css',
             'screens/components/enemy-board/enemyBoardComponent.css',
             'screens/components/mulligan/mulligan.css'
@@ -410,32 +411,11 @@ class ArenaAdventureScreen extends BaseScreen {
     }
 
     createMulliganCardElement(card, index) {
-        const div = document.createElement('div');
-        div.className = 'mulligan-card ' + (card.rarity || 'common');
+        const div = SpellCardComponent.createCardElement(card, {
+            baseClass: 'mulligan-card'
+        });
         div.dataset.handIndex = index;
         div.onclick = () => this.handleMulliganCardClick(div);
-
-        const mana = document.createElement('div');
-        mana.className = 'card-mana';
-        mana.textContent = card.mana;
-
-        const art = document.createElement('div');
-        art.className = 'card-art';
-        art.textContent = card.art;
-
-        const name = document.createElement('div');
-        name.className = 'card-name';
-        name.textContent = card.name;
-
-        const text = document.createElement('div');
-        text.className = 'card-text';
-        text.textContent = card.text;
-
-        div.appendChild(mana);
-        div.appendChild(art);
-        div.appendChild(name);
-        div.appendChild(text);
-
         return div;
     }
 

@@ -8,3 +8,5 @@ There will be three choices between upgrades. CHoices can be - for example - a n
 C'est mieux mais en mode arène il y a deux fois le tour 1.
 Je vois parfois des attaques d'ennemis qui n'existent pas s'afficher, des effets de particules se jouaient alors que les cartes correspondances n'ont pas été jouées.Peux-tu vérifier s'il n'y a pas un problème ?
 Je préfère que l'on supprime certains des messages qui s'affichent : Quand un ennemi attaque pour faire X dégâts, ce n'est pas intéressant d'afficher cela. Idem pour les messages des sorts qui font des dégats, soignent, ect.. pas besoin d'afficher ces messages.
+
+J'ai remarqué que l'affichage des cartes dans la création de deck n'est pas affiché de la même façon que sur les autres écrans. J'aimerais que les cartes affichées dans le deck builder aient le même affichage qu'ailleurs.

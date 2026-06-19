@@ -765,7 +765,6 @@ class MainMenuScreen extends BaseScreen {
         overlay.querySelector('#confirm-deck-selection').addEventListener('click', async () => {
             if (selectedDeckId) {
                 document.body.removeChild(overlay);
-                this.showMessage('Starting adventure...', 'info', 1000);
                 
                 // Navigate to game with selected deck
                 await this.navigateTo('game', { deckId: selectedDeckId });

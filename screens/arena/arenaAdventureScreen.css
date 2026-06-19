@@ -284,58 +284,6 @@
     100% { transform: translateY(0) scale(0.9); opacity: 0; }
 }
 
-/* Card Elements - full size */
-.player-hand .card .card-mana {
-    position: absolute;
-    top: -8px;
-    left: -8px;
-    width: 35px;
-    height: 35px;
-    background: radial-gradient(circle, #4169E1, #191970);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-size: 18px;
-    color: white;
-    border: 3px solid #FFD700;
-    z-index: 2;
-}
-
-.player-hand .card .card-art {
-    width: 110px;
-    height: 80px;
-    margin: 30px auto 8px;
-    background: linear-gradient(45deg, #87CEEB, #4682B4);
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 32px;
-    border: 2px solid #333;
-}
-
-.player-hand .card .card-name {
-    text-align: center;
-    font-size: 14px;
-    font-weight: bold;
-    color: #333;
-    margin: 5px 8px;
-}
-
-.player-hand .card .card-text {
-    text-align: center;
-    font-size: 11px;
-    color: #555;
-    margin: 0 8px 8px;
-    line-height: 1.3;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
 /* Player Info */
 .player-info {
     display: flex;
@@ -727,35 +675,6 @@
     .main-game-area .left-sidebar, 
     .main-game-area .right-sidebar {
         width: 180px;
-    }
-}
-
-@media (max-width: 1200px) {
-    .player-hand .card {
-        width: 120px;
-        height: 170px;
-    }
-
-    .player-hand .card .card-art {
-        width: 90px;
-        height: 65px;
-        font-size: 28px;
-        margin: 25px auto 6px;
-    }
-
-    .player-hand .card .card-mana {
-        width: 30px;
-        height: 30px;
-        font-size: 16px;
-    }
-
-    .player-hand .card .card-name {
-        font-size: 12px;
-    }
-
-    .player-hand .card .card-text {
-        font-size: 10px;
-        height: 35px;
     }
 }
 

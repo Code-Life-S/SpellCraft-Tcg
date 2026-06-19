@@ -26,6 +26,20 @@ class DeckBuilderScreen extends BaseScreen {
             const html = await window.templateLoader.loadScreenTemplate('screens/deckbuilder', 'deckBuilderScreen');
             this.element.innerHTML = html;
 
+            // Load shared component CSS
+            const componentCSS = [
+                'screens/components/spell-card/spellCardComponent.css'
+            ];
+            for (const cssPath of componentCSS) {
+                try {
+                    if (window.templateLoader && typeof window.templateLoader.loadCSS === 'function') {
+                        await window.templateLoader.loadCSS(cssPath, cssPath.replace(/[\/\.]/g, '-'));
+                    }
+                } catch (error) {
+                    console.warn('Failed to load component CSS:', error);
+                }
+            }
+
             // Initialize card manager
             this.cardManager = new CardManager();
             await this.cardManager.loadCards();
@@ -141,7 +155,7 @@ class DeckBuilderScreen extends BaseScreen {
             this.element.querySelector('.spell-grid'),
             'click',
             (e) => {
-                const spellCard = e.target.closest('.spell-card');
+                const spellCard = e.target.closest('.card');
                 if (spellCard) {
                     this.handleSpellCardClick(spellCard);
                 }
@@ -255,21 +269,25 @@ class DeckBuilderScreen extends BaseScreen {
         });
 
         // Generate spell cards HTML
-        spellGrid.innerHTML = filteredSpells.map(spell => {
+        spellGrid.innerHTML = '';
+        filteredSpells.forEach(spell => {
             const countInDeck = deckCardCounts[spell.id] || 0;
             const isMaxed = countInDeck >= 2;
-            const hasInDeck = countInDeck > 0;
-            
-            return `
-                <div class="spell-card ${isMaxed ? 'disabled' : ''}" data-spell-id="${spell.id}" title="${spell.text}">
-                    <div class="spell-art">${spell.art}</div>
-                    <div class="spell-mana">${spell.mana}</div>
-                    <div class="spell-name">${spell.name}</div>
-                    <div class="spell-rarity ${spell.rarity}"></div>
-                    ${hasInDeck ? `<div class="card-count-indicator">${countInDeck}/2</div>` : ''}
-                </div>
-            `;
-        }).join('');
+
+            const cardEl = SpellCardComponent.createCardElement(spell, {
+                disabled: isMaxed
+            });
+            cardEl.dataset.spellId = spell.id;
+
+            if (countInDeck > 0) {
+                const badge = document.createElement('div');
+                badge.className = 'card-count-indicator';
+                badge.textContent = countInDeck + '/2';
+                cardEl.appendChild(badge);
+            }
+
+            spellGrid.appendChild(cardEl);
+        });
     }
 
     updateDeckCardsList() {
