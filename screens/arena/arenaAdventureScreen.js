@@ -34,10 +34,6 @@ class ArenaAdventureScreen extends BaseScreen {
 
     async setupContent() {
         try {
-            // Clear template cache to ensure fresh HTML on each init
-            if (window.templateLoader) {
-                window.templateLoader.clearCache();
-            }
             const html = await window.templateLoader.loadScreenTemplate('screens/arena', 'arenaAdventureScreen');
             this.element.innerHTML = html;
         } catch (error) {
