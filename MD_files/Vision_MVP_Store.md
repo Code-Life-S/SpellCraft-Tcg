@@ -6,20 +6,57 @@ Date: 20 Juin 2026
 
 ## Modele economique
 
-**Hybride, inspire de Fortnite/Valorant/Balatro :**
+**2 phases selon la plateforme :**
 
-- **Jeu payant sur Steam (~8-10$)** avec demo gratuite (3-5 premieres vagues)
-- **IAP cosmetiques uniquement** :
-  - Dos de cartes (Cuir, Or, Cristal, Obsidienne, Themes saisonniers)
-  - Plateaux de jeu (Bibliotheque, Caverne, Temple, Arenes)
-  - Effets de particules (Feux d'artifice, Etoiles, Ombres)
-  - Skins de heros
-  - Packs de musiques alternatives
-- **Gacha leger cosmetique** ("Parchemins anciens") : gagnes en jouant ou achetes. Donne des cosmetiques aleatoires. Zero pay-to-win.
-- **Pas de cartes de jeu dans le gacha** -- tout se debloque en jouant (XP/paliers/succes)
-- **Publicites : non** (jeu payant + IAP, la pub tuerait l'experience)
+### Phase 1 - Steam (MVP ~3-6 mois)
 
-### Plateformes (ordre de priorite)
+**Jeu de base payant (~8-10$)** avec demo gratuite (3 premieres vagues).
+
+Contenu du jeu de base :
+- 3 classes : Pyromancien, Cryomancien, Necromancien
+- Campagne 10 vagues + boss final
+- Mode sans fin (post-campagne)
+- Toutes les cartes de base deblocables en jouant (XP/paliers)
+
+**DLC (vente additionnelle) :**
+- DLC "Maitres de l'Arcane" (~4-5$) : 4 classes (Tempetier, Archimage, Ombrelumiere, Elementaliste) + 1 boss + 5-10 cartes
+- DLC "Heros Legendaires" (~6-7$) : 2 classes avancees + boss bonus + cartes
+- Pack "Collection Complete" (~10-12$)
+
+Alternative : classes vendues a l'unite (~2$ chacune) + pack bundle.
+
+**IAP cosmetiques :**
+- Dos de cartes (Cuir, Or, Cristal, Obsidienne, Themes saisonniers)
+- Plateaux de jeu (Bibliotheque, Caverne, Temple, Arenes)
+- Effets de particules (Feux d'artifice, Etoiles, Ombres)
+- Skins de heros
+- Packs de musiques alternatives
+
+**Gacha leger cosmetique** ("Parchemins anciens") :
+- Gagnes en jouant ou achetes
+- Donne des cosmetiques aleatoires (dos, plateau, effet)
+- Zero pay-to-win
+
+**Pas de publicites** (jeu payant + IAP, la pub tuerait l'experience)
+
+### Phase 2 - Mobile (post-MVP ~6-12 mois)
+
+**Free-to-play** avec rotation de classes (inspire League of Legends).
+
+- 3 classes gratuites permanentes (Pyromancien, Cryomancien, Necromancien)
+- 1 classe en rotation gratuite chaque semaine
+- Acheter une classe permanente : ~2$ (ou deblocage par temps de jeu)
+- Pack "Toutes les classes" : ~10-12$
+- Memes cosmetiques IAP que la version Steam (transferables si compte unifie)
+- Meme gacha leger cosmetique
+
+Note : Avoir le jeu payant sur Steam mais gratuit sur mobile n'est pas derangeant.
+- Les joueurs PC sont habitues a payer sur Steam
+- Les joueurs mobiles sont habitues au F2P
+- Les deux audiences ne se chevauchent que partiellement
+- Exemples reussis : Dead Cells, Minecraft
+
+### Plateauformes (ordre de priorite)
 
 1. **Steam** (PC) -- MVP dans 3-6 mois
 2. **Mobile** (Play Store / App Store) -- portage 6-12 mois plus tard
@@ -175,8 +212,11 @@ Ajouter 2-3 boss pour le MVP. Mecaniques uniques, phases, defi memorable.
 
 ### Phase 1 (1-2 mois) : Coeur du jeu
 - Campagne lineaire (10 vagues + boss final)
-- Ennemis avec capacites (4 types)
-- 2 boss
+- Ennemis avec capacites (4-5 types)
+- 2 boss avec mecaniques uniques
+- **Systeme de classes** : 3 classes de base (Pyromancien, Cryomancien, Necromancien)
+  - Chaque classe : passif + 3 cartes de classe
+  - Selection de classe avant chaque run
 - Progression XP + deblocage de cartes
 - Succes / Hauts-faits
 
@@ -185,17 +225,20 @@ Ajouter 2-3 boss pour le MVP. Mecaniques uniques, phases, defi memorable.
 - Mode sans fin (post-campagne)
 - 1 boss supplementaire
 - Defi quotidien
+- 2 classes supplementaires (Tempetier, Archimage)
 
 ### Phase 3 (1-2 mois) : Polish & Store
 - Sons IA / libres de droits
 - Page Steam (capsule, trailer, screenshots)
-- Demo gratuite
+- Demo gratuite (3 premieres vagues)
 - Build final + bugfix
+- DLC prets pour le lancement (classes restantes en packs)
 
 ### Post-MVP (apres sortie Steam)
-- Portage mobile
+- Portage mobile (F2P avec rotation de classes)
 - Gacha cosmetique "Parchemins anciens"
 - Nouvelles campagnes / boss
+- Evenements temporaires (Double Classe, Boss de la Semaine, etc.)
 - Mode Aventure (choix de chemin, optionnel)
 
 ---
@@ -204,6 +247,7 @@ Ajouter 2-3 boss pour le MVP. Mecaniques uniques, phases, defi memorable.
 
 - **Chill, fun, addictif, sans prise de tete** -- le joueur lance une partie et joue immediatement
 - **Pas de pay-to-win** -- tout le contenu de jeu se debloque en jouant
+- **Classes comme pilier de rejouabilite** -- chaque classe offre un style de jeu different, encourage a toutes les essayer
 - **Le cosmetique est la seule monnaie reelle** (hors prix du jeu sur Steam)
-- **Rejouabilite** par la variete (cartes, ennemis, boss, seed) et la progression (succes, XP, defi quotidien)
+- **Rejouabilite** par la variete (classes, cartes, ennemis, boss, seed) et la progression (succes, XP, defi quotidien)
 - **Mobile-friendly** en tete pour le code (responsive, touch), mais adaptation mobile apres la sortie Steam
