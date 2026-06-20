@@ -43,6 +43,12 @@ class ArenaStateManager {
         const hits = card.hits || 0;
 
         const parts = [];
+        if (card.lifesteal) {
+            parts.push('Lifesteal');
+        }
+        if (card.element === 'frost') {
+            parts.push('Freeze');
+        }
         if (damage > 0) {
             if (card.targetType === 'all') {
                 parts.push(damage + ' damage to All');

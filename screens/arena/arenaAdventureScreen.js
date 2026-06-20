@@ -691,7 +691,7 @@ class ArenaAdventureScreen extends BaseScreen {
                 if (targetEnemyId) {
                     const enemyEl = this.element.querySelector(`[data-enemy-id="${targetEnemyId}"]`);
                     this.visualEffects.createSpellImpact(enemyEl, spellType);
-                    this.applyDamageWithElement(targetEnemyId, card.damage || 0, spellType);
+                    this.applyDamageWithElement(targetEnemyId, card.damage || 0, card.element || spellType);
                     if (card.lifesteal && card.damage > 0) {
                         this.applyLifesteal(card.damage);
                     }
@@ -706,7 +706,7 @@ class ArenaAdventureScreen extends BaseScreen {
                         if (guard()) return;
                         const enemyEl = this.element.querySelector(`[data-enemy-id="${enemy.id}"]`);
                         this.visualEffects.createSpellImpact(enemyEl, spellType);
-                        this.applyDamageWithElement(enemy.id, card.damage || 0, spellType);
+                        this.applyDamageWithElement(enemy.id, card.damage || 0, card.element || spellType);
                     }, i * 150);
                     totalLifestealAll += Math.min(card.damage || 0, enemy.health);
                 });
@@ -727,7 +727,7 @@ class ArenaAdventureScreen extends BaseScreen {
                             const target = alive[Math.floor(Math.random() * alive.length)];
                             const enemyEl = this.element.querySelector(`[data-enemy-id="${target.id}"]`);
                             this.visualEffects.createSpellImpact(enemyEl, spellType);
-                            this.applyDamageWithElement(target.id, card.damage || 1, spellType);
+                            this.applyDamageWithElement(target.id, card.damage || 1, card.element || spellType);
                             totalLifestealRandom += Math.min(card.damage || 1, target.health);
                         }
                     }, i * 200);
@@ -739,7 +739,7 @@ class ArenaAdventureScreen extends BaseScreen {
                         const target = this.enemies[Math.floor(Math.random() * this.enemies.length)];
                         const enemyEl = this.element.querySelector(`[data-enemy-id="${target.id}"]`);
                         this.visualEffects.createSpellImpact(enemyEl, spellType);
-                        this.applyDamageWithElement(target.id, card.damage, spellType);
+                        this.applyDamageWithElement(target.id, card.damage, card.element || spellType);
                     }
                 }
                 if (card.healing) {

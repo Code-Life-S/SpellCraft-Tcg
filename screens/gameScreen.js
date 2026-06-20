@@ -800,7 +800,7 @@ class GameScreen extends BaseScreen {
                     const enemy = this.enemies.find(e => e.id === targetEnemyId);
                     const enemyEl = this.element.querySelector(`[data-enemy-id="${targetEnemyId}"]`);
                     this.visualEffects.createSpellImpact(enemyEl, spellType);
-                    this.applyDamageWithElement(targetEnemyId, card.damage, spellType);
+                    this.applyDamageWithElement(targetEnemyId, card.damage, card.element || spellType);
                     if (enemy) {
                         this.addToHistory(`${card.art} - ${card.damage} ${enemy.art}`, true);
                     }
@@ -828,7 +828,7 @@ class GameScreen extends BaseScreen {
                     setTimeout(() => {
                         const enemyEl = this.element.querySelector(`[data-enemy-id="${enemy.id}"]`);
                         this.visualEffects.createSpellImpact(enemyEl, spellType);
-                        this.applyDamageWithElement(enemy.id, card.damage, spellType);
+                        this.applyDamageWithElement(enemy.id, card.damage, card.element || spellType);
                         // Play impact sounds with slight delay
                         setTimeout(() => {
                             this.soundManager?.playSpellSound(card.id, 'impact');
@@ -882,7 +882,7 @@ class GameScreen extends BaseScreen {
                             }
                             
                             // Damage enemy but skip automatic death history
-                            this.applyDamageWithElement(randomEnemy.id, card.damage, spellType, true);
+                            this.applyDamageWithElement(randomEnemy.id, card.damage, card.element || spellType, true);
                             totalLifestealDamage += Math.min(card.damage, (enemy ? enemy.health : card.damage));
                             this.soundManager?.playSpellSound(card.id, 'impact');
                         }

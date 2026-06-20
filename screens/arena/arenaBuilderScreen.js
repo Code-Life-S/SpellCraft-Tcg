@@ -112,8 +112,9 @@ class ArenaBuilderScreen extends BaseScreen {
         if (this.chosenClassId) {
             ClassManager.setActiveClass(this.chosenClassId);
         }
-        // Generate initial choices if arena is fresh
-        if (this.arenaCards.length === 0 && (!this.currentChoices || this.currentChoices.length === 0)) {
+        // Regenerate choices on fresh arena with correct class
+        if (this.arenaCards.length === 0) {
+            this.currentChoices = [];
             this.generateNewChoices();
             this.updateUI();
         }
