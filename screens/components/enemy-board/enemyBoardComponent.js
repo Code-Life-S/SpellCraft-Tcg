@@ -59,6 +59,7 @@ class EnemyBoardComponent {
             const el = this.createEnemyElement(enemy);
             this.container.appendChild(el);
         });
+        this.updateAllStatusOverlays(enemies);
     }
 
     updateEnemyHealth(enemyId, health, maxHealth) {

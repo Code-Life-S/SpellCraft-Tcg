@@ -999,7 +999,6 @@ class GameScreen extends BaseScreen {
             if (ElementalReactionsManager.shouldSkipAttack(enemy)) {
                 attackIndex++;
                 this.addToHistory(STATUS_EFFECTS.frozen.icon + ' ' + enemy.name + ' is frozen and cannot attack!', false);
-                ElementalReactionsManager.removeStatus(enemy, 'frozen');
                 this.enemyBoard.updateStatusOverlay(enemy.id, enemy);
                 this.updateUI();
                 return;

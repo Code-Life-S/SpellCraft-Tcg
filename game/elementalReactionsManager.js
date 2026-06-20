@@ -108,13 +108,15 @@ class ElementalReactionsManager {
             const effectDef = STATUS_EFFECTS[type];
             if (!effectDef) continue;
 
+            effect.duration--;
+
             if (effectDef.onTurnStart === 'skipAttack') {
                 continue;
-            } else if (effectDef.onTurnStart && effectDef.onTurnStart.damage) {
-                damage += effectDef.onTurnStart.damage;
             }
 
-            effect.duration--;
+            if (effectDef.onTurnStart && effectDef.onTurnStart.damage && effect.duration > 0) {
+                damage += effectDef.onTurnStart.damage;
+            }
         }
 
         this.cleanupExpired(enemy);

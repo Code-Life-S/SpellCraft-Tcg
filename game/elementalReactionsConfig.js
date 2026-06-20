@@ -4,15 +4,15 @@ const STATUS_EFFECTS = {
     frozen: {
         name: 'Frozen',
         icon: '❄️',
-        duration: 1,
+        duration: 2,
         onTurnStart: 'skipAttack',
-        description: 'Skips next attack',
+        description: 'Skips next attack, lasts through player turn',
         visualClass: 'status-frozen'
     },
     burning: {
         name: 'Burning',
         icon: '🔥',
-        duration: 2,
+        duration: 3,
         onTurnStart: { damage: 1 },
         description: 'Takes 1 damage at start of turn',
         visualClass: 'status-burning'
@@ -20,9 +20,8 @@ const STATUS_EFFECTS = {
     shocked: {
         name: 'Shocked',
         icon: '⚡',
-        duration: null,
-        onHit: { bonusDamage: 2 },
-        description: 'Takes +2 damage from next hit',
+        duration: 2,
+        description: 'Lasts through player turn, removed after 1 enemy turn',
         visualClass: 'status-shocked'
     }
 };

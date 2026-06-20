@@ -818,7 +818,6 @@ class ArenaAdventureScreen extends BaseScreen {
             // Skip frozen enemies
             if (ElementalReactionsManager.shouldSkipAttack(enemy)) {
                 this.addToHistory(STATUS_EFFECTS.frozen.icon + ' ' + enemy.name + ' is frozen and cannot attack!', false);
-                ElementalReactionsManager.removeStatus(enemy, 'frozen');
                 this.enemyBoard.updateStatusOverlay(enemy.id, enemy);
                 this.updateUI();
                 setTimeout(doNextAttack, 350);
