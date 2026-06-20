@@ -359,7 +359,8 @@ class GameScreen extends BaseScreen {
                 art: enemyType.art,
                 health: enemyType.health,
                 maxHealth: enemyType.health,
-                attack: enemyType.attack
+                attack: enemyType.attack,
+                ability: typeof getRandomAbilityChance === 'function' ? getRandomAbilityChance() : null
             });
         }
         
@@ -651,21 +652,39 @@ class GameScreen extends BaseScreen {
 
     handleEnemyClick(enemyElement) {
         if (this.selectedCard && (this.selectedCard.targetType === 'single')) {
-            const enemyId = parseInt(enemyElement.dataset.enemyId);
-            this.enemyBoard.addTargetSelectionEffect(enemyId);
+            var enemyId = parseInt(enemyElement.dataset.enemyId);
             
-            // Disable targeting and clear selection
+            if (typeof hasActiveProvoker === 'function' && hasActiveProvoker(this.enemies)) {
+                var provoker = this.enemies.find(function(e) {
+                    return e.ability === 'provoke' && !e.isDying && e.health > 0;
+                });
+                if (provoker && enemyId !== provoker.id) {
+                    this.showMessage('This enemy is protected by Provocation!');
+                    return;
+                }
+            }
+            
+            this.enemyBoard.addTargetSelectionEffect(enemyId);
             this.disableEnemyTargeting();
             this.playerHandComp.deselectAll();
             
-            // Cast spell with slight delay for visual feedback
-            setTimeout(() => {
+            setTimeout(function() {
                 this.castSpell(this.selectedCard, this.selectedCardIndex, enemyId);
-            }, 200);
+            }.bind(this), 200);
         }
     }
 
     enableEnemyTargeting() {
+        if (typeof hasActiveProvoker === 'function' && hasActiveProvoker(this.enemies)) {
+            var provoker = this.enemies.find(function(e) {
+                return e.ability === 'provoke' && !e.isDying && e.health > 0;
+            });
+            if (provoker) {
+                this.enemyBoard.enableTargetingForEnemy(provoker.id);
+                this.showTargetingInstruction('This enemy has Provocation! Target it first!');
+                return;
+            }
+        }
         this.enemyBoard.enableTargeting();
     }
 
@@ -907,6 +926,10 @@ class GameScreen extends BaseScreen {
             this.enemyBoard.addDamageEffect(enemyId);
             enemy.health -= damage;
             
+            if (typeof checkAndTriggerEnrage === 'function' && checkAndTriggerEnrage(enemy)) {
+                this.addToHistory(enemy.art + ' ' + enemy.name + ' is ENRAGED! +2 ATK', false);
+            }
+            
             if (enemy.health <= 0) {
                 this.soundManager?.play('enemy_death');
                 enemy.isDying = true;
@@ -978,11 +1001,42 @@ class GameScreen extends BaseScreen {
         });
     }
 
+    processEnemyAbilities() {
+        var _this = this;
+        var healers = this.enemies.filter(function(e) {
+            return e.ability === 'healer' && !e.isDying && e.health > 0;
+        });
+        healers.forEach(function(healer) {
+            var target = typeof getBestHealTarget === 'function' ? getBestHealTarget(_this.enemies) : null;
+            if (target && target.health < target.maxHealth) {
+                target.health = Math.min(target.maxHealth, target.health + 2);
+                _this.addToHistory(healer.art + ' ' + healer.name + ' heals ' + target.name + ' for 2', false);
+                _this.enemyBoard.updateStatusOverlay(target.id, target);
+            }
+        });
+        var summoners = this.enemies.filter(function(e) {
+            return e.ability === 'summoner' && !e.isDying && e.health > 0;
+        });
+        summoners.forEach(function(summoner) {
+            if (typeof createSummonMinion === 'function') {
+                var minion = createSummonMinion(_this.enemyIdCounter);
+                _this.enemyIdCounter++;
+                _this.enemies.push(minion);
+                _this.addToHistory(summoner.art + ' ' + summoner.name + ' summons a ' + minion.name, false);
+            }
+        });
+        if (healers.length > 0 || summoners.length > 0) {
+            this.renderEnemies();
+        }
+    }
+
     enemyAttackPhase() {
         if (this.enemies.length === 0) {
             this.checkGameEnd();
             return;
         }
+        
+        this.enemies.forEach(function(e) { delete e.canAttack; });
 
         this.processEnemyStatusEffects();
 
@@ -990,11 +1044,17 @@ class GameScreen extends BaseScreen {
         const attackInterval = setInterval(() => {
             if (attackIndex >= this.enemies.length) {
                 clearInterval(attackInterval);
+                this.processEnemyAbilities();
                 this.startNewTurn();
                 return;
             }
 
-            const enemy = this.enemies[attackIndex];
+            var enemy = this.enemies[attackIndex];
+
+            if (enemy.canAttack === false) {
+                attackIndex++;
+                return;
+            }
 
             // Skip frozen enemies
             if (ElementalReactionsManager.shouldSkipAttack(enemy)) {

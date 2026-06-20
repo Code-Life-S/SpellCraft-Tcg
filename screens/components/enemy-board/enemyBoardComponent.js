@@ -27,6 +27,13 @@ class EnemyBoardComponent {
         nameDiv.className = 'enemy-name';
         nameDiv.textContent = enemy.name;
 
+        var abilityDiv = null;
+        if (enemy.ability && window.ENEMY_ABILITIES && window.ENEMY_ABILITIES[enemy.ability]) {
+            abilityDiv = document.createElement('div');
+            abilityDiv.className = 'enemy-ability';
+            abilityDiv.textContent = window.ENEMY_ABILITIES[enemy.ability].icon;
+        }
+
         const statsDiv = document.createElement('div');
         statsDiv.className = 'enemy-stats';
 
@@ -46,6 +53,7 @@ class EnemyBoardComponent {
 
         enemyDiv.appendChild(artDiv);
         enemyDiv.appendChild(nameDiv);
+        if (abilityDiv) enemyDiv.appendChild(abilityDiv);
         enemyDiv.appendChild(statsDiv);
         enemyDiv.appendChild(statusDiv);
 
@@ -90,6 +98,16 @@ class EnemyBoardComponent {
         this.container.querySelectorAll('.enemy').forEach(enemy => {
             enemy.classList.remove('targetable');
         });
+    }
+
+    enableTargetingForEnemy(enemyId) {
+        this.container.querySelectorAll('.enemy').forEach(enemy => {
+            enemy.classList.remove('targetable');
+        });
+        const el = this.container.querySelector(this.getEnemySelector(enemyId));
+        if (el) {
+            el.classList.add('targetable');
+        }
     }
 
     addDamageEffect(enemyId) {

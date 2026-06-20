@@ -298,7 +298,8 @@ class ArenaAdventureScreen extends BaseScreen {
                 health: baseHp,
                 maxHealth: baseHp,
                 attack: baseAttack,
-                isDying: false
+                isDying: false,
+                ability: typeof getAbilityForRound === 'function' ? getAbilityForRound(round) : null
             });
         }
     }
@@ -580,6 +581,16 @@ class ArenaAdventureScreen extends BaseScreen {
         if (card.targetType === 'self' || card.targetType === 'all' || card.targetType === 'random') {
             this.castSpell(card, handIndex);
         } else {
+            if (typeof hasActiveProvoker === 'function' && hasActiveProvoker(this.enemies)) {
+                var provoker = this.enemies.find(function(e) {
+                    return e.ability === 'provoke' && !e.isDying && e.health > 0;
+                });
+                if (provoker) {
+                    this.enemyBoard.enableTargetingForEnemy(provoker.id);
+                    this.showMessage('This enemy has Provocation! Target it first!');
+                    return;
+                }
+            }
             this.enemyBoard.enableTargeting();
         }
     }
@@ -587,7 +598,18 @@ class ArenaAdventureScreen extends BaseScreen {
     handleEnemyClick(enemyEl) {
         if (!this.selectedCard || this.selectedCard.targetType !== 'single') return;
 
-        const enemyId = parseInt(enemyEl.dataset.enemyId);
+        var enemyId = parseInt(enemyEl.dataset.enemyId);
+
+        if (typeof hasActiveProvoker === 'function' && hasActiveProvoker(this.enemies)) {
+            var provoker = this.enemies.find(function(e) {
+                return e.ability === 'provoke' && !e.isDying && e.health > 0;
+            });
+            if (provoker && enemyId !== provoker.id) {
+                this.showMessage('This enemy is protected by Provocation!');
+                return;
+            }
+        }
+
         this.enemyBoard.disableTargeting();
         this.playerHandComp.deselectAll();
 
@@ -740,6 +762,11 @@ class ArenaAdventureScreen extends BaseScreen {
         this.enemyBoard.addDamageEffect(enemyId);
 
         enemy.health -= damage;
+
+        if (typeof checkAndTriggerEnrage === 'function' && checkAndTriggerEnrage(enemy)) {
+            this.addToHistory(enemy.art + ' ' + enemy.name + ' is ENRAGED! +2 ATK', false);
+        }
+
         if (enemy.health <= 0) {
             enemy.isDying = true;
             this.soundManager?.play('enemy_death');
@@ -797,7 +824,38 @@ class ArenaAdventureScreen extends BaseScreen {
         });
     }
 
+    processEnemyAbilities() {
+        var _this = this;
+        var healers = this.enemies.filter(function(e) {
+            return e.ability === 'healer' && !e.isDying && e.health > 0;
+        });
+        healers.forEach(function(healer) {
+            var target = typeof getBestHealTarget === 'function' ? getBestHealTarget(_this.enemies) : null;
+            if (target && target.health < target.maxHealth) {
+                target.health = Math.min(target.maxHealth, target.health + 2);
+                _this.addToHistory(healer.art + ' ' + healer.name + ' heals ' + target.name + ' for 2', false);
+                _this.enemyBoard.updateStatusOverlay(target.id, target);
+            }
+        });
+        var summoners = this.enemies.filter(function(e) {
+            return e.ability === 'summoner' && !e.isDying && e.health > 0;
+        });
+        summoners.forEach(function(summoner) {
+            if (typeof createSummonMinion === 'function') {
+                var minion = createSummonMinion(_this.enemyIdCounter);
+                _this.enemyIdCounter++;
+                _this.enemies.push(minion);
+                _this.addToHistory(summoner.art + ' ' + summoner.name + ' summons a ' + minion.name, false);
+            }
+        });
+        if (healers.length > 0 || summoners.length > 0) {
+            this.renderEnemies();
+        }
+    }
+
     enemyAttackPhase() {
+        this.enemies.forEach(function(e) { delete e.canAttack; });
+        
         this.processEnemyStatusEffects();
 
         const aliveEnemies = this.enemies.filter(e => !e.isDying);
@@ -806,14 +864,20 @@ class ArenaAdventureScreen extends BaseScreen {
             return;
         }
 
-        let attackIndex = 0;
+        var attackIndex = 0;
         const doNextAttack = () => {
             if (attackIndex >= aliveEnemies.length || this.gameState !== 'playing') {
+                this.processEnemyAbilities();
                 this.startPlayerTurn();
                 return;
             }
-            const enemy = aliveEnemies[attackIndex];
+            var enemy = aliveEnemies[attackIndex];
             attackIndex++;
+
+            if (enemy.canAttack === false) {
+                setTimeout(doNextAttack, 350);
+                return;
+            }
 
             // Skip frozen enemies
             if (ElementalReactionsManager.shouldSkipAttack(enemy)) {
