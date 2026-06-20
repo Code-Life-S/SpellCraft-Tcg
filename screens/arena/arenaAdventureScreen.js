@@ -692,11 +692,15 @@ class ArenaAdventureScreen extends BaseScreen {
                     const enemyEl = this.element.querySelector(`[data-enemy-id="${targetEnemyId}"]`);
                     this.visualEffects.createSpellImpact(enemyEl, spellType);
                     this.applyDamageWithElement(targetEnemyId, card.damage || 0, spellType);
+                    if (card.lifesteal && card.damage > 0) {
+                        this.applyLifesteal(card.damage);
+                    }
                 }
                 break;
             case 'all':
                 const battlefieldEl = this.element.querySelector('.game-board');
                 this.visualEffects.createScreenShake(battlefieldEl);
+                var totalLifestealAll = 0;
                 [...this.enemies].forEach((enemy, i) => {
                     setTimeout(() => {
                         if (guard()) return;
@@ -704,9 +708,17 @@ class ArenaAdventureScreen extends BaseScreen {
                         this.visualEffects.createSpellImpact(enemyEl, spellType);
                         this.applyDamageWithElement(enemy.id, card.damage || 0, spellType);
                     }, i * 150);
+                    totalLifestealAll += Math.min(card.damage || 0, enemy.health);
                 });
+                if (card.lifesteal && totalLifestealAll > 0) {
+                    var selfAll = this;
+                    setTimeout(function() {
+                        selfAll.applyLifesteal(totalLifestealAll);
+                    }, this.enemies.length * 150 + 100);
+                }
                 break;
             case 'random':
+                var totalLifestealRandom = 0;
                 for (let i = 0; i < (card.hits || 3); i++) {
                     setTimeout(() => {
                         if (guard()) return;
@@ -716,6 +728,7 @@ class ArenaAdventureScreen extends BaseScreen {
                             const enemyEl = this.element.querySelector(`[data-enemy-id="${target.id}"]`);
                             this.visualEffects.createSpellImpact(enemyEl, spellType);
                             this.applyDamageWithElement(target.id, card.damage || 1, spellType);
+                            totalLifestealRandom += Math.min(card.damage || 1, target.health);
                         }
                     }, i * 200);
                 }
@@ -753,6 +766,15 @@ class ArenaAdventureScreen extends BaseScreen {
             this.currentMana = Math.min(this.currentMana + card.manaBoost, 10);
             this.updateUI();
         }
+    }
+
+    applyLifesteal(amount) {
+        this.arenaState.playerHealth = Math.min(this.arenaState.maxHealth, this.arenaState.playerHealth + amount);
+        var heroEl = this.element.querySelector('.hero-portrait');
+        if (heroEl) {
+            this.visualEffects.showHealingNumber(heroEl, amount);
+        }
+        this.updateUI();
     }
 
     applyDamageWithElement(enemyId, baseDamage, elementType) {
@@ -824,7 +846,9 @@ class ArenaAdventureScreen extends BaseScreen {
         }
 
         if (enemy.health <= 0) {
-            this.arenaState.playerHealth = ClassManager.onEnemyDeath(this.arenaState.playerHealth, this.arenaState.maxHealth);
+            var deathResult = ClassManager.onEnemyDeath(this.arenaState.playerHealth, this.arenaState.maxHealth);
+            this.arenaState.playerHealth = deathResult.health;
+            this.arenaState.maxHealth = deathResult.maxHealth;
             enemy.isDying = true;
             this.soundManager?.play('enemy_death');
             this.enemyBoard.startSimpleDeathEffect(enemyId, () => {

@@ -11,6 +11,7 @@ class GameScreen extends BaseScreen {
         this.currentMana = 1;
         this.maxMana = 1;
         this.playerHealth = 30;
+        this.maxHealth = 30;
         this.playerShield = 0;
         this.currentTurn = 1;
         this.enemies = [];
@@ -150,7 +151,7 @@ class GameScreen extends BaseScreen {
                         <div class="player-hero">
                             <div class="hero-portrait">
                                 <div class="hero-stats">
-                                    <span class="hero-health" id="player-health">❤️ 30</span>
+                                    <span class="hero-health" id="player-health">❤️ 30/30</span>
                                     <span class="hero-shield" id="player-shield" style="display: none;">🛡️0</span>
                                 </div>
                             </div>
@@ -803,6 +804,14 @@ class GameScreen extends BaseScreen {
                     if (enemy) {
                         this.addToHistory(`${card.art} - ${card.damage} ${enemy.art}`, true);
                     }
+                    // Lifesteal
+                    if (card.lifesteal && card.damage > 0) {
+                        this.playerHealth = Math.min(this.maxHealth || 30, this.playerHealth + card.damage);
+                        const playerHero = this.element.querySelector('.player-hero');
+                        this.visualEffects.createHealingEffect(playerHero);
+                        this.visualEffects.showHealingNumber(playerHero, card.damage);
+                        this.addToHistory(`+${card.damage} ❤️ (lifesteal)`, true);
+                    }
                     // Play impact sound with delay
                     setTimeout(() => {
                         this.soundManager?.playSpellSound(card.id, 'impact');
@@ -814,6 +823,7 @@ class GameScreen extends BaseScreen {
                 this.addToHistory(`${card.art} - ${card.damage} 🌍`, true);
                 // Create a copy of enemies array to avoid modification during iteration
                 const enemiesSnapshot = [...this.enemies];
+                var totalDamage = 0;
                 enemiesSnapshot.forEach((enemy, index) => {
                     setTimeout(() => {
                         const enemyEl = this.element.querySelector(`[data-enemy-id="${enemy.id}"]`);
@@ -824,7 +834,19 @@ class GameScreen extends BaseScreen {
                             this.soundManager?.playSpellSound(card.id, 'impact');
                         }, 300);
                     }, index * 150); // Stagger the damage application
+                    totalDamage += Math.min(card.damage, enemy.health || 999);
                 });
+                // Lifesteal for AOE
+                if (card.lifesteal && totalDamage > 0) {
+                    var self = this;
+                    setTimeout(function() {
+                        self.playerHealth = Math.min(self.maxHealth || 30, self.playerHealth + totalDamage);
+                        var playerHero = self.element.querySelector('.player-hero');
+                        self.visualEffects.createHealingEffect(playerHero);
+                        self.visualEffects.showHealingNumber(playerHero, totalDamage);
+                        self.addToHistory(`+${totalDamage} ❤️ (lifesteal)`, true);
+                    }, enemiesSnapshot.length * 150 + 100);
+                }
                 const gameBoard = this.element.querySelector('.game-board');
                 this.visualEffects.createScreenShake(gameBoard);
                 this.soundManager?.play('screen_shake');
@@ -835,6 +857,7 @@ class GameScreen extends BaseScreen {
                 
                 // Track which enemies died during this spell to avoid duplicate death messages
                 const enemiesKilledThisSpell = new Set();
+                var totalLifestealDamage = 0;
                 
                 for (let i = 0; i < card.hits; i++) {
                     setTimeout(() => {
@@ -860,6 +883,7 @@ class GameScreen extends BaseScreen {
                             
                             // Damage enemy but skip automatic death history
                             this.applyDamageWithElement(randomEnemy.id, card.damage, spellType, true);
+                            totalLifestealDamage += Math.min(card.damage, (enemy ? enemy.health : card.damage));
                             this.soundManager?.playSpellSound(card.id, 'impact');
                         }
                     }, i * 200);
@@ -871,7 +895,7 @@ class GameScreen extends BaseScreen {
                 
                 // Handle healing
                 if (card.healing) {
-                    this.playerHealth = Math.min(30, this.playerHealth + card.healing);
+                    this.playerHealth = Math.min(this.maxHealth || 30, this.playerHealth + card.healing);
                     const playerHero = this.element.querySelector('.player-hero');
                     this.visualEffects.createHealingEffect(playerHero);
                     this.visualEffects.showHealingNumber(playerHero, card.healing);
@@ -962,7 +986,9 @@ class GameScreen extends BaseScreen {
             }
             
             if (enemy.health <= 0) {
-                this.playerHealth = ClassManager.onEnemyDeath(this.playerHealth, 30);
+                var deathResult = ClassManager.onEnemyDeath(this.playerHealth, this.maxHealth || 30);
+                this.playerHealth = deathResult.health;
+                this.maxHealth = deathResult.maxHealth;
                 this.soundManager?.play('enemy_death');
                 enemy.isDying = true;
                 this.enemyBoard.startDeathAnimation(enemyId, 1800, () => {
@@ -1246,6 +1272,7 @@ class GameScreen extends BaseScreen {
         this.currentMana = 1;
         this.maxMana = 1;
         this.playerHealth = 30;
+        this.maxHealth = 30;
         this.playerShield = 0;
         this.currentTurn = 1;
         this.enemies = [];
@@ -1303,7 +1330,7 @@ class GameScreen extends BaseScreen {
 
     updateUI() {
         this.element.querySelector('#current-mana').textContent = this.currentMana;
-        this.element.querySelector('#player-health').textContent = `❤️ ${this.playerHealth}`;
+        this.element.querySelector('#player-health').textContent = `❤️ ${this.playerHealth}/${this.maxHealth}`;
         this.element.querySelector('#turn-number').textContent = this.currentTurn;
         this.element.querySelector('#enemies-count').textContent = this.enemies.length;
         this.element.querySelector('#max-mana').textContent = `/${this.maxMana}`;

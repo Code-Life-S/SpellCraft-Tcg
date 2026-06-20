@@ -53,9 +53,9 @@ var ClassManager = {
 
     onEnemyDeath: function(playerHealth, maxHealth) {
         if (this._activeClassId === 'necromancer') {
-            return Math.min(maxHealth || 30, playerHealth + 1);
+            return { health: playerHealth + 1, maxHealth: maxHealth + 1 };
         }
-        return playerHealth;
+        return { health: playerHealth, maxHealth: maxHealth };
     }
 };
 

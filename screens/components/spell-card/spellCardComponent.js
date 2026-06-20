@@ -13,6 +13,12 @@ class SpellCardComponent {
 
         const classes = [baseClass, card.rarity || 'common', ...extraClasses];
         if (disabled) classes.push('disabled');
+        // Class-specific visual class
+        if (card.class) {
+            classes.push('card-class-' + card.class);
+        } else {
+            classes.push('card-neutral');
+        }
 
         const div = document.createElement('div');
         div.className = classes.join(' ');

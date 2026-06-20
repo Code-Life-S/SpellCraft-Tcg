@@ -29,9 +29,9 @@ var CLASSES = [
         id: 'necromancer',
         name: 'Necromancien',
         art: '\u{1F480}',
-        description: 'Maitre de la mort et du sustain. Gagnez 1 PV quand un ennemi meurt.',
+        description: 'Maitre de la mort et du sustain. Gagnez +1 PV max quand un ennemi meurt.',
         passive: 'necro_heal_on_death',
-        passiveDesc: '+1 PV quand ennemi meurt',
+        passiveDesc: '+1 PV max quand ennemi meurt',
         cards: [
             { id: 'necro_soul_drain', count: 1 },
             { id: 'necro_bone_shield', count: 1 },
