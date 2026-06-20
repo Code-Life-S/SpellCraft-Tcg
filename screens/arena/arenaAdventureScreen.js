@@ -1134,12 +1134,13 @@ class ArenaAdventureScreen extends BaseScreen {
             hpDisplay.classList.add('hidden');
         }
 
-        // Phase 1: add a new card to deck
+        // Phase 1: add a new card to deck (neutral or current class only)
         const allSpells = this.cardManager?.allSpells || [];
         const choices = ArenaStateManager.generateAddCardChoices(
             this.arenaState.arenaCards,
             allSpells,
-            this.arenaState.deckUpgrades
+            this.arenaState.deckUpgrades,
+            this.arenaState.chosenClass
         );
 
         this.renderChoiceCards('#upgrade-choices', choices, 'add_card');

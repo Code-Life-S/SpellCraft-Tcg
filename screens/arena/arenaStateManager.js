@@ -225,12 +225,18 @@ class ArenaStateManager {
         return choices.slice(0, 3);
     }
 
-    static generateAddCardChoices(arenaCards, allSpells, deckUpgrades) {
+    static generateAddCardChoices(arenaCards, allSpells, deckUpgrades, classId) {
         const choices = [];
 
-        // Pick 3 random spells from all available (allow duplicates)
-        for (let i = 0; i < 3 && allSpells.length > 0; i++) {
-            const spell = allSpells[Math.floor(Math.random() * allSpells.length)];
+        // Filter to neutral cards (no 'class' field) or current class cards
+        const classFilter = classId || 'pyromancer';
+        const filtered = allSpells.filter(function(card) {
+            return !card.class || card.class === classFilter;
+        });
+
+        // Pick 3 random spells from filtered pool (allow duplicates)
+        for (let i = 0; i < 3 && filtered.length > 0; i++) {
+            const spell = filtered[Math.floor(Math.random() * filtered.length)];
             const previewCard = this.getUpgradedCard(spell, deckUpgrades);
             choices.push({
                 type: 'add_card',
