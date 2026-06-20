@@ -753,7 +753,7 @@ class GameScreen extends BaseScreen {
                     const enemy = this.enemies.find(e => e.id === targetEnemyId);
                     const enemyEl = this.element.querySelector(`[data-enemy-id="${targetEnemyId}"]`);
                     this.visualEffects.createSpellImpact(enemyEl, spellType);
-                    this.damageEnemyWithEffects(targetEnemyId, card.damage);
+                    this.applyDamageWithElement(targetEnemyId, card.damage, spellType);
                     if (enemy) {
                         this.addToHistory(`${card.art} - ${card.damage} ${enemy.art}`, true);
                     }
@@ -772,7 +772,7 @@ class GameScreen extends BaseScreen {
                     setTimeout(() => {
                         const enemyEl = this.element.querySelector(`[data-enemy-id="${enemy.id}"]`);
                         this.visualEffects.createSpellImpact(enemyEl, spellType);
-                        this.damageEnemyWithEffects(enemy.id, card.damage);
+                        this.applyDamageWithElement(enemy.id, card.damage, spellType);
                         // Play impact sounds with slight delay
                         setTimeout(() => {
                             this.soundManager?.playSpellSound(card.id, 'impact');
@@ -813,7 +813,7 @@ class GameScreen extends BaseScreen {
                             }
                             
                             // Damage enemy but skip automatic death history
-                            this.damageEnemyWithEffects(randomEnemy.id, card.damage, true);
+                            this.applyDamageWithElement(randomEnemy.id, card.damage, spellType, true);
                             this.soundManager?.playSpellSound(card.id, 'impact');
                         }
                     }, i * 200);
@@ -863,6 +863,39 @@ class GameScreen extends BaseScreen {
                 this.showMessage(message.trim());
                 break;
         }
+    }
+
+    applyDamageWithElement(enemyId, baseDamage, elementType, skipDeathHistory = false) {
+        if (!ElementalReactionsManager.isEnabled()) {
+            this.damageEnemyWithEffects(enemyId, baseDamage, skipDeathHistory);
+            return;
+        }
+        const enemy = this.enemies.find(e => e.id === enemyId);
+        if (!enemy) return;
+
+        const result = ElementalReactionsManager.processReaction(enemy, elementType, baseDamage);
+
+        if (result.reaction) {
+            const reactionEl = this.element.querySelector(`[data-enemy-id="${enemyId}"]`);
+            if (reactionEl) {
+                reactionEl.classList.add('reaction-flash');
+                setTimeout(() => reactionEl.classList.remove('reaction-flash'), 600);
+            }
+            this.addToHistory(result.reaction.icon + ' ' + result.reaction.name + '!', false);
+        }
+
+        this.damageEnemyWithEffects(enemyId, result.damage, skipDeathHistory);
+
+        if (result.aoeDamage > 0) {
+            this.enemies.forEach(other => {
+                if (other.id !== enemyId && !other.isDying && other.health > 0) {
+                    this.damageEnemyWithEffects(other.id, result.aoeDamage, true);
+                }
+            });
+        }
+
+        ElementalReactionsManager.applyElementalStatus(enemy, null, elementType);
+        this.enemyBoard.updateStatusOverlay(enemyId, enemy);
     }
 
     damageEnemyWithEffects(enemyId, damage, skipDeathHistory = false) {
@@ -927,11 +960,30 @@ class GameScreen extends BaseScreen {
         }, 1000);
     }
 
+    processEnemyStatusEffects() {
+        if (!ElementalReactionsManager.isEnabled()) return;
+        const aliveEnemies = this.enemies.filter(e => !e.isDying && e.health > 0);
+        aliveEnemies.forEach(enemy => {
+            const result = ElementalReactionsManager.processTurnStart(enemy);
+            if (result.damage > 0) {
+                this.damageEnemyWithEffects(enemy.id, result.damage, true);
+                const enemyEl = this.element.querySelector(`[data-enemy-id="${enemy.id}"]`);
+                if (enemyEl) {
+                    this.visualEffects.showDamageNumber(enemyEl, result.damage);
+                }
+                this.addToHistory(STATUS_EFFECTS.burning.icon + ' ' + enemy.name + ' takes ' + result.damage + ' burn damage', false);
+            }
+            this.enemyBoard.updateStatusOverlay(enemy.id, enemy);
+        });
+    }
+
     enemyAttackPhase() {
         if (this.enemies.length === 0) {
             this.checkGameEnd();
             return;
         }
+
+        this.processEnemyStatusEffects();
 
         let attackIndex = 0;
         const attackInterval = setInterval(() => {
@@ -942,6 +994,17 @@ class GameScreen extends BaseScreen {
             }
 
             const enemy = this.enemies[attackIndex];
+
+            // Skip frozen enemies
+            if (ElementalReactionsManager.shouldSkipAttack(enemy)) {
+                attackIndex++;
+                this.addToHistory(STATUS_EFFECTS.frozen.icon + ' ' + enemy.name + ' is frozen and cannot attack!', false);
+                ElementalReactionsManager.removeStatus(enemy, 'frozen');
+                this.enemyBoard.updateStatusOverlay(enemy.id, enemy);
+                this.updateUI();
+                return;
+            }
+
             let damage = enemy.attack;
             let shieldAbsorbed = 0;
 

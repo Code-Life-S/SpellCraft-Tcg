@@ -634,7 +634,7 @@ class ArenaAdventureScreen extends BaseScreen {
                 if (targetEnemyId) {
                     const enemyEl = this.element.querySelector(`[data-enemy-id="${targetEnemyId}"]`);
                     this.visualEffects.createSpellImpact(enemyEl, spellType);
-                    this.damageEnemy(targetEnemyId, card.damage || 0);
+                    this.applyDamageWithElement(targetEnemyId, card.damage || 0, spellType);
                 }
                 break;
             case 'all':
@@ -645,7 +645,7 @@ class ArenaAdventureScreen extends BaseScreen {
                         if (guard()) return;
                         const enemyEl = this.element.querySelector(`[data-enemy-id="${enemy.id}"]`);
                         this.visualEffects.createSpellImpact(enemyEl, spellType);
-                        this.damageEnemy(enemy.id, card.damage || 0);
+                        this.applyDamageWithElement(enemy.id, card.damage || 0, spellType);
                     }, i * 150);
                 });
                 break;
@@ -658,7 +658,7 @@ class ArenaAdventureScreen extends BaseScreen {
                             const target = alive[Math.floor(Math.random() * alive.length)];
                             const enemyEl = this.element.querySelector(`[data-enemy-id="${target.id}"]`);
                             this.visualEffects.createSpellImpact(enemyEl, spellType);
-                            this.damageEnemy(target.id, card.damage || 1);
+                            this.applyDamageWithElement(target.id, card.damage || 1, spellType);
                         }
                     }, i * 200);
                 }
@@ -669,7 +669,7 @@ class ArenaAdventureScreen extends BaseScreen {
                         const target = this.enemies[Math.floor(Math.random() * this.enemies.length)];
                         const enemyEl = this.element.querySelector(`[data-enemy-id="${target.id}"]`);
                         this.visualEffects.createSpellImpact(enemyEl, spellType);
-                        this.damageEnemy(target.id, card.damage);
+                        this.applyDamageWithElement(target.id, card.damage, spellType);
                     }
                 }
                 if (card.healing) {
@@ -696,6 +696,39 @@ class ArenaAdventureScreen extends BaseScreen {
             this.currentMana = Math.min(this.currentMana + card.manaBoost, 10);
             this.updateUI();
         }
+    }
+
+    applyDamageWithElement(enemyId, baseDamage, elementType) {
+        if (!ElementalReactionsManager.isEnabled()) {
+            this.damageEnemy(enemyId, baseDamage);
+            return;
+        }
+        const enemy = this.enemies.find(e => e.id === enemyId);
+        if (!enemy) return;
+
+        const result = ElementalReactionsManager.processReaction(enemy, elementType, baseDamage);
+
+        if (result.reaction) {
+            const reactionEl = this.element.querySelector(`[data-enemy-id="${enemyId}"]`);
+            if (reactionEl) {
+                reactionEl.classList.add('reaction-flash');
+                setTimeout(() => reactionEl.classList.remove('reaction-flash'), 600);
+            }
+            this.addToHistory(result.reaction.icon + ' ' + result.reaction.name + '!', false);
+        }
+
+        this.damageEnemy(enemyId, result.damage);
+
+        if (result.aoeDamage > 0) {
+            this.enemies.forEach(other => {
+                if (other.id !== enemyId && !other.isDying && other.health > 0) {
+                    this.damageEnemy(other.id, result.aoeDamage);
+                }
+            });
+        }
+
+        ElementalReactionsManager.applyElementalStatus(enemy, null, elementType);
+        this.enemyBoard.updateStatusOverlay(enemyId, enemy);
     }
 
     damageEnemy(enemyId, damage) {
@@ -747,7 +780,26 @@ class ArenaAdventureScreen extends BaseScreen {
         }, 400);
     }
 
+    processEnemyStatusEffects() {
+        if (!ElementalReactionsManager.isEnabled()) return;
+        const aliveEnemies = this.enemies.filter(e => !e.isDying && e.health > 0);
+        aliveEnemies.forEach(enemy => {
+            const result = ElementalReactionsManager.processTurnStart(enemy);
+            if (result.damage > 0) {
+                this.damageEnemy(enemy.id, result.damage);
+                const enemyEl = this.element.querySelector(`[data-enemy-id="${enemy.id}"]`);
+                if (enemyEl) {
+                    this.visualEffects.showDamageNumber(enemyEl, result.damage);
+                }
+                this.addToHistory(STATUS_EFFECTS.burning.icon + ' ' + enemy.name + ' takes ' + result.damage + ' burn damage', false);
+            }
+            this.enemyBoard.updateStatusOverlay(enemy.id, enemy);
+        });
+    }
+
     enemyAttackPhase() {
+        this.processEnemyStatusEffects();
+
         const aliveEnemies = this.enemies.filter(e => !e.isDying);
         if (aliveEnemies.length === 0) {
             this.startPlayerTurn();
@@ -762,6 +814,16 @@ class ArenaAdventureScreen extends BaseScreen {
             }
             const enemy = aliveEnemies[attackIndex];
             attackIndex++;
+
+            // Skip frozen enemies
+            if (ElementalReactionsManager.shouldSkipAttack(enemy)) {
+                this.addToHistory(STATUS_EFFECTS.frozen.icon + ' ' + enemy.name + ' is frozen and cannot attack!', false);
+                ElementalReactionsManager.removeStatus(enemy, 'frozen');
+                this.enemyBoard.updateStatusOverlay(enemy.id, enemy);
+                this.updateUI();
+                setTimeout(doNextAttack, 350);
+                return;
+            }
 
             // Enemy attack animation
             this.enemyBoard.addAttackEffect(enemy.id);

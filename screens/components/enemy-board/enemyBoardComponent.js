@@ -41,9 +41,13 @@ class EnemyBoardComponent {
         statsDiv.appendChild(attackDiv);
         statsDiv.appendChild(healthDiv);
 
+        const statusDiv = document.createElement('div');
+        statusDiv.className = 'status-overlays';
+
         enemyDiv.appendChild(artDiv);
         enemyDiv.appendChild(nameDiv);
         enemyDiv.appendChild(statsDiv);
+        enemyDiv.appendChild(statusDiv);
 
         return enemyDiv;
     }
@@ -140,6 +144,45 @@ class EnemyBoardComponent {
         setTimeout(() => {
             if (onComplete) onComplete();
         }, 600);
+    }
+
+    updateStatusOverlay(enemyId, enemy) {
+        const el = this.container.querySelector(this.getEnemySelector(enemyId));
+        if (!el) return;
+
+        const overlay = el.querySelector('.status-overlays');
+        if (!overlay) return;
+
+        overlay.innerHTML = '';
+
+        if (!window.ElementalReactionsManager || !ElementalReactionsManager.isEnabled()) return;
+
+        const classes = ElementalReactionsManager.getStatusVisualClasses(enemy);
+
+        ['status-frozen', 'status-burning', 'status-shocked'].forEach(cls => {
+            el.classList.remove(cls);
+        });
+
+        classes.forEach(cls => {
+            el.classList.add(cls);
+        });
+
+        const statuses = ElementalReactionsManager.getActiveStatuses(enemy);
+        statuses.forEach(statusType => {
+            const effectDef = window.STATUS_EFFECTS ? STATUS_EFFECTS[statusType] : null;
+            if (effectDef) {
+                const iconSpan = document.createElement('span');
+                iconSpan.className = 'status-icon status-icon-' + statusType;
+                iconSpan.textContent = effectDef.icon;
+                overlay.appendChild(iconSpan);
+            }
+        });
+    }
+
+    updateAllStatusOverlays(enemies) {
+        enemies.forEach(enemy => {
+            this.updateStatusOverlay(enemy.id, enemy);
+        });
     }
 
     getEnemyCount() {

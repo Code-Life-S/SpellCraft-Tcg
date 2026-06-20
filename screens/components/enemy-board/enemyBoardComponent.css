@@ -2,7 +2,8 @@
 .enemy {
     width: 140px;
     height: 200px;
-    background: linear-gradient(145deg, #8B0000, #DC143C);
+    background: linear-gradient(145deg, #3a3a3a, #5a5a5a);
+    background-size: 200% 200%;
     border-radius: 15px;
     border: 3px solid #FF4500;
     position: relative;
@@ -262,4 +263,111 @@
 @keyframes instructionFadeOut {
     from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
     to   { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+}
+
+/* Status Overlays */
+.status-overlays {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 4px;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.status-icon {
+    font-size: 18px;
+    filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.8));
+    animation: statusAppear 0.3s ease-out;
+}
+
+@keyframes statusAppear {
+    0% { transform: scale(0); opacity: 0; }
+    60% { transform: scale(1.3); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.status-icon-frozen {
+    animation: frozenPulse 2s ease-in-out infinite;
+}
+
+.status-icon-burning {
+    animation: burningPulse 0.8s ease-in-out infinite;
+}
+
+.status-icon-shocked {
+    animation: shockedPulse 0.5s ease-in-out infinite;
+}
+
+@keyframes frozenPulse {
+    0%, 100% { filter: drop-shadow(0 0 4px rgba(173, 216, 230, 0.8)) brightness(1); transform: scale(1); }
+    50% { filter: drop-shadow(0 0 12px rgba(173, 216, 230, 1)) brightness(1.3); transform: scale(1.1); }
+}
+
+@keyframes burningPulse {
+    0%, 100% { filter: drop-shadow(0 0 4px rgba(255, 69, 0, 0.8)) brightness(1); transform: scale(1); }
+    50% { filter: drop-shadow(0 0 12px rgba(255, 69, 0, 1)) brightness(1.4); transform: scale(1.15); }
+}
+
+@keyframes shockedPulse {
+    0%, 100% { filter: drop-shadow(0 0 4px rgba(255, 255, 0, 0.8)) brightness(1); transform: scale(1) rotate(0deg); }
+    25% { filter: drop-shadow(0 0 12px rgba(255, 255, 0, 1)) brightness(1.5); transform: scale(1.1) rotate(-5deg); }
+    75% { filter: drop-shadow(0 0 12px rgba(255, 255, 0, 1)) brightness(1.5); transform: scale(1.1) rotate(5deg); }
+}
+
+/* Enemy Background + Border Effects by Status */
+.enemy.status-frozen {
+    border-color: #ADD8E6 !important;
+    box-shadow: 0 0 20px rgba(173, 216, 230, 0.6), inset 0 0 15px rgba(173, 216, 230, 0.2);
+    background: linear-gradient(145deg, #3A6B8A, #5B9EBD, #3A6B8A);
+    background-size: 200% 200%;
+    animation: frozenBgShift 4s ease-in-out infinite;
+}
+
+.enemy.status-burning {
+    border-color: #FF4500 !important;
+    box-shadow: 0 0 20px rgba(255, 69, 0, 0.6), inset 0 0 15px rgba(255, 69, 0, 0.2);
+    background: linear-gradient(145deg, #8B1A1A, #DC143C, #FF4500, #DC143C);
+    background-size: 300% 300%;
+    animation: burningBgShift 2s ease-in-out infinite;
+}
+
+.enemy.status-shocked {
+    border-color: #DAA520 !important;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.6), inset 0 0 15px rgba(255, 215, 0, 0.15);
+    background: linear-gradient(145deg, #6B6B00, #DAA520, #FFF44F, #DAA520);
+    background-size: 300% 300%;
+    animation: shockedBgShift 1s ease-in-out infinite;
+}
+
+@keyframes frozenBgShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+@keyframes burningBgShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+@keyframes shockedBgShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+/* Reaction Flash */
+@keyframes reactionFlash {
+    0% { filter: brightness(1); transform: scale(1); }
+    20% { filter: brightness(2.5); transform: scale(1.15); }
+    40% { filter: brightness(1.8); transform: scale(1.05); }
+    60% { filter: brightness(2.2); transform: scale(1.1); }
+    80% { filter: brightness(1.3); transform: scale(1.02); }
+    100% { filter: brightness(1); transform: scale(1); }
+}
+
+.enemy.reaction-flash {
+    animation: reactionFlash 0.6s ease-out;
+    z-index: 50;
 }
