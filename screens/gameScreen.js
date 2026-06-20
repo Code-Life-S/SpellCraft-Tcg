@@ -388,6 +388,7 @@ class GameScreen extends BaseScreen {
                     }
                 }
             });
+            this.enemyBoard.updateAllStatusOverlays(this.enemies);
         }
     }
 

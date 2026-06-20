@@ -170,7 +170,7 @@ class EnemyBoardComponent {
 
         const statuses = ElementalReactionsManager.getActiveStatuses(enemy);
         statuses.forEach(statusType => {
-            const effectDef = window.STATUS_EFFECTS ? STATUS_EFFECTS[statusType] : null;
+            const effectDef = typeof STATUS_EFFECTS !== 'undefined' ? STATUS_EFFECTS[statusType] : null;
             if (effectDef) {
                 const iconSpan = document.createElement('span');
                 iconSpan.className = 'status-icon status-icon-' + statusType;
