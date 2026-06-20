@@ -1004,7 +1004,7 @@ class GameScreen extends BaseScreen {
     processEnemyAbilities() {
         var _this = this;
         var healers = this.enemies.filter(function(e) {
-            return e.ability === 'healer' && !e.isDying && e.health > 0;
+            return e.ability === 'healer' && !e.isDying && e.health > 0 && !e.isBoss;
         });
         healers.forEach(function(healer) {
             var target = typeof getBestHealTarget === 'function' ? getBestHealTarget(_this.enemies) : null;
@@ -1015,7 +1015,7 @@ class GameScreen extends BaseScreen {
             }
         });
         var summoners = this.enemies.filter(function(e) {
-            return e.ability === 'summoner' && !e.isDying && e.health > 0;
+            return e.ability === 'summoner' && !e.isDying && e.health > 0 && !e.isBoss;
         });
         summoners.forEach(function(summoner) {
             if (typeof createSummonMinion === 'function') {

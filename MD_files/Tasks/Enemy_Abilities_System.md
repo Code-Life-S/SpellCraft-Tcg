@@ -43,7 +43,39 @@ Implement 4 enemy abilities (Provocation, Enrage, Soigneur, Invocateur) for both
 - Rounds 4-7: Provocation, Soigneur
 - Rounds 8+: All 4 abilities
 
+## Boss System (Phase 2)
+
+### Done
+- Created `game/bossConfig.js` with 3 MVP bosses:
+  - **Roi Squelette** (skeleton_king): summons 2 skeletons at start of each enemy turn (skeletons attack same turn)
+  - **Mage Noir** (dark_mage): gains 3 shield/turn, drains 2 HP from player and heals self, shield shatter stuns 1 turn
+  - **Dragon** (dragon): breath attack (2 AOE damage to player each turn), enrages at <50% HP (+2 ATK via ability system)
+- Added `<script src="game/bossConfig.js">` to `index.html`
+- Added boss CSS to `enemyBoardComponent.css`:
+  - `.enemy-boss`: larger card (190x270), gold border, enhanced glow, unique gradient background
+  - `.boss-label`: gold badge at top-right corner
+  - `.boss-shield-bar`: blue shield health bar for Mage Noir
+  - Enhanced boss stat circles (gold health, red attack)
+- Modified `enemyBoardComponent.js`:
+  - `createEnemyElement()`: adds `enemy-boss` class, BOSS label, shield bar for bosses
+  - `updateBossShieldBar()`: updates shield bar width/visibility
+- Modified `arenaAdventureScreen.js`:
+  - `spawnEnemies(round)`: boss spawn at round 12 via `getRandomBoss()`, replaces normal enemies
+  - `processBossMechanics()`: handles per-boss unique behavior (summon, shield+drain, breath)
+  - `enemyAttackPhase()`: calls `processBossMechanics()` before attacks, skips stunned boss
+  - `damageEnemy()`: boss shield absorption + stun trigger on shield break
+  - `processEnemyAbilities()`: now filters out bosses (`!e.isBoss`)
+- Both screens: `processEnemyAbilities()` filters out `!e.isBoss` (future-proof)
+
+### Boss Stats
+| Boss | HP | ATK | Ability | Mechanic |
+|---|---|---|---|---|
+| Roi Squelette | 20 | 4 | Summoner | Summon 2 skeletons at turn start |
+| Mage Noir | 15 | 3 | - | 3 shield/turn, life drain 2, stun on shield break |
+| Dragon | 30 | 5 | Enrage | Breath 2 AOE, enrage at <50% |
+
 ### Next Steps
-1. Test and debug ability interactions
+1. Test and debug ability interactions + boss fights
 2. Add more abilities in future iterations
-3. Boss system (2 abilities per boss, random boss at round 12)
+3. Campaign boss system (for non-arena mode)
+4. Boss companions (1-2 minions with boss, optional)

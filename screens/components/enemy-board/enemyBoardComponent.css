@@ -273,6 +273,73 @@
     to   { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
 }
 
+/* Boss Card */
+.enemy-boss {
+    width: 190px !important;
+    height: 270px !important;
+    border-color: #FFD700 !important;
+    border-width: 4px !important;
+    box-shadow: 0 0 40px rgba(255, 215, 0, 0.5), inset 0 0 20px rgba(255, 215, 0, 0.1) !important;
+    background: linear-gradient(145deg, #4a2a0a, #6b3a1a) !important;
+    z-index: 5;
+}
+
+.enemy-boss:hover {
+    transform: scale(1.08) !important;
+    box-shadow: 0 0 50px rgba(255, 215, 0, 0.9), inset 0 0 30px rgba(255, 215, 0, 0.2) !important;
+}
+
+.enemy-boss .enemy-art {
+    font-size: 48px !important;
+}
+
+.boss-label {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: linear-gradient(145deg, #FFD700, #FFA500);
+    color: #4a2a0a;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 8px;
+    border: 2px solid #FF4500;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    z-index: 20;
+    pointer-events: none;
+    letter-spacing: 1px;
+}
+
+.enemy-boss .enemy-health {
+    background: radial-gradient(circle, #FFD700, #B8860B) !important;
+    border-color: #FF4500 !important;
+}
+
+.enemy-boss .enemy-attack {
+    background: radial-gradient(circle, #FF4500, #8B0000) !important;
+    border-color: #FFD700 !important;
+}
+
+/* Boss Shield Bar */
+.boss-shield-bar {
+    position: absolute;
+    bottom: 2px;
+    left: 10px;
+    right: 10px;
+    height: 6px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 3px;
+    overflow: hidden;
+    display: none;
+}
+
+.boss-shield-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4169E1, #00BFFF);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
 /* Status Overlays */
 .status-overlays {
     position: absolute;

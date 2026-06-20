@@ -270,9 +270,31 @@ class ArenaAdventureScreen extends BaseScreen {
     spawnEnemies(round) {
         this.enemies = [];
         this.enemyIdCounter = 1;
-        const count = ArenaAdventureScreen.ENEMY_BASE_COUNT + Math.floor(round / ArenaAdventureScreen.ENEMY_COUNT_PER_ROUNDS);
 
-        const enemyTypes = [
+        // Boss round at round 12
+        if (round >= 12 && typeof getRandomBoss === 'function') {
+            var bossTemplate = getRandomBoss();
+            var boss = {
+                id: this.enemyIdCounter++,
+                name: bossTemplate.name,
+                art: bossTemplate.art,
+                health: bossTemplate.health,
+                maxHealth: bossTemplate.health,
+                attack: bossTemplate.attack,
+                ability: bossTemplate.ability || null,
+                isBoss: true,
+                bossMechanics: bossTemplate.bossMechanics,
+                bossShield: 0,
+                stunnedNextTurn: false,
+                isDying: false
+            };
+            this.enemies.push(boss);
+            return;
+        }
+
+        var count = ArenaAdventureScreen.ENEMY_BASE_COUNT + Math.floor(round / ArenaAdventureScreen.ENEMY_COUNT_PER_ROUNDS);
+
+        var enemyTypes = [
             { name: 'Goblin', art: '👹' },
             { name: 'Skeleton', art: '💀' },
             { name: 'Spider', art: '🕷️' },
@@ -287,10 +309,10 @@ class ArenaAdventureScreen extends BaseScreen {
             { name: 'Minotaur', art: '🐂' }
         ];
 
-        for (let i = 0; i < count; i++) {
-            const baseHp = Math.round(ArenaAdventureScreen.ENEMY_BASE_HP + (round * ArenaAdventureScreen.ENEMY_HP_PER_ROUND) + (Math.random() * 3 - 1));
-            const baseAttack = Math.max(1, Math.round(ArenaAdventureScreen.ENEMY_BASE_ATTACK + (round * ArenaAdventureScreen.ENEMY_ATTACK_PER_ROUND) + (Math.random() * 2 - 1)));
-            const type = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+        for (var i = 0; i < count; i++) {
+            var baseHp = Math.round(ArenaAdventureScreen.ENEMY_BASE_HP + (round * ArenaAdventureScreen.ENEMY_HP_PER_ROUND) + (Math.random() * 3 - 1));
+            var baseAttack = Math.max(1, Math.round(ArenaAdventureScreen.ENEMY_BASE_ATTACK + (round * ArenaAdventureScreen.ENEMY_ATTACK_PER_ROUND) + (Math.random() * 2 - 1)));
+            var type = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
             this.enemies.push({
                 id: this.enemyIdCounter++,
                 name: type.name,
@@ -757,6 +779,23 @@ class ArenaAdventureScreen extends BaseScreen {
         const enemy = this.enemies.find(e => e.id === enemyId);
         if (!enemy || enemy.health <= 0) return;
 
+        // Boss shield absorption
+        if (enemy.bossShield > 0) {
+            var absorbed = Math.min(enemy.bossShield, damage);
+            enemy.bossShield -= absorbed;
+            damage -= absorbed;
+            var maxShield = enemy.bossMechanics && enemy.bossMechanics.shieldPerTurn ? enemy.bossMechanics.shieldPerTurn * 3 : 10;
+            this.enemyBoard.updateBossShieldBar(enemy.id, enemy.bossShield, maxShield);
+            if (enemy.bossShield === 0 && absorbed > 0) {
+                enemy.stunnedNextTurn = true;
+                this.addToHistory(enemy.art + ' ' + enemy.name + '\'s shield shatters!', false);
+            }
+            if (damage <= 0) {
+                this.enemyBoard.addDamageEffect(enemyId);
+                return;
+            }
+        }
+
         const el = this.enemyBoard.container.querySelector(`[data-enemy-id="${enemyId}"]`);
         this.visualEffects.showDamageNumber(el, damage);
         this.enemyBoard.addDamageEffect(enemyId);
@@ -827,7 +866,7 @@ class ArenaAdventureScreen extends BaseScreen {
     processEnemyAbilities() {
         var _this = this;
         var healers = this.enemies.filter(function(e) {
-            return e.ability === 'healer' && !e.isDying && e.health > 0;
+            return e.ability === 'healer' && !e.isDying && e.health > 0 && !e.isBoss;
         });
         healers.forEach(function(healer) {
             var target = typeof getBestHealTarget === 'function' ? getBestHealTarget(_this.enemies) : null;
@@ -838,7 +877,7 @@ class ArenaAdventureScreen extends BaseScreen {
             }
         });
         var summoners = this.enemies.filter(function(e) {
-            return e.ability === 'summoner' && !e.isDying && e.health > 0;
+            return e.ability === 'summoner' && !e.isDying && e.health > 0 && !e.isBoss;
         });
         summoners.forEach(function(summoner) {
             if (typeof createSummonMinion === 'function') {
@@ -853,10 +892,61 @@ class ArenaAdventureScreen extends BaseScreen {
         }
     }
 
+    processBossMechanics() {
+        var boss = this.enemies.find(function(e) { return e.isBoss && !e.isDying; });
+        if (!boss) return;
+
+        boss.skipAttack = false;
+
+        if (boss.stunnedNextTurn) {
+            boss.stunnedNextTurn = false;
+            boss.skipAttack = true;
+            this.addToHistory(boss.art + ' ' + boss.name + ' is stunned and cannot act!', false);
+            return;
+        }
+
+        var mech = boss.bossMechanics;
+        if (!mech) return;
+
+        switch (mech.type) {
+            case 'skeleton_king':
+                for (var si = 0; si < mech.summonCount; si++) {
+                    if (typeof createSummonMinion === 'function') {
+                        var minion = createSummonMinion(this.enemyIdCounter);
+                        this.enemyIdCounter++;
+                        delete minion.canAttack;
+                        this.enemies.push(minion);
+                        this.addToHistory(boss.art + ' ' + boss.name + ' summons a ' + minion.name, false);
+                    }
+                }
+                this.renderEnemies();
+                break;
+
+            case 'dark_mage':
+                boss.bossShield += mech.shieldPerTurn;
+                var drain = mech.lifeDrain;
+                boss.health = Math.min(boss.maxHealth, boss.health + drain);
+                this.arenaState.playerHealth -= drain;
+                this.updateUI();
+                var maxShield = mech.shieldPerTurn * 3;
+                this.enemyBoard.updateBossShieldBar(boss.id, boss.bossShield, maxShield);
+                this.addToHistory(boss.art + ' ' + boss.name + ' drains ' + drain + ' HP and gains ' + mech.shieldPerTurn + ' shield', false);
+                break;
+
+            case 'dragon':
+                var breathDmg = mech.breathDamage;
+                this.arenaState.playerHealth -= breathDmg;
+                this.addToHistory(boss.art + ' ' + boss.name + ' uses Breath! -' + breathDmg + ' HP', false);
+                this.updateUI();
+                break;
+        }
+    }
+
     enemyAttackPhase() {
         this.enemies.forEach(function(e) { delete e.canAttack; });
         
         this.processEnemyStatusEffects();
+        this.processBossMechanics();
 
         const aliveEnemies = this.enemies.filter(e => !e.isDying);
         if (aliveEnemies.length === 0) {
@@ -874,7 +964,7 @@ class ArenaAdventureScreen extends BaseScreen {
             var enemy = aliveEnemies[attackIndex];
             attackIndex++;
 
-            if (enemy.canAttack === false) {
+            if (enemy.canAttack === false || enemy.skipAttack) {
                 setTimeout(doNextAttack, 350);
                 return;
             }
