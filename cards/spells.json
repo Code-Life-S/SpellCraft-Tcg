@@ -7,9 +7,10 @@
       "mana": 1,
       "rarity": "common",
       "text": "3 damage to Target",
-      "art": "🔥",
+      "art": "\uD83D\uDD25",
       "damage": 3,
-      "targetType": "single"
+      "targetType": "single",
+      "element": "fire"
     },
     {
       "id": "thunder_storm",
@@ -18,9 +19,10 @@
       "mana": 3,
       "rarity": "rare",
       "text": "2 damage to All",
-      "art": "⚡",
+      "art": "\u26A1",
       "damage": 2,
-      "targetType": "all"
+      "targetType": "all",
+      "element": "lightning"
     },
     {
       "id": "healing_light",
@@ -29,9 +31,10 @@
       "mana": 2,
       "rarity": "common",
       "text": "Heal 5",
-      "art": "✨",
+      "art": "\u2728",
       "healing": 5,
-      "targetType": "self"
+      "targetType": "self",
+      "element": "holy"
     },
     {
       "id": "meteor",
@@ -40,9 +43,10 @@
       "mana": 5,
       "rarity": "epic",
       "text": "8 damage to Target",
-      "art": "☄️",
+      "art": "\u2604\uFE0F",
       "damage": 8,
-      "targetType": "single"
+      "targetType": "single",
+      "element": "fire"
     },
     {
       "id": "frost_nova",
@@ -51,9 +55,10 @@
       "mana": 2,
       "rarity": "rare",
       "text": "1 damage to All",
-      "art": "❄️",
+      "art": "\u2744\uFE0F",
       "damage": 1,
-      "targetType": "all"
+      "targetType": "all",
+      "element": "frost"
     },
     {
       "id": "arcane_missiles",
@@ -62,10 +67,11 @@
       "mana": 1,
       "rarity": "common",
       "text": "1 damage 3 times",
-      "art": "🌟",
+      "art": "\uD83C\uDF1F",
       "damage": 1,
       "targetType": "random",
-      "hits": 3
+      "hits": 3,
+      "element": "arcane"
     },
     {
       "id": "divine_wrath",
@@ -74,9 +80,10 @@
       "mana": 6,
       "rarity": "legendary",
       "text": "5 damage to All",
-      "art": "⚡",
+      "art": "\u26A1",
       "damage": 5,
-      "targetType": "all"
+      "targetType": "all",
+      "element": "holy"
     },
     {
       "id": "magic_missile",
@@ -85,9 +92,10 @@
       "mana": 1,
       "rarity": "common",
       "text": "2 damage to Target",
-      "art": "✨",
+      "art": "\u2728",
       "damage": 2,
-      "targetType": "single"
+      "targetType": "single",
+      "element": "arcane"
     },
     {
       "id": "flame_burst",
@@ -96,9 +104,10 @@
       "mana": 2,
       "rarity": "common",
       "text": "1 damage to All",
-      "art": "🔥",
+      "art": "\uD83D\uDD25",
       "damage": 1,
-      "targetType": "all"
+      "targetType": "all",
+      "element": "fire"
     },
     {
       "id": "minor_heal",
@@ -107,9 +116,10 @@
       "mana": 1,
       "rarity": "common",
       "text": "Heal 3",
-      "art": "💚",
+      "art": "\uD83D\uDC9A",
       "healing": 3,
-      "targetType": "self"
+      "targetType": "self",
+      "element": "holy"
     },
     {
       "id": "arcane_study",
@@ -118,9 +128,10 @@
       "mana": 1,
       "rarity": "common",
       "text": "Draw 2",
-      "art": "📚",
+      "art": "\uD83D\uDCDA",
       "cardDraw": 2,
-      "targetType": "self"
+      "targetType": "self",
+      "element": "arcane"
     },
     {
       "id": "mystical_insight",
@@ -129,9 +140,10 @@
       "mana": 2,
       "rarity": "rare",
       "text": "Draw 3",
-      "art": "🔮",
+      "art": "\uD83D\uDD2E",
       "cardDraw": 3,
-      "targetType": "self"
+      "targetType": "self",
+      "element": "arcane"
     },
     {
       "id": "quickdraw",
@@ -139,11 +151,12 @@
       "type": "spell",
       "mana": 3,
       "rarity": "rare",
-      "text": "Draw 2\n+1 mana",
-      "art": "⚡",
+      "text": "Draw 2\\n+1 mana",
+      "art": "\u26A1",
       "cardDraw": 2,
       "manaBoost": 1,
-      "targetType": "self"
+      "targetType": "self",
+      "element": "arcane"
     },
     {
       "id": "arcane_shield",
@@ -152,9 +165,10 @@
       "mana": 1,
       "rarity": "common",
       "text": "Shield 3",
-      "art": "🛡️",
+      "art": "\uD83D\uDEE1\uFE0F",
       "shield": 3,
-      "targetType": "self"
+      "targetType": "self",
+      "element": "arcane"
     },
     {
       "id": "mana_surge",
@@ -163,9 +177,10 @@
       "mana": 1,
       "rarity": "common",
       "text": "+2 mana",
-      "art": "🔄",
+      "art": "\uD83D\uDD04",
       "manaBoost": 2,
-      "targetType": "self"
+      "targetType": "self",
+      "element": "arcane"
     },
     {
       "id": "greater_heal",
@@ -174,9 +189,129 @@
       "mana": 3,
       "rarity": "rare",
       "text": "Heal 8",
-      "art": "💖",
+      "art": "\uD83D\uDC96",
       "healing": 8,
-      "targetType": "self"
+      "targetType": "self",
+      "element": "holy"
+    },
+    {
+      "id": "pyro_fire_ball",
+      "name": "Boule de Feu",
+      "type": "spell",
+      "mana": 2,
+      "rarity": "rare",
+      "text": "5 damage to Target",
+      "art": "\uD83D\uDCA5",
+      "damage": 5,
+      "targetType": "single",
+      "element": "fire",
+      "class": "pyromancer"
+    },
+    {
+      "id": "pyro_flame_shield",
+      "name": "Bouclier de Flammes",
+      "type": "spell",
+      "mana": 2,
+      "rarity": "rare",
+      "text": "Gain 4 Shield",
+      "art": "\uD83D\uDEE1\uFE0F",
+      "shield": 4,
+      "targetType": "self",
+      "element": "fire",
+      "class": "pyromancer"
+    },
+    {
+      "id": "pyro_conflagration",
+      "name": "Conflagration",
+      "type": "spell",
+      "mana": 4,
+      "rarity": "rare",
+      "text": "7 damage to Target",
+      "art": "\uD83C\uDF2A\uFE0F",
+      "damage": 7,
+      "targetType": "single",
+      "element": "fire",
+      "class": "pyromancer"
+    },
+    {
+      "id": "cryo_ice_barrier",
+      "name": "Barriere de Glace",
+      "type": "spell",
+      "mana": 2,
+      "rarity": "rare",
+      "text": "Gain 4 Shield",
+      "art": "\uD83E\uDDCA",
+      "shield": 4,
+      "targetType": "self",
+      "element": "frost",
+      "class": "cryomancer"
+    },
+    {
+      "id": "cryo_blizzard",
+      "name": "Blizzard",
+      "type": "spell",
+      "mana": 4,
+      "rarity": "rare",
+      "text": "2 damage to All",
+      "art": "\u2744\uFE0F",
+      "damage": 2,
+      "targetType": "all",
+      "element": "frost",
+      "class": "cryomancer"
+    },
+    {
+      "id": "cryo_frost_armor",
+      "name": "Armure de Givre",
+      "type": "spell",
+      "mana": 3,
+      "rarity": "rare",
+      "text": "Shield 4 + Heal 2",
+      "art": "\uD83E\uDDE7",
+      "shield": 4,
+      "healing": 2,
+      "targetType": "self",
+      "element": "frost",
+      "class": "cryomancer"
+    },
+    {
+      "id": "necro_soul_drain",
+      "name": "Drain d'Ame",
+      "type": "spell",
+      "mana": 2,
+      "rarity": "rare",
+      "text": "3 damage + Heal 3",
+      "art": "\uD83D\uDC7B",
+      "damage": 3,
+      "healing": 3,
+      "targetType": "single",
+      "element": "arcane",
+      "class": "necromancer"
+    },
+    {
+      "id": "necro_bone_shield",
+      "name": "Bouclier d'Ossements",
+      "type": "spell",
+      "mana": 2,
+      "rarity": "rare",
+      "text": "Gain 3 Shield",
+      "art": "\uD83E\uDDB4",
+      "shield": 3,
+      "targetType": "self",
+      "element": "arcane",
+      "class": "necromancer"
+    },
+    {
+      "id": "necro_soul_harvest",
+      "name": "Moisson d'Ame",
+      "type": "spell",
+      "mana": 4,
+      "rarity": "rare",
+      "text": "8 damage to Target",
+      "art": "\u2620\uFE0F",
+      "damage": 8,
+      "targetType": "single",
+      "element": "arcane",
+      "class": "necromancer"
     }
   ]
 }

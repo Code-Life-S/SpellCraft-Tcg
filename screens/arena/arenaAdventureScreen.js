@@ -226,6 +226,7 @@ class ArenaAdventureScreen extends BaseScreen {
 
         const handSize = ArenaStateManager.getHandSize(round);
         this.arenaDeck = this.buildShuffledDeck();
+        this.injectClassCards();
         this.playerHand = this.drawCards(handSize);
 
         this.spawnEnemies(round);
@@ -253,6 +254,18 @@ class ArenaAdventureScreen extends BaseScreen {
             [deck[i], deck[j]] = [deck[j], deck[i]];
         }
         return deck;
+    }
+
+    injectClassCards() {
+        var classCardIds = ClassManager.getClassCardIds(ClassManager.getActiveClassId());
+        var _this = this;
+        classCardIds.forEach(function(cardId) {
+            var cardData = _this.cardManager.getCardById(cardId);
+            if (cardData) {
+                _this.arenaDeck.push({ ...cardData, instanceId: Date.now() + Math.random() });
+            }
+        });
+        this.shuffleArray(this.arenaDeck);
     }
 
     drawCards(count) {
@@ -743,6 +756,10 @@ class ArenaAdventureScreen extends BaseScreen {
     }
 
     applyDamageWithElement(enemyId, baseDamage, elementType) {
+        if (elementType === 'fire' && ClassManager.getFireDamageBonus() > 0) {
+            baseDamage += ClassManager.getFireDamageBonus();
+        }
+
         if (!ElementalReactionsManager.isEnabled()) {
             this.damageEnemy(enemyId, baseDamage);
             return;
@@ -771,7 +788,7 @@ class ArenaAdventureScreen extends BaseScreen {
             });
         }
 
-        ElementalReactionsManager.applyElementalStatus(enemy, null, elementType);
+        ElementalReactionsManager.applyElementalStatus(enemy, null, elementType, ClassManager.getFrozenDurationBonus());
         this.enemyBoard.updateStatusOverlay(enemyId, enemy);
     }
 
@@ -807,6 +824,7 @@ class ArenaAdventureScreen extends BaseScreen {
         }
 
         if (enemy.health <= 0) {
+            this.arenaState.playerHealth = ClassManager.onEnemyDeath(this.arenaState.playerHealth, this.arenaState.maxHealth);
             enemy.isDying = true;
             this.soundManager?.play('enemy_death');
             this.enemyBoard.startSimpleDeathEffect(enemyId, () => {
@@ -1247,6 +1265,10 @@ class ArenaAdventureScreen extends BaseScreen {
 
         const state = ArenaStateManager.getState();
         if (state && state.phase === 'adventure') {
+            // Restore class from arena state
+            if (state.chosenClass) {
+                ClassManager.setActiveClass(state.chosenClass);
+            }
             // Hide any lingering overlays from previous run
             this.element.querySelector('#gameover-overlay')?.classList.add('hidden');
             this.element.querySelector('#round-overlay')?.classList.add('hidden');

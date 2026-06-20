@@ -4,6 +4,7 @@
       "id": "starter_deck",
       "name": "Starter Deck",
       "description": "A balanced deck for new spell casters",
+      "class": "pyromancer",
       "cards": [
         { "id": "fire_bolt", "count": 2 },
         { "id": "magic_missile", "count": 2 },
@@ -27,6 +28,7 @@
       "id": "aggro_deck",
       "name": "Aggressive Spellcaster",
       "description": "Fast and aggressive damage-focused deck",
+      "class": "pyromancer",
       "cards": [
         { "id": "fire_bolt", "count": 2 },
         { "id": "magic_missile", "count": 2 },
@@ -50,6 +52,7 @@
       "id": "control_deck",
       "name": "Control Mage",
       "description": "Defensive deck focused on survival and big spells",
+      "class": "pyromancer",
       "cards": [
         { "id": "minor_heal", "count": 2 },
         { "id": "healing_light", "count": 2 },

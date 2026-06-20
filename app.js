@@ -41,6 +41,9 @@ class SpellCasterApp {
             // Register all screens
             this.registerScreens();
 
+            // Initialize ClassManager
+            ClassManager.init();
+            
             // Start the application
             await this.startApplication();
 
@@ -164,6 +167,7 @@ class SpellCasterApp {
             { name: 'Arena Builder Screen', check: () => window.ArenaBuilderScreen },
             { name: 'Arena State Manager', check: () => window.ArenaStateManager },
             { name: 'Arena Adventure Screen', check: () => window.ArenaAdventureScreen },
+            { name: 'Class Select Screen', check: () => window.ClassSelectScreen },
             { name: 'Deck Builder Screen', check: () => window.DeckBuilderScreen },
             { name: 'Card Manager', check: () => window.CardManager },
             { name: 'Sound Manager', check: () => window.SoundManager }
@@ -214,6 +218,9 @@ class SpellCasterApp {
         
         // Register arena adventure screen
         this.screenManager.registerScreen('arena-adventure', window.ArenaAdventureScreen);
+        
+        // Register class select screen
+        this.screenManager.registerScreen('class-select', window.ClassSelectScreen);
         
         // Register deck builder screen
         this.screenManager.registerScreen('deck-builder', window.DeckBuilderScreen);

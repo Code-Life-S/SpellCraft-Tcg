@@ -18,6 +18,7 @@ class DeckBuilderScreen extends BaseScreen {
             rarity: "all"
         };
         this.selectedCard = null;
+        this.chosenClassId = 'pyromancer';
     }
 
     async setupContent() {
@@ -72,6 +73,8 @@ class DeckBuilderScreen extends BaseScreen {
         // If a deckId is provided, load that deck
         if (data && data.deckId) {
             await this.loadDeckById(data.deckId);
+        } else if (data && data.classId) {
+            this.createNewDeck(data.classId);
         } else {
             this.createNewDeck();
         }
@@ -231,9 +234,27 @@ class DeckBuilderScreen extends BaseScreen {
     updateDeckInfo() {
         const deckNameInput = this.element.querySelector('.deck-name-input');
         const cardCount = this.element.querySelector('.card-count');
+        const classIndicator = this.element.querySelector('.deck-class-indicator');
         
         if (deckNameInput) deckNameInput.value = this.currentDeck.name;
         if (cardCount) cardCount.textContent = `${this.currentDeck.cards.length}/${this.currentDeck.maxCards}`;
+        
+        // Update class indicator
+        if (!classIndicator) {
+            var statContainer = this.element.querySelector('.deck-stats');
+            if (statContainer) {
+                var indicator = document.createElement('div');
+                indicator.className = 'stat-item deck-class-indicator';
+                var cls = window.getClassById ? window.getClassById(this.chosenClassId) : null;
+                indicator.innerHTML = '<span class="stat-label">Class:</span>' +
+                    '<span class="stat-value">' + (cls ? cls.art + ' ' + cls.name : this.chosenClassId) + '</span>';
+                statContainer.appendChild(indicator);
+            }
+        } else {
+            var cls = window.getClassById ? window.getClassById(this.chosenClassId) : null;
+            classIndicator.innerHTML = '<span class="stat-label">Class:</span>' +
+                '<span class="stat-value">' + (cls ? cls.art + ' ' + cls.name : this.chosenClassId) + '</span>';
+        }
     }
 
     updateSpellGrid() {
@@ -248,6 +269,9 @@ class DeckBuilderScreen extends BaseScreen {
 
         // Filter and sort spells
         let filteredSpells = this.availableSpells.filter(spell => {
+            // Class filter: neutral (no class field) OR matches chosen class
+            const matchesClass = !spell.class || spell.class === this.chosenClassId;
+            
             const matchesSearch = !this.filters.search || 
                 spell.name.toLowerCase().includes(this.filters.search) ||
                 spell.text.toLowerCase().includes(this.filters.search);
@@ -258,7 +282,7 @@ class DeckBuilderScreen extends BaseScreen {
             const matchesRarity = this.filters.rarity === 'all' || 
                 spell.rarity === this.filters.rarity;
 
-            return matchesSearch && matchesMana && matchesRarity;
+            return matchesClass && matchesSearch && matchesMana && matchesRarity;
         }).sort((a, b) => {
             // First sort by mana cost
             if (a.mana !== b.mana) {
@@ -372,6 +396,7 @@ class DeckBuilderScreen extends BaseScreen {
                 id: this.currentDeck.id || 'deck_' + Date.now(),
                 name: this.currentDeck.name,
                 description: this.currentDeck.description || '',
+                class: this.chosenClassId || 'pyromancer',
                 cards: this.convertCardsToStorageFormat(this.currentDeck.cards),
                 isDefault: false
             };
@@ -401,7 +426,9 @@ class DeckBuilderScreen extends BaseScreen {
         }
     }
 
-    createNewDeck() {
+    createNewDeck(classId) {
+        this.chosenClassId = classId || ClassManager.getActiveClassId() || 'pyromancer';
+        ClassManager.setActiveClass(this.chosenClassId);
         this.currentDeck = {
             id: null, // Will be assigned when saved
             name: "New Deck",
@@ -429,6 +456,9 @@ class DeckBuilderScreen extends BaseScreen {
         const foundDeck = this.cardManager.deckStorage.getDeck(deckId);
         
         if (foundDeck) {
+            // Restore class from deck
+            this.chosenClassId = foundDeck.class || 'pyromancer';
+            ClassManager.setActiveClass(this.chosenClassId);
             // Convert storage format to deck builder format
             this.currentDeck = this.convertStorageDeckToBuilder(foundDeck);
             console.log(`Loaded deck: ${foundDeck.name}`);

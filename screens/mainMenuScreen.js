@@ -572,15 +572,18 @@ class MainMenuScreen extends BaseScreen {
             <div class="deck-selection-panel">
                 <h2>Choose Your Deck</h2>
                 <div class="deck-selection-list" id="deck-selection-list">
-                    ${availableDecks.map(deck => `
-                        <div class="deck-selection-item" data-deck-id="${deck.id}">
-                            <div class="deck-selection-name">${deck.name}</div>
-                            <div class="deck-selection-info">
-                                ${this.calculateDeckSize(deck)} cards
-                                ${deck.isDefault ? '(Default)' : '(Custom)'}
-                            </div>
-                        </div>
-                    `).join('')}
+                    ${availableDecks.map(deck => {
+                        var cls = window.getClassById && deck.class ? window.getClassById(deck.class) : null;
+                        var classIcon = cls ? cls.art : '?';
+                        return '<div class="deck-selection-item" data-deck-id="' + deck.id + '">' +
+                            '<div class="deck-selection-name">' + deck.name + '</div>' +
+                            '<div class="deck-selection-info">' +
+                                this.calculateDeckSize(deck) + ' cards' +
+                                ' <span class="deck-class-icon">' + classIcon + '</span>' +
+                                (deck.isDefault ? ' (Default)' : ' (Custom)') +
+                            '</div>' +
+                        '</div>';
+                    }).join('')}
                 </div>
                 <div class="deck-selection-buttons">
                     <button class="deck-selection-btn cancel" id="cancel-deck-selection">Cancel</button>
@@ -672,6 +675,10 @@ class MainMenuScreen extends BaseScreen {
                 border-color: #FFD700;
             }
             
+            .deck-class-icon {
+                font-size: 16px;
+                margin-left: 8px;
+            }
             .deck-selection-name {
                 color: #fff;
                 font-size: 18px;
@@ -766,7 +773,12 @@ class MainMenuScreen extends BaseScreen {
             if (selectedDeckId) {
                 document.body.removeChild(overlay);
                 
-                // Navigate to game with selected deck
+                // Get deck class and set it as active
+                var deck = this.cardManager.deckStorage.getDeck(selectedDeckId);
+                var classId = deck && deck.class ? deck.class : 'pyromancer';
+                ClassManager.setActiveClass(classId);
+                
+                // Navigate directly to game
                 await this.navigateTo('game', { deckId: selectedDeckId });
             }
         });
@@ -781,7 +793,7 @@ class MainMenuScreen extends BaseScreen {
 
     async openArenaMode() {
         this.playButtonSound();
-        await this.navigateTo('arena-builder');
+        await this.navigateTo('class-select', { mode: 'arena' });
     }
 
     async openDeckBuilder() {

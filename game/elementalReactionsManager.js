@@ -7,7 +7,7 @@ class ElementalReactionsManager {
         return SPELL_ELEMENT_MAP[spellId] || null;
     }
 
-    static applyStatus(enemy, statusType) {
+    static applyStatus(enemy, statusType, durationModifier) {
         if (!this.isEnabled()) return;
         const effectDef = STATUS_EFFECTS[statusType];
         if (!effectDef || !enemy) return;
@@ -16,9 +16,14 @@ class ElementalReactionsManager {
             enemy.statusEffects = {};
         }
 
+        var duration = effectDef.duration;
+        if (durationModifier) {
+            duration += durationModifier;
+        }
+
         enemy.statusEffects[statusType] = {
             type: statusType,
-            duration: effectDef.duration
+            duration: duration
         };
     }
 
@@ -141,11 +146,11 @@ class ElementalReactionsManager {
         return this.isEnabled() && this.hasStatus(enemy, 'frozen');
     }
 
-    static applyElementalStatus(enemy, spellId, spellElement) {
+    static applyElementalStatus(enemy, spellId, spellElement, durationModifier) {
         if (!this.isEnabled() || !enemy) return;
         const statusType = ELEMENT_STATUS_MAP[spellElement];
         if (!statusType) return;
-        this.applyStatus(enemy, statusType);
+        this.applyStatus(enemy, statusType, durationModifier);
     }
 
     static getStatusVisualClasses(enemy) {

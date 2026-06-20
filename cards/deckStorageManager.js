@@ -92,6 +92,18 @@ class DeckStorageManager {
     getAllDecks() {
         try {
             const decks = JSON.parse(localStorage.getItem(this.STORAGE_KEY) || '[]');
+            var migrated = false;
+            if (Array.isArray(decks)) {
+                decks.forEach(function(deck) {
+                    if (!deck.class) {
+                        deck.class = 'pyromancer';
+                        migrated = true;
+                    }
+                });
+                if (migrated) {
+                    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(decks));
+                }
+            }
             return Array.isArray(decks) ? decks : [];
         } catch (error) {
             console.error('Error reading decks from storage:', error);
@@ -104,7 +116,11 @@ class DeckStorageManager {
      */
     getDeck(deckId) {
         const decks = this.getAllDecks();
-        return decks.find(deck => deck.id === deckId) || null;
+        const deck = decks.find(deck => deck.id === deckId) || null;
+        if (deck && !deck.class) {
+            deck.class = 'pyromancer';
+        }
+        return deck;
     }
 
     /**
@@ -213,11 +229,12 @@ class DeckStorageManager {
     /**
      * Create a new empty deck
      */
-    createNewDeck(name = 'New Deck') {
+    createNewDeck(name = 'New Deck', classId) {
         const newDeck = {
             id: 'deck_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
             name: name,
             description: '',
+            class: classId || 'pyromancer',
             cards: [],
             isDefault: false,
             created: Date.now(),

@@ -75,6 +75,12 @@
     background: rgba(100,149,237,0.13);
     transform: translateY(-2px) scale(1.01);
 }
+.deck-list-class {
+    font-size: 1.5rem;
+    margin-right: 0.8rem;
+    min-width: 2rem;
+    text-align: center;
+}
 .deck-list-name {
     font-size: 1.1rem;
     font-weight: bold;

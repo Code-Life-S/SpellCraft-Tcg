@@ -16,6 +16,7 @@ class ArenaBuilderScreen extends BaseScreen {
         
         // Arena state key for localStorage
         this.ARENA_STATE_KEY = 'arenaBuilderState';
+        this.chosenClassId = null;
     }
 
     async setupContent() {
@@ -102,6 +103,22 @@ class ArenaBuilderScreen extends BaseScreen {
         }
     }
 
+    async onBeforeShow(data) {
+        if (data && data.classId) {
+            this.chosenClassId = data.classId;
+        } else if (!this.chosenClassId) {
+            this.chosenClassId = ClassManager.getActiveClassId() || 'pyromancer';
+        }
+        if (this.chosenClassId) {
+            ClassManager.setActiveClass(this.chosenClassId);
+        }
+        // Generate initial choices if arena is fresh
+        if (this.arenaCards.length === 0 && (!this.currentChoices || this.currentChoices.length === 0)) {
+            this.generateNewChoices();
+            this.updateUI();
+        }
+    }
+
     bindEvents() {
         // Header buttons
         this.addEventListenerSafe(
@@ -150,6 +167,7 @@ class ArenaBuilderScreen extends BaseScreen {
                 }
                 
                 this.arenaCards = state.arenaCards || [];
+                this.chosenClassId = state.chosenClass || null;
                 this.isArenaComplete = this.arenaCards.length >= this.ARENA_DECK_SIZE;
                 
                 // Show resume button if there's a saved arena
@@ -175,14 +193,16 @@ class ArenaBuilderScreen extends BaseScreen {
         const state = {
             arenaCards: this.arenaCards,
             phase: 'builder',
+            chosenClass: this.chosenClassId,
             timestamp: Date.now()
         };
         localStorage.setItem(this.ARENA_STATE_KEY, JSON.stringify(state));
     }
 
-    startNewArena() {
+    startNewArena(classId) {
         this.arenaCards = [];
         this.isArenaComplete = false;
+        this.chosenClassId = classId || this.chosenClassId || ClassManager.getActiveClassId() || 'pyromancer';
         this.saveArenaState();
         
         // Hide resume button
@@ -220,10 +240,16 @@ class ArenaBuilderScreen extends BaseScreen {
             return;
         }
         
+        // Filter: neutral (no 'class' field) OR matches chosen class
+        const classId = this.chosenClassId || ClassManager.getActiveClassId() || 'pyromancer';
+        const filteredSpells = allSpells.filter(function(card) {
+            return !card.class || card.class === classId;
+        });
+        
         this.currentChoices = [];
         
-        // Get 3 random unique spells
-        const availableSpells = [...allSpells];
+        // Get 3 random unique spells from filtered pool
+        const availableSpells = [...filteredSpells];
         for (let i = 0; i < this.CARDS_PER_CHOICE && availableSpells.length > 0; i++) {
             const randomIndex = Math.floor(Math.random() * availableSpells.length);
             const selectedSpell = availableSpells.splice(randomIndex, 1)[0];
@@ -383,6 +409,7 @@ class ArenaBuilderScreen extends BaseScreen {
         // Mark state as adventure phase
         const arenaState = {
             arenaCards: this.arenaCards,
+            chosenClass: this.chosenClassId || ClassManager.getActiveClassId() || 'pyromancer',
             phase: 'adventure',
             currentRound: 1,
             playerHealth: 30,

@@ -57,6 +57,12 @@ class DeckListScreen extends BaseScreen {
             item.className = 'deck-list-item';
             item.dataset.deckId = deck.id;
 
+            const classIcon = document.createElement('span');
+            classIcon.className = 'deck-list-class';
+            var cls = window.getClassById ? window.getClassById(deck.class || 'pyromancer') : null;
+            classIcon.textContent = cls ? cls.art : '?';
+            item.appendChild(classIcon);
+
             const name = document.createElement('span');
             name.className = 'deck-list-name';
             name.textContent = deck.name;
@@ -125,17 +131,7 @@ class DeckListScreen extends BaseScreen {
     }
 
     createNewDeck() {
-        const name = prompt('Enter a name for your new deck:', 'New Deck');
-        if (!name) return;
-        
-        try {
-            const newDeck = this.cardManager.deckStorage.createNewDeck(name);
-            this.loadAllDecks();
-            this.renderDecks();
-            this.showMessage('New deck created!', 'success');
-        } catch (error) {
-            this.showMessage(`Error creating deck: ${error.message}`, 'error');
-        }
+        this.navigateTo('class-select', { mode: 'deck_builder' });
     }
 
     deleteDeck(deckId) {

@@ -195,6 +195,14 @@ class GameScreen extends BaseScreen {
     }
 
     async onBeforeShow(data) {
+        // Ensure active class is set (from deck if available)
+        if (data && data.deckId && this.cardManager) {
+            var deck = this.cardManager.deckStorage.getDeck(data.deckId);
+            if (deck && deck.class) {
+                ClassManager.setActiveClass(deck.class);
+            }
+        }
+
         // Load the selected deck if provided
         if (data && data.deckId) {
             const success = this.cardManager.loadDeck(data.deckId);
@@ -209,6 +217,9 @@ class GameScreen extends BaseScreen {
             console.log('🎯 No deck specified, using starter deck');
             this.cardManager.loadDeck('starter_deck');
         }
+        
+        // Inject class cards into deck
+        this.injectClassCards();
         
         // Now that deck is loaded, create cards and start mulligan
         this.createSpellCards();
@@ -322,6 +333,21 @@ class GameScreen extends BaseScreen {
     }
 
     // Game Logic Methods (extracted from original script.js)
+    injectClassCards() {
+        var classCards = ClassManager.getClassCardIds(ClassManager.getActiveClassId());
+        var _this = this;
+        classCards.forEach(function(cardId) {
+            var cardData = _this.cardManager.getCardById(cardId);
+            if (cardData) {
+                _this.cardManager.currentDeck.push({
+                    ...cardData,
+                    deckIndex: _this.cardManager.currentDeck.length
+                });
+            }
+        });
+        _this.cardManager.resetDeck();
+    }
+
     createSpellCards() {
         // Get starting hand from deck (4 cards for mulligan)
         this.playerHand = this.cardManager.getStartingHand(4);
@@ -886,6 +912,11 @@ class GameScreen extends BaseScreen {
     }
 
     applyDamageWithElement(enemyId, baseDamage, elementType, skipDeathHistory = false) {
+        // Class passive: Pyromancien +1 fire damage
+        if (elementType === 'fire' && ClassManager.getFireDamageBonus() > 0) {
+            baseDamage += ClassManager.getFireDamageBonus();
+        }
+
         if (!ElementalReactionsManager.isEnabled()) {
             this.damageEnemyWithEffects(enemyId, baseDamage, skipDeathHistory);
             return;
@@ -914,7 +945,7 @@ class GameScreen extends BaseScreen {
             });
         }
 
-        ElementalReactionsManager.applyElementalStatus(enemy, null, elementType);
+        ElementalReactionsManager.applyElementalStatus(enemy, null, elementType, ClassManager.getFrozenDurationBonus());
         this.enemyBoard.updateStatusOverlay(enemyId, enemy);
     }
 
@@ -931,6 +962,7 @@ class GameScreen extends BaseScreen {
             }
             
             if (enemy.health <= 0) {
+                this.playerHealth = ClassManager.onEnemyDeath(this.playerHealth, 30);
                 this.soundManager?.play('enemy_death');
                 enemy.isDying = true;
                 this.enemyBoard.startDeathAnimation(enemyId, 1800, () => {
