@@ -1,4 +1,49 @@
 class SpellCardComponent {
+    static formatCardText(card) {
+        const damage = card.damage || 0;
+        const healing = card.healing || 0;
+        const shield = card.shield || 0;
+        const cardDraw = card.cardDraw || 0;
+        const manaBoost = card.manaBoost || 0;
+        const hits = card.hits || 0;
+
+        let finalDamage = damage;
+        if (card.element === 'fire' && window.ClassManager) {
+            finalDamage += window.ClassManager.getFireDamageBonus();
+        }
+
+        const parts = [];
+        if (card.lifesteal) {
+            parts.push('<i>Lifesteal</i>');
+        }
+        if (card.element === 'frost') {
+            parts.push('<i>Freeze</i>');
+        }
+        if (finalDamage > 0) {
+            if (card.targetType === 'all') {
+                parts.push('<b>' + finalDamage + '</b> damage to <i>All</i>');
+            } else if (card.targetType === 'random' && hits > 0) {
+                parts.push('<b>' + finalDamage + '</b> damage <b>' + hits + '</b> times');
+            } else {
+                parts.push('<b>' + finalDamage + '</b> damage to <i>Target</i>');
+            }
+        }
+        if (healing > 0) {
+            parts.push('Heal <b>' + healing + '</b>');
+        }
+        if (shield > 0) {
+            parts.push('Shield <b>' + shield + '</b>');
+        }
+        if (cardDraw > 0) {
+            parts.push('Draw <b>' + cardDraw + '</b>');
+        }
+        if (manaBoost > 0) {
+            parts.push('+<b>' + manaBoost + '</b> mana');
+        }
+        if (parts.length > 0) return parts.join('<br>');
+        return card.text || '';
+    }
+
     /**
      * Creates a card DOM element matching the game screen's card design.
      * @param {Object} card - { mana, art, name, text, rarity }
@@ -37,7 +82,7 @@ class SpellCardComponent {
 
         const textDiv = document.createElement('div');
         textDiv.className = 'card-text';
-        textDiv.textContent = card.text;
+        textDiv.innerHTML = SpellCardComponent.formatCardText(card);
 
         div.appendChild(manaDiv);
         div.appendChild(artDiv);

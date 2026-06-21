@@ -151,7 +151,7 @@
       "type": "spell",
       "mana": 3,
       "rarity": "rare",
-      "text": "Draw 2\\n+1 mana",
+      "text": "Draw 2\\n +1 mana",
       "art": "\u26A1",
       "cardDraw": 2,
       "manaBoost": 1,

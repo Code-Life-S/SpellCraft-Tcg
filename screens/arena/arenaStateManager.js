@@ -35,43 +35,7 @@ class ArenaStateManager {
     }
 
     static getCardDisplayText(card) {
-        const damage = card.damage || 0;
-        const healing = card.healing || 0;
-        const shield = card.shield || 0;
-        const cardDraw = card.cardDraw || 0;
-        const manaBoost = card.manaBoost || 0;
-        const hits = card.hits || 0;
-
-        const parts = [];
-        if (card.lifesteal) {
-            parts.push('Lifesteal');
-        }
-        if (card.element === 'frost') {
-            parts.push('Freeze');
-        }
-        if (damage > 0) {
-            if (card.targetType === 'all') {
-                parts.push(damage + ' damage to All');
-            } else if (card.targetType === 'random' && hits > 0) {
-                parts.push(damage + ' damage ' + hits + ' times');
-            } else {
-                parts.push(damage + ' damage to Target');
-            }
-        }
-        if (healing > 0) {
-            parts.push('Heal ' + healing);
-        }
-        if (shield > 0) {
-            parts.push('Shield ' + shield);
-        }
-        if (cardDraw > 0) {
-            parts.push('Draw ' + cardDraw);
-        }
-        if (manaBoost > 0) {
-            parts.push('+' + manaBoost + ' mana');
-        }
-        if (parts.length > 0) return parts.join('\n');
-        return card.text || '';
+        return SpellCardComponent.formatCardText(card);
     }
 
     static getUpgradedCard(card, deckUpgrades) {
