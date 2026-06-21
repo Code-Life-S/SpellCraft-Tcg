@@ -1,0 +1,10 @@
+/* GameHeaderComponent styles */
+.game-info .round-sep {
+    color: #555;
+    font-size: 16px;
+}
+
+.game-info .round-total {
+    color: #888;
+    font-size: 14px;
+}

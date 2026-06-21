@@ -58,7 +58,8 @@ class GameScreen extends BaseScreen {
             'screens/components/spell-card/spellCardComponent.css',
             'screens/components/visual-effects/visualEffectsComponent.css',
             'screens/components/enemy-board/enemyBoardComponent.css',
-            'screens/components/mulligan/mulligan.css'
+            'screens/components/mulligan/mulligan.css',
+            'screens/components/game-header/gameHeaderComponent.css'
         ];
         for (const cssPath of componentCSS) {
             try {
@@ -71,6 +72,18 @@ class GameScreen extends BaseScreen {
         }
 
         // Create shared component instances
+        this.headerComp = new GameHeaderComponent({
+            mode: 'adventure',
+            onHomeClick: () => this.backToMenu(),
+            onToggleHistory: () => this.toggleSidebar('history'),
+            onToggleDeck: () => this.toggleSidebar('deck'),
+            onToggleSound: () => this.toggleSound(),
+            onToggleMusic: () => this.toggleMusic()
+        });
+        const gameBoard = this.element.querySelector('.game-board');
+        if (gameBoard) {
+            gameBoard.prepend(this.headerComp.render());
+        }
         this.visualEffects = new VisualEffectsComponent(this.element);
         this.enemyBoard = new EnemyBoardComponent(this.element, '#enemy-battlefield');
         this.playerHandComp = new PlayerHandComponent(this.element, '#player-hand');
@@ -98,29 +111,6 @@ class GameScreen extends BaseScreen {
         this.element.innerHTML = `
             <div class="game-container">
                 <div class="game-board">
-                    <div class="game-info">
-                        <div class="turn-counter">
-                            <span class="turn-label">Turn</span>
-                            <span class="turn-number" id="turn-number">1</span>
-                        </div>
-                        <div class="enemies-remaining">
-                            <span class="enemies-label">Enemies:</span>
-                            <span class="enemies-count" id="enemies-count">0</span>
-                        </div>
-                        <div class="game-status">
-                            <span class="status-text" id="game-status">Your Turn</span>
-                        </div>
-                        <div class="ui-controls">
-                            <button class="ui-btn" id="back-to-menu" title="Back to Main Menu">🏠</button>
-                            <button class="ui-btn" id="toggle-history" title="Toggle Action History">📜</button>
-                            <button class="ui-btn" id="toggle-deck" title="Toggle Deck Tracker">🃏</button>
-                            <div class="audio-controls">
-                                <button class="ui-btn audio-btn" id="toggle-sound" title="Toggle Sound">🔊</button>
-                                <button class="ui-btn audio-btn" id="toggle-music" title="Toggle Music">🎵</button>
-                            </div>
-                        </div>
-                    </div>
-
                     <div class="main-game-area">
                         <div class="left-sidebar" id="left-sidebar">
                             <div class="history-panel">
@@ -274,39 +264,6 @@ class GameScreen extends BaseScreen {
             }
         );
 
-        // Back to menu button
-        this.addEventListenerSafe(
-            this.element.querySelector('#back-to-menu'),
-            'click',
-            () => this.backToMenu()
-        );
-
-        // UI toggle buttons
-        this.addEventListenerSafe(
-            this.element.querySelector('#toggle-history'),
-            'click',
-            () => this.toggleSidebar('history')
-        );
-
-        this.addEventListenerSafe(
-            this.element.querySelector('#toggle-deck'),
-            'click',
-            () => this.toggleSidebar('deck')
-        );
-
-        // Audio control buttons
-        this.addEventListenerSafe(
-            this.element.querySelector('#toggle-sound'),
-            'click',
-            () => this.toggleSound()
-        );
-
-        this.addEventListenerSafe(
-            this.element.querySelector('#toggle-music'),
-            'click',
-            () => this.toggleMusic()
-        );
-
         // Animation system is working properly!
 
         // Card hover effects
@@ -454,20 +411,11 @@ class GameScreen extends BaseScreen {
     }
 
     updateAudioButtons() {
-        const soundBtn = this.element.querySelector('#toggle-sound');
-        const musicBtn = this.element.querySelector('#toggle-music');
-
-        if (this.soundManager && soundBtn && musicBtn) {
-            // Update sound button
+        if (this.soundManager && this.headerComp) {
             const soundEnabled = this.soundManager.enabled;
-            soundBtn.textContent = soundEnabled ? '🔊' : '🔇';
-            soundBtn.classList.toggle('disabled', !soundEnabled);
-
-            // Update music button based on localStorage and current playing state
             const musicEnabled = localStorage.getItem('musicEnabled') !== 'false';
             const isPlaying = this.soundManager.backgroundMusicPlaying;
-            musicBtn.textContent = (musicEnabled && isPlaying) ? '🎶' : '🎵';
-            musicBtn.classList.toggle('disabled', !musicEnabled || !isPlaying);
+            this.headerComp.updateAudio(soundEnabled, musicEnabled, isPlaying);
         }
     }
 
@@ -487,12 +435,7 @@ class GameScreen extends BaseScreen {
                     // Double-check that no music is playing before starting
                     if (!this.soundManager.backgroundMusicPlaying) {
                         this.soundManager.playBackgroundMusic();
-                        // Update music button to show it's playing
-                        const musicButton = this.element.querySelector('#toggle-music');
-                        if (musicButton) {
-                            musicButton.textContent = '🎶';
-                            musicButton.classList.remove('disabled');
-                        }
+                        this.updateAudioButtons();
                     }
                 }, 500);
             }
@@ -502,39 +445,24 @@ class GameScreen extends BaseScreen {
     // Audio Control Methods
     toggleSound() {
         if (this.soundManager) {
-            const enabled = this.soundManager.toggle();
-            const button = this.element.querySelector('#toggle-sound');
-            button.textContent = enabled ? '🔊' : '🔇';
-            button.classList.toggle('disabled', !enabled);
-            
-            localStorage.setItem('soundEnabled', enabled);
+            this.soundManager.toggle();
+            localStorage.setItem('soundEnabled', this.soundManager.enabled);
             this.soundManager.play('button_click');
+            this.updateAudioButtons();
         }
     }
 
     toggleMusic() {
-        const button = this.element.querySelector('#toggle-music');
-        const isPlaying = !button.classList.contains('disabled');
-        
-        if (isPlaying) {
-            if (this.soundManager) {
-                this.soundManager.stopBackgroundMusic();
-            }
-            button.textContent = '🎵';
-            button.classList.add('disabled');
+        const musicEnabled = localStorage.getItem('musicEnabled') !== 'false';
+        if (musicEnabled) {
+            this.soundManager?.stopBackgroundMusic();
             localStorage.setItem('musicEnabled', false);
         } else {
-            if (this.soundManager) {
-                this.soundManager.playBackgroundMusic();
-            }
-            button.textContent = '🎶';
-            button.classList.remove('disabled');
+            this.soundManager?.playBackgroundMusic();
             localStorage.setItem('musicEnabled', true);
         }
-        
-        if (this.soundManager) {
-            this.soundManager.play('button_click');
-        }
+        this.soundManager?.play('button_click');
+        this.updateAudioButtons();
     }
 
     // Sidebar Management
@@ -1321,6 +1249,9 @@ class GameScreen extends BaseScreen {
         if (statusElement) {
             statusElement.textContent = status;
         }
+        if (this.headerComp) {
+            this.headerComp.update({ status: status });
+        }
     }
 
     addToHistory(action, isPlayerAction = true) {
@@ -1331,9 +1262,14 @@ class GameScreen extends BaseScreen {
     updateUI() {
         this.element.querySelector('#current-mana').textContent = this.currentMana;
         this.element.querySelector('#player-health').textContent = `❤️ ${this.playerHealth}/${this.maxHealth}`;
-        this.element.querySelector('#turn-number').textContent = this.currentTurn;
-        this.element.querySelector('#enemies-count').textContent = this.enemies.length;
         this.element.querySelector('#max-mana').textContent = `/${this.maxMana}`;
+        if (this.headerComp) {
+            this.headerComp.update({
+                round: this.currentTurn,
+                enemies: this.enemies.length,
+                status: this.element.querySelector('#game-status')?.textContent || ''
+            });
+        }
         
         // Update shield display
         const shieldElement = this.element.querySelector('#player-shield');

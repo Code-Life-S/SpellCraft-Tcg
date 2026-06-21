@@ -30,6 +30,8 @@ class ArenaAdventureScreen extends BaseScreen {
         this.actionHistoryComp = null;
         this.mulliganActive = false;
         this.selectedCardsForMulligan = null;
+        this.sidebarStates = { history: false, deck: false };
+        this.headerComp = null;
     }
 
     async setupContent() {
@@ -46,7 +48,8 @@ class ArenaAdventureScreen extends BaseScreen {
             'screens/components/spell-card/spellCardComponent.css',
             'screens/components/visual-effects/visualEffectsComponent.css',
             'screens/components/enemy-board/enemyBoardComponent.css',
-            'screens/components/mulligan/mulligan.css'
+            'screens/components/mulligan/mulligan.css',
+            'screens/components/game-header/gameHeaderComponent.css'
         ];
         for (const cssPath of componentCSS) {
             try {
@@ -59,6 +62,19 @@ class ArenaAdventureScreen extends BaseScreen {
         }
 
         // Create shared component instances
+        this.headerComp = new GameHeaderComponent({
+            mode: 'arena',
+            onHomeClick: () => this.backToMenu(),
+            onToggleHistory: () => this.toggleSidebar('history'),
+            onToggleDeck: () => this.toggleSidebar('deck'),
+            onToggleSound: () => this.toggleSound(),
+            onToggleMusic: () => this.toggleMusic()
+        });
+        const gameBoard = this.element.querySelector('.game-board');
+        if (gameBoard) {
+            gameBoard.prepend(this.headerComp.render());
+        }
+        this.initializeUIToggles();
         this.visualEffects = new VisualEffectsComponent(this.element);
         this.enemyBoard = new EnemyBoardComponent(this.element, '#enemy-area');
         this.playerHandComp = new PlayerHandComponent(this.element, '#player-hand');
@@ -105,24 +121,6 @@ class ArenaAdventureScreen extends BaseScreen {
     getFallbackHTML() {
         return '<div class="arena-adventure" style="width:100%;height:100%;display:flex;flex-direction:column;background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;overflow:hidden;">' +
             '<div class="game-board" style="width:100%;height:100%;display:flex;flex-direction:column;">' +
-                '<div class="game-info" style="height:6%;display:flex;justify-content:space-between;align-items:center;padding:8px 40px;background:linear-gradient(90deg,rgba(139,69,19,0.3),rgba(210,105,30,0.3));border-bottom:2px solid rgba(255,215,0,0.5);">' +
-                    '<div class="turn-counter" style="display:flex;align-items:center;gap:8px;font-size:16px;font-weight:bold;">' +
-                        '<span style="color:#FFD700;">Round</span>' +
-                        '<span id="round-number" style="color:#FF6B6B;font-size:20px;">1</span>' +
-                        '<span style="color:#555;">/</span>' +
-                        '<span style="color:#888;font-size:14px;">12</span>' +
-                    '</div>' +
-                    '<div class="enemies-remaining" style="display:flex;align-items:center;gap:8px;font-size:16px;font-weight:bold;">' +
-                        '<span style="color:#FFD700;">Enemies:</span>' +
-                        '<span id="enemies-count" style="color:#FF6B6B;font-size:20px;">0</span>' +
-                    '</div>' +
-                    '<div class="game-status" style="display:flex;align-items:center;gap:8px;font-size:16px;font-weight:bold;">' +
-                        '<span id="game-status" style="color:#00FF7F;font-size:18px;">Round 1</span>' +
-                    '</div>' +
-                    '<div class="ui-controls" style="display:flex;align-items:center;gap:10px;">' +
-                        '<button id="concede-btn" style="background:rgba(220,20,60,0.2);border:2px solid rgba(220,20,60,0.6);border-radius:8px;color:#DC143C;padding:6px 14px;cursor:pointer;font-weight:bold;font-size:13px;">Concede</button>' +
-                    '</div>' +
-                '</div>' +
                 '<div class="main-game-area" style="display:flex;height:auto;min-height:220px;max-height:300px;margin:10px 20px;gap:15px;width:calc(100% - 40px);">' +
                     '<div class="left-sidebar" id="left-sidebar" style="width:200px;background:linear-gradient(135deg,rgba(30,30,50,0.8),rgba(50,50,80,0.8));border:2px solid rgba(255,215,0,0.3);border-radius:10px;padding:10px;overflow-y:auto;display:flex;flex-direction:column;">' +
                         '<div class="history-panel" style="display:flex;flex-direction:column;height:100%;">' +
@@ -235,8 +233,9 @@ class ArenaAdventureScreen extends BaseScreen {
         this.renderEnemies();
 
         const el = this.element;
-        el.querySelector('#round-number').textContent = round;
-        el.querySelector('#concede-btn').style.display = '';
+        if (this.headerComp) {
+            this.headerComp.update({ round: round, status: 'Your Turn - Round ' + round });
+        }
         el.querySelector('#end-turn-btn').disabled = false;
 
         // Mulligan at the start of round 1
@@ -367,18 +366,19 @@ class ArenaAdventureScreen extends BaseScreen {
         el.querySelector('#current-mana').textContent = this.currentMana;
         el.querySelector('#max-mana').textContent = this.maxMana;
 
-        // Enemies remaining
-        const enemiesEl = el.querySelector('#enemies-count');
-        if (enemiesEl) enemiesEl.textContent = aliveEnemies.length;
-
-        // Game status
-        const statusEl = el.querySelector('#game-status');
-        if (statusEl) {
+        // Header info
+        if (this.headerComp) {
+            let status;
             if (this.gameState === 'playing') {
-                statusEl.textContent = this.isPlayerTurn ? 'Your Turn - Round ' + this.arenaState.currentRound : 'Enemy Turn';
+                status = this.isPlayerTurn ? 'Your Turn - Round ' + this.arenaState.currentRound : 'Enemy Turn';
             } else {
-                statusEl.textContent = this.gameState === 'won' ? 'Round Complete!' : this.gameState === 'lost' ? 'Defeated' : 'Complete';
+                status = this.gameState === 'won' ? 'Round Complete!' : this.gameState === 'lost' ? 'Defeated' : 'Complete';
             }
+            this.headerComp.update({
+                round: this.arenaState.currentRound,
+                enemies: aliveEnemies.length,
+                status: status
+            });
         }
 
         // Update end turn button state
@@ -386,6 +386,94 @@ class ArenaAdventureScreen extends BaseScreen {
 
         // Update deck tracker
         if (this.deckTracker) this.deckTracker.update();
+    }
+
+    backToMenu() {
+        this.soundManager?.play('button_click');
+        if (confirm('Return to main menu? You can continue this arena run later.')) {
+            this.soundManager?.stopBackgroundMusic();
+            this.navigateTo('mainmenu');
+        }
+    }
+
+    toggleSidebar(type) {
+        this.sidebarStates[type] = !this.sidebarStates[type];
+        localStorage.setItem(type === 'history' ? 'historyVisible' : 'deckVisible',
+            this.sidebarStates[type]);
+        this.updateSidebarVisibility();
+    }
+
+    updateSidebarVisibility() {
+        const leftSidebar = this.element.querySelector('#left-sidebar');
+        const rightSidebar = this.element.querySelector('#right-sidebar');
+        const mainGameArea = this.element.querySelector('.main-game-area');
+        const historyBtn = this.headerComp?.getHistoryButton();
+        const deckBtn = this.headerComp?.getDeckButton();
+
+        if (leftSidebar) {
+            leftSidebar.classList.toggle('hidden', !this.sidebarStates.history);
+            leftSidebar.classList.toggle('visible', this.sidebarStates.history);
+        }
+        if (historyBtn) {
+            historyBtn.classList.toggle('active', this.sidebarStates.history);
+        }
+
+        if (rightSidebar) {
+            rightSidebar.classList.toggle('hidden', !this.sidebarStates.deck);
+            rightSidebar.classList.toggle('visible', this.sidebarStates.deck);
+        }
+        if (deckBtn) {
+            deckBtn.classList.toggle('active', this.sidebarStates.deck);
+        }
+
+        if (mainGameArea) {
+            mainGameArea.classList.toggle('left-hidden', !this.sidebarStates.history);
+            mainGameArea.classList.toggle('right-hidden', !this.sidebarStates.deck);
+            mainGameArea.classList.toggle('sidebars-hidden',
+                !this.sidebarStates.history && !this.sidebarStates.deck);
+        }
+    }
+
+    initializeUIToggles() {
+        const isMobile = window.innerWidth <= 768;
+        this.sidebarStates = {
+            history: localStorage.getItem('historyVisible') !== null
+                ? localStorage.getItem('historyVisible') === 'true' : !isMobile,
+            deck: localStorage.getItem('deckVisible') !== null
+                ? localStorage.getItem('deckVisible') === 'true' : !isMobile
+        };
+        this.updateSidebarVisibility();
+    }
+
+    toggleSound() {
+        if (this.soundManager) {
+            this.soundManager.toggle();
+            localStorage.setItem('soundEnabled', this.soundManager.enabled);
+            this.soundManager.play('button_click');
+            this.updateAudioButtons();
+        }
+    }
+
+    toggleMusic() {
+        const musicEnabled = localStorage.getItem('musicEnabled') !== 'false';
+        if (musicEnabled) {
+            this.soundManager?.stopBackgroundMusic();
+            localStorage.setItem('musicEnabled', false);
+        } else {
+            this.soundManager?.playBackgroundMusic();
+            localStorage.setItem('musicEnabled', true);
+        }
+        this.soundManager?.play('button_click');
+        this.updateAudioButtons();
+    }
+
+    updateAudioButtons() {
+        if (this.soundManager && this.headerComp) {
+            const soundEnabled = this.soundManager.enabled;
+            const musicEnabled = localStorage.getItem('musicEnabled') !== 'false';
+            const isPlaying = this.soundManager.backgroundMusicPlaying;
+            this.headerComp.updateAudio(soundEnabled, musicEnabled, isPlaying);
+        }
     }
 
     renderPlayerHand() {
@@ -556,11 +644,6 @@ class ArenaAdventureScreen extends BaseScreen {
 
     bindEvents() {
         const q = (sel) => this.element.querySelector(sel);
-
-        const concedeBtn = q('#concede-btn');
-        if (concedeBtn) {
-            this.addEventListenerSafe(concedeBtn, 'click', () => this.concedeRun());
-        }
 
         const endTurnBtn = q('#end-turn-btn');
         if (endTurnBtn) {
@@ -1081,8 +1164,6 @@ class ArenaAdventureScreen extends BaseScreen {
         const alive = this.enemies.filter(e => !e.isDying);
         if (alive.length === 0) {
             this.gameState = 'won';
-            const concedeBtn = this.element.querySelector('#concede-btn');
-            if (concedeBtn) concedeBtn.style.display = 'none';
             this.element.querySelector('#end-turn-btn').disabled = true;
             setTimeout(() => this.onRoundVictory(), 500);
         }
@@ -1276,11 +1357,6 @@ class ArenaAdventureScreen extends BaseScreen {
         stats.innerHTML = '<div>Reached round: ' + this.arenaState.currentRound + '/12</div>' +
             '<div>Deck size: ' + this.arenaState.arenaCards.length + ' cards</div>' +
             '<div>Min Heal Bonus: +' + (this.arenaState.minHealBonus || 0) + '</div>';
-    }
-
-    concedeRun() {
-        if (!confirm('Concede the arena run? You will lose all progress.')) return;
-        this.showDefeat();
     }
 
     /* ------ SCREEN LIFECYCLE ------ */
