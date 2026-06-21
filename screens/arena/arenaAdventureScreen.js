@@ -279,7 +279,7 @@ class ArenaAdventureScreen extends BaseScreen {
         this.currentTurn = 1;
         this.currentMana = 1;
         this.maxMana = 1;
-        this.playerShield = 0;
+        this.playerShield = this.arenaState.currentShield || 0;
         this.selectedCard = null;
         this.selectedCardIndex = null;
         this.phase = null;
@@ -1153,7 +1153,7 @@ class ArenaAdventureScreen extends BaseScreen {
             attackIndex++;
 
             if (enemy.canAttack === false || enemy.skipAttack) {
-                setTimeout(doNextAttack, 350);
+                setTimeout(doNextAttack, 100);
                 return;
             }
 
@@ -1162,7 +1162,7 @@ class ArenaAdventureScreen extends BaseScreen {
                 this.addToHistory(STATUS_EFFECTS.frozen.icon + ' ' + enemy.name + ' is frozen and cannot attack!', false);
                 this.enemyBoard.updateStatusOverlay(enemy.id, enemy);
                 this.updateUI();
-                setTimeout(doNextAttack, 350);
+                setTimeout(doNextAttack, 100);
                 return;
             }
 
@@ -1250,6 +1250,7 @@ class ArenaAdventureScreen extends BaseScreen {
             hpIncrease = true;
         }
 
+        this.arenaState.currentShield = this.playerShield;
         this.saveState();
 
         // Skip upgrade/add card phases on the final round

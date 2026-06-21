@@ -417,6 +417,7 @@ class ArenaBuilderScreen extends BaseScreen {
             maxHealth: 30,
             deckUpgrades: {},
             minHealBonus: 0,
+            currentShield: 0,
             runResult: null,
             timestamp: Date.now()
         };

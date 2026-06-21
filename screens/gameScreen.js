@@ -1104,7 +1104,7 @@ class GameScreen extends BaseScreen {
             
             this.updateUI();
             attackIndex++;
-        }, 1500);
+        }, 350);
     }
 
     startNewTurn() {

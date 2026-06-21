@@ -50,7 +50,7 @@ class VisualEffectsComponent {
     }
 
     showShieldNumber(targetElement, amount) {
-        this.showFloatingNumber('+' + amount + ' [U+1F6E1]', 'shield', targetElement);
+        this.showFloatingNumber('+' + amount + ' 🛡️', 'shield', targetElement);
     }
 
     createSpellImpact(targetElement, spellType) {
