@@ -43,6 +43,11 @@ class SpellCasterApp {
 
             // Initialize ClassManager
             ClassManager.init();
+
+            // Initialize PlayerProgressionManager
+            if (window.PlayerProgressionManager) {
+                PlayerProgressionManager.initialize();
+            }
             
             // Start the application
             await this.startApplication();
