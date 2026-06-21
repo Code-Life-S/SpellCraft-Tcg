@@ -196,7 +196,7 @@
     },
     {
       "id": "pyro_fire_ball",
-      "name": "Boule de Feu",
+      "name": "Fire Ball",
       "type": "spell",
       "mana": 2,
       "rarity": "rare",
@@ -209,7 +209,7 @@
     },
     {
       "id": "pyro_flame_shield",
-      "name": "Bouclier de Flammes",
+      "name": "Flame Shield",
       "type": "spell",
       "mana": 2,
       "rarity": "rare",
@@ -235,7 +235,7 @@
     },
     {
       "id": "cryo_ice_barrier",
-      "name": "Barriere de Glace",
+      "name": "Ice Barrier",
       "type": "spell",
       "mana": 2,
       "rarity": "rare",
@@ -261,7 +261,7 @@
     },
     {
       "id": "cryo_frost_armor",
-      "name": "Armure de Givre",
+      "name": "Frost Armor",
       "type": "spell",
       "mana": 3,
       "rarity": "rare",
@@ -275,7 +275,7 @@
     },
     {
       "id": "necro_soul_drain",
-      "name": "Drain d'Ame",
+      "name": "Soul Drain",
       "type": "spell",
       "mana": 2,
       "rarity": "rare",
@@ -289,7 +289,7 @@
     },
     {
       "id": "necro_bone_shield",
-      "name": "Bouclier d'Ossements",
+      "name": "Bone Shield",
       "type": "spell",
       "mana": 2,
       "rarity": "rare",
@@ -302,7 +302,7 @@
     },
     {
       "id": "necro_soul_harvest",
-      "name": "Moisson d'Ame",
+      "name": "Soul Harvest",
       "type": "spell",
       "mana": 3,
       "rarity": "rare",
