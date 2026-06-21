@@ -793,7 +793,188 @@ class MainMenuScreen extends BaseScreen {
 
     async openArenaMode() {
         this.playButtonSound();
-        await this.navigateTo('class-select', { mode: 'arena' });
+
+        const savedState = ArenaStateManager.getState();
+
+        if (!savedState || savedState.phase === 'completed') {
+            await this.navigateTo('class-select', { mode: 'arena' });
+            return;
+        }
+
+        await this.showArenaChoiceDialog(savedState);
+    }
+
+    async showArenaChoiceDialog(state) {
+        const isBuilder = state.phase === 'builder' || !state.phase;
+        const progress = isBuilder
+            ? (state.arenaCards ? state.arenaCards.length : 0) + '/10 cards'
+            : 'Round ' + (state.currentRound || 1) + '/12';
+        const cls = window.getClassById ? window.getClassById(state.chosenClass) : null;
+        const classIcon = cls ? cls.art : '?';
+
+        const overlay = document.createElement('div');
+        overlay.className = 'arena-choice-overlay';
+        overlay.innerHTML = `
+            <div class="arena-choice-panel">
+                <h2>Arena Mode</h2>
+                <div class="arena-choice-info">
+                    <span class="arena-choice-class">${classIcon}</span>
+                    <span class="arena-choice-progress">${progress}</span>
+                </div>
+                <div class="arena-choice-buttons">
+                    <button class="arena-choice-btn primary" id="arena-continue">
+                        <span class="btn-icon">▶</span>
+                        <span class="btn-text">Continue</span>
+                    </button>
+                    <button class="arena-choice-btn danger" id="arena-new-arena">
+                        <span class="btn-icon">🔄</span>
+                        <span class="btn-text">New Arena</span>
+                    </button>
+                </div>
+                <button class="arena-choice-btn cancel" id="arena-cancel">Cancel</button>
+            </div>
+        `;
+
+        this.addArenaChoiceStyles();
+        document.body.appendChild(overlay);
+
+        const continueBtn = overlay.querySelector('#arena-continue');
+        const newArenaBtn = overlay.querySelector('#arena-new-arena');
+        const cancelBtn = overlay.querySelector('#arena-cancel');
+
+        continueBtn.addEventListener('click', () => {
+            document.body.removeChild(overlay);
+            this.playButtonSound();
+            if (state.phase === 'adventure') {
+                this.navigateTo('arena-adventure');
+            } else {
+                this.navigateTo('arena-builder');
+            }
+        });
+
+        newArenaBtn.addEventListener('click', () => {
+            document.body.removeChild(overlay);
+            ArenaStateManager.clearState();
+            this.playButtonSound();
+            this.navigateTo('class-select', { mode: 'arena' });
+        });
+
+        cancelBtn.addEventListener('click', () => {
+            document.body.removeChild(overlay);
+            this.playButtonSound();
+        });
+
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                document.body.removeChild(overlay);
+            }
+        });
+    }
+
+    addArenaChoiceStyles() {
+        if (document.getElementById('arena-choice-styles')) return;
+
+        const style = document.createElement('style');
+        style.id = 'arena-choice-styles';
+        style.textContent = `
+            .arena-choice-overlay {
+                position: fixed;
+                top: 0; left: 0;
+                width: 100%; height: 100%;
+                background: rgba(0,0,0,0.8);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+                animation: fadeIn 0.3s ease-out;
+            }
+            .arena-choice-panel {
+                background: linear-gradient(145deg, #1a1a2e, #16213e);
+                border: 2px solid #FFD700;
+                border-radius: 15px;
+                padding: 30px;
+                max-width: 420px;
+                width: 90%;
+                text-align: center;
+            }
+            .arena-choice-panel h2 {
+                color: #FFD700;
+                margin: 0 0 20px 0;
+                font-size: 28px;
+            }
+            .arena-choice-info {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 12px;
+                margin-bottom: 25px;
+                background: rgba(255,255,255,0.08);
+                padding: 12px 20px;
+                border-radius: 10px;
+            }
+            .arena-choice-class {
+                font-size: 28px;
+            }
+            .arena-choice-progress {
+                color: #87CEEB;
+                font-size: 16px;
+                font-weight: bold;
+            }
+            .arena-choice-buttons {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                margin-bottom: 15px;
+            }
+            .arena-choice-btn {
+                padding: 14px 20px;
+                border: 2px solid;
+                border-radius: 10px;
+                font-size: 16px;
+                font-weight: bold;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                justify-content: center;
+                font-family: inherit;
+            }
+            .arena-choice-btn .btn-icon { font-size: 20px; }
+            .arena-choice-btn.primary {
+                background: linear-gradient(145deg, rgba(255,215,0,0.2), rgba(255,165,0,0.2));
+                border-color: #FFD700;
+                color: #FFD700;
+            }
+            .arena-choice-btn.primary:hover {
+                background: linear-gradient(145deg, rgba(255,215,0,0.4), rgba(255,165,0,0.4));
+                box-shadow: 0 5px 20px rgba(255,215,0,0.3);
+            }
+            .arena-choice-btn.danger {
+                background: transparent;
+                border-color: #DC143C;
+                color: #DC143C;
+            }
+            .arena-choice-btn.danger:hover {
+                background: rgba(220,20,60,0.2);
+                box-shadow: 0 5px 20px rgba(220,20,60,0.3);
+            }
+            .arena-choice-btn.cancel {
+                background: transparent;
+                border-color: #888;
+                color: #888;
+                padding: 10px 20px;
+                font-size: 14px;
+                width: auto;
+                margin: 0 auto;
+            }
+            .arena-choice-btn.cancel:hover {
+                background: rgba(255,255,255,0.1);
+                border-color: #ccc;
+                color: #ccc;
+            }
+        `;
+        document.head.appendChild(style);
     }
 
     async openDeckBuilder() {
