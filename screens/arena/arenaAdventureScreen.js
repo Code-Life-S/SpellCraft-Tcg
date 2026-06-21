@@ -204,7 +204,69 @@ class ArenaAdventureScreen extends BaseScreen {
     }
 
     saveState() {
+        delete this.arenaState.midRound;
         ArenaStateManager.saveState(this.arenaState);
+    }
+
+    saveMidRoundState() {
+        this.arenaState.midRound = {
+            saved: true,
+            currentTurn: this.currentTurn,
+            currentMana: this.currentMana,
+            maxMana: this.maxMana,
+            playerShield: this.playerShield,
+            playerHand: this.playerHand.map(function(c) { return Object.assign({}, c); }),
+            arenaDeck: this.arenaDeck.map(function(c) { return Object.assign({}, c); }),
+            enemies: JSON.parse(JSON.stringify(this.enemies)),
+            enemyIdCounter: this.enemyIdCounter
+        };
+        ArenaStateManager.saveState(this.arenaState);
+    }
+
+    restoreGame() {
+        var snapshot = this.arenaState.midRound;
+        if (!snapshot || !snapshot.saved) {
+            this.startRound();
+            return;
+        }
+
+        this.gameState = 'playing';
+        this.isPlayerTurn = true;
+        this.roundTransitioning = false;
+        this.currentTurn = snapshot.currentTurn;
+        this.currentMana = snapshot.currentMana;
+        this.maxMana = snapshot.maxMana;
+        this.playerShield = snapshot.playerShield;
+        this.selectedCard = null;
+        this.selectedCardIndex = null;
+        this.phase = null;
+        this.mulliganActive = false;
+        this.selectedCardsForMulligan = null;
+
+        this.playerHand = snapshot.playerHand.map(function(c) { return Object.assign({}, c); });
+        this.arenaDeck = snapshot.arenaDeck.map(function(c) { return Object.assign({}, c); });
+
+        this.enemies = JSON.parse(JSON.stringify(snapshot.enemies)).filter(function(e) { return !(e.isDying && e.health <= 0); });
+        this.enemyIdCounter = snapshot.enemyIdCounter;
+
+        this.updateUI();
+        this.renderPlayerHand();
+        this.renderEnemies();
+
+        var el = this.element;
+        var endTurnBtn = el.querySelector('#end-turn-btn');
+        if (endTurnBtn) endTurnBtn.disabled = false;
+
+        if (this.headerComp) {
+            this.headerComp.update({
+                round: this.arenaState.currentRound,
+                enemies: this.enemies.filter(function(e) { return !e.isDying; }).length,
+                status: 'Your Turn - Round ' + this.arenaState.currentRound
+            });
+        }
+
+        this.addToHistory('Arena run resumed - Round ' + this.arenaState.currentRound + ', Turn ' + this.currentTurn, true);
+        this.updateAudioButtons();
     }
 
     /* ------ ROUND MANAGEMENT ------ */
@@ -391,6 +453,7 @@ class ArenaAdventureScreen extends BaseScreen {
     backToMenu() {
         this.soundManager?.play('button_click');
         if (confirm('Return to main menu? You can continue this arena run later.')) {
+            this.saveMidRoundState();
             this.soundManager?.stopBackgroundMusic();
             this.navigateTo('mainmenu');
         }
@@ -1374,7 +1437,12 @@ class ArenaAdventureScreen extends BaseScreen {
             this.element.querySelector('#gameover-overlay')?.classList.add('hidden');
             this.element.querySelector('#round-overlay')?.classList.add('hidden');
             this.arenaState = state;
-            this.startRound();
+
+            if (state.midRound && state.midRound.saved) {
+                this.restoreGame();
+            } else {
+                this.startRound();
+            }
         } else {
             // Defer redirect to avoid blocking (isTransitioning is true during show())
             const self = this;
