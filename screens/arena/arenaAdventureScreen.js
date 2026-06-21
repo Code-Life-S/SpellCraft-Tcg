@@ -26,6 +26,7 @@ class ArenaAdventureScreen extends BaseScreen {
         this.soundManager = null;
         this.currentTurn = 0;
         this.actionHistory = [];
+        this.arenaXPAccumulator = 0;
         this.deckTracker = null;
         this.actionHistoryComp = null;
         this.mulliganActive = false;
@@ -992,6 +993,7 @@ class ArenaAdventureScreen extends BaseScreen {
         }
 
         if (enemy.health <= 0) {
+            this.arenaXPAccumulator += 10;
             var deathResult = ClassManager.onEnemyDeath(this.arenaState.playerHealth, this.arenaState.maxHealth);
             this.arenaState.playerHealth = deathResult.health;
             this.arenaState.maxHealth = deathResult.maxHealth;
@@ -1250,6 +1252,7 @@ class ArenaAdventureScreen extends BaseScreen {
             hpIncrease = true;
         }
 
+        this.arenaXPAccumulator += 25;
         this.arenaState.currentShield = this.playerShield;
         this.saveState();
 
@@ -1393,6 +1396,12 @@ class ArenaAdventureScreen extends BaseScreen {
         this.arenaState.phase = 'completed';
         this.saveState();
 
+        if (window.PlayerProgressionManager) {
+            var totalXP = this.arenaXPAccumulator + 50;
+            PlayerProgressionManager.addXP(totalXP);
+            PlayerProgressionManager.recordArenaWin(this.arenaState.chosenClass);
+        }
+
         const overlay = this.element.querySelector('#gameover-overlay');
         overlay.classList.remove('hidden');
         overlay.querySelector('#gameover-title').textContent = 'Victory!';
@@ -1410,6 +1419,11 @@ class ArenaAdventureScreen extends BaseScreen {
         this.arenaState.runResult = 'lost';
         this.arenaState.phase = 'completed';
         this.saveState();
+
+        if (window.PlayerProgressionManager) {
+            var totalXP = this.arenaXPAccumulator + 20;
+            PlayerProgressionManager.addXP(totalXP);
+        }
 
         const overlay = this.element.querySelector('#gameover-overlay');
         overlay.classList.remove('hidden');

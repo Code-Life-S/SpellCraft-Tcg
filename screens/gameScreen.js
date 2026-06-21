@@ -34,6 +34,9 @@ class GameScreen extends BaseScreen {
         
         // Audio state
         this.backgroundMusicStarted = false;
+
+        // XP tracking
+        this.gameXPAccumulator = 0;
     }
 
     async setupContent() {
@@ -914,6 +917,7 @@ class GameScreen extends BaseScreen {
             }
             
             if (enemy.health <= 0) {
+                this.gameXPAccumulator += 10;
                 var deathResult = ClassManager.onEnemyDeath(this.playerHealth, this.maxHealth || 30);
                 this.playerHealth = deathResult.health;
                 this.maxHealth = deathResult.maxHealth;
@@ -1172,6 +1176,12 @@ class GameScreen extends BaseScreen {
             this.showMessage('💀 Game Over! Your hero has fallen! 💀', 'error');
         }
         
+        // Award XP
+        if (window.PlayerProgressionManager) {
+            var totalXP = this.gameXPAccumulator + (playerWon ? 75 : 20);
+            PlayerProgressionManager.addXP(totalXP);
+        }
+
         // Show restart option only once
         if (!this.gameOverDialogShown) {
             this.gameOverDialogShown = true;
