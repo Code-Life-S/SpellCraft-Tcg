@@ -28,6 +28,17 @@ class MainMenuScreen extends BaseScreen {
                                 <span class="title-subtitle">Wave Defense TCG</span>
                             </h1>
                         </div>
+                        <div class="player-progress">
+                            <div class="progress-header">
+                                <span class="progress-level" id="progress-level">⭐ Level 1</span>
+                                <span class="progress-xp-text" id="progress-xp-text">0 / 100 XP</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-bar-fill" id="progress-bar-fill" style="width:0%"></div>
+                            </div>
+                            <div class="progress-next" id="progress-next"></div>
+                            <div class="progress-class-next" id="progress-class-next"></div>
+                        </div>
                         <div class="menu-options">
                             <button class="menu-btn primary" id="start-adventure">
                                 <span class="btn-icon">⚔️</span>
@@ -50,6 +61,9 @@ class MainMenuScreen extends BaseScreen {
         
         // Load and display game stats
         this.loadGameStats();
+
+        // Load and display player progression
+        this.loadPlayerProgression();
         
         // Create background effects
         this.createBackgroundEffects();
@@ -439,6 +453,9 @@ class MainMenuScreen extends BaseScreen {
 
         // Update audio button states
         this.updateAudioButtons();
+
+        // Refresh progression (XP may have changed during game)
+        this.loadPlayerProgression();
     }
 
     initializeSoundManager() {
@@ -518,6 +535,48 @@ class MainMenuScreen extends BaseScreen {
         this.element.querySelector('#best-wave').textContent = stats.bestWave;
         this.element.querySelector('#total-victories').textContent = stats.totalVictories;
         this.element.querySelector('#spells-cast').textContent = stats.spellsCast;
+    }
+
+    loadPlayerProgression() {
+        if (!window.PlayerProgressionManager) return;
+
+        var progression = PlayerProgressionManager.getProgression();
+        var xpNeeded = PlayerProgressionManager.getXPForNextLevel(progression.level);
+        var progressPct = xpNeeded > 0 ? Math.min(100, Math.round((progression.xp / xpNeeded) * 100)) : 0;
+
+        var levelEl = this.element.querySelector('#progress-level');
+        var xpTextEl = this.element.querySelector('#progress-xp-text');
+        var barFillEl = this.element.querySelector('#progress-bar-fill');
+        var nextEl = this.element.querySelector('#progress-next');
+        var classNextEl = this.element.querySelector('#progress-class-next');
+
+        if (levelEl) levelEl.textContent = '⭐ Level ' + progression.level;
+        if (xpTextEl) xpTextEl.textContent = progression.xp + ' / ' + xpNeeded + ' XP';
+        if (barFillEl) barFillEl.style.width = progressPct + '%';
+
+        // Next card unlock
+        if (nextEl) {
+            var nextCardIds = PlayerProgressionManager.getNextLevelUnlocks(progression);
+            if (nextCardIds.length > 0) {
+                var cardName = PlayerProgressionManager.CARD_UNLOCK_NAMES[nextCardIds[0]];
+                nextEl.textContent = 'Next card: ' + (cardName || nextCardIds[0]);
+                nextEl.style.display = '';
+            } else {
+                nextEl.style.display = 'none';
+            }
+        }
+
+        // Next class unlock
+        if (classNextEl) {
+            var nextClass = PlayerProgressionManager.getNextClassUnlock(progression);
+            if (nextClass) {
+                classNextEl.textContent = '🔒 ' + nextClass.requirement;
+                classNextEl.style.display = '';
+            } else {
+                classNextEl.textContent = '🌟 All classes unlocked!';
+                classNextEl.style.display = '';
+            }
+        }
     }
 
     createBackgroundEffects() {

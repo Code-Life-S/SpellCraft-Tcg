@@ -12,6 +12,15 @@ class PlayerProgressionManager {
         7: ['divine_wrath']
     };
 
+    static CARD_UNLOCK_NAMES = {
+        mystical_insight: 'Mystical Insight',
+        greater_heal: 'Greater Heal',
+        thunder_storm: 'Thunder Storm',
+        arcane_missiles: 'Arcane Missiles',
+        meteor: 'Meteor',
+        divine_wrath: 'Divine Wrath'
+    };
+
     static CLASS_UNLOCK_RULES = {
         pyromancer: null,
         cryomancer: 'pyromancer',
