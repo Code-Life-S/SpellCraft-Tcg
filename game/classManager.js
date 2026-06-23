@@ -51,6 +51,11 @@ var ClassManager = {
         return 0;
     },
 
+    getLightningElectrifiedBonus: function() {
+        if (this._activeClassId === 'electromancer') return 2;
+        return 0;
+    },
+
     onEnemyDeath: function(playerHealth, maxHealth) {
         if (this._activeClassId === 'necromancer') {
             return { health: playerHealth + 1, maxHealth: maxHealth + 1 };

@@ -842,6 +842,34 @@ class ArenaAdventureScreen extends BaseScreen {
                     if (card.lifesteal && card.damage > 0) {
                         this.applyLifesteal(card.damage);
                     }
+
+                    // Chain lightning: hit adjacent enemies with stagger
+                    if (card.id === 'electro_chain_lightning' || card.id === 'electro_lightning_bolt') {
+                        var aliveEnemies = this.enemies.filter(function(e) { return !e.isDying && e.health > 0; });
+                        var targetIdx = aliveEnemies.findIndex(function(e) { return e.id === targetEnemyId; });
+                        var adjDmg = (card.id === 'electro_chain_lightning') ? 2 : card.damage;
+
+                        if (targetIdx > 0) {
+                            const leftEnemy = aliveEnemies[targetIdx - 1];
+                            setTimeout(() => {
+                                const leftEl = this.element.querySelector(`[data-enemy-id="${leftEnemy.id}"]`);
+                                if (leftEl) {
+                                    this.visualEffects.createSpellImpact(leftEl, spellType);
+                                    this.applyDamageWithElement(leftEnemy.id, adjDmg, card.element || spellType);
+                                }
+                            }, 250);
+                        }
+                        if (targetIdx < aliveEnemies.length - 1) {
+                            const rightEnemy = aliveEnemies[targetIdx + 1];
+                            setTimeout(() => {
+                                const rightEl = this.element.querySelector(`[data-enemy-id="${rightEnemy.id}"]`);
+                                if (rightEl) {
+                                    this.visualEffects.createSpellImpact(rightEl, spellType);
+                                    this.applyDamageWithElement(rightEnemy.id, adjDmg, card.element || spellType);
+                                }
+                            }, 450);
+                        }
+                    }
                 }
                 break;
             case 'all':
@@ -896,6 +924,21 @@ class ArenaAdventureScreen extends BaseScreen {
                     this.playerShield += card.shield;
                     const heroEl = this.element.querySelector('.hero-portrait');
                     this.visualEffects.showShieldNumber(heroEl, card.shield);
+                }
+
+                // Static draw (Electromancien)
+                if (card.id === 'electro_static_draw') {
+                    const shockedEnemies = this.enemies.filter(function(e) {
+                        return !e.isDying && e.health > 0 && ElementalReactionsManager.hasStatus(e, 'shocked');
+                    });
+                    if (shockedEnemies.length > 0) {
+                        const drawn = this.drawCards(shockedEnemies.length);
+                        if (drawn.length > 0) {
+                            this.playerHand = this.playerHand.concat(drawn);
+                        }
+                        this.renderPlayerHand();
+                        this.updateUI();
+                    }
                 }
                 break;
         }

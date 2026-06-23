@@ -17,6 +17,9 @@ class VisualEffectsComponent {
         const types = {
             fire_bolt: 'fire', flame_burst: 'fire', meteor: 'fire',
             thunder_storm: 'lightning', divine_wrath: 'lightning',
+            electro_lightning_bolt: 'lightning',
+            electro_chain_lightning: 'lightning',
+            electro_static_draw: 'lightning',
             frost_nova: 'frost',
             arcane_missiles: 'arcane', magic_missile: 'arcane',
             healing_light: 'healing', minor_heal: 'healing',

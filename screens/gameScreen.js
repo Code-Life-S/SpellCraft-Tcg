@@ -952,6 +952,36 @@ class GameScreen extends BaseScreen {
                     setTimeout(() => {
                         this.soundManager?.playSpellSound(card.id, 'impact');
                     }, 800);
+
+                    // Chain lightning: hit adjacent enemies with stagger
+                    if (card.id === 'electro_chain_lightning' || card.id === 'electro_lightning_bolt') {
+                        var aliveEnemies = this.enemies.filter(function(e) { return !e.isDying && e.health > 0; });
+                        var targetIdx = aliveEnemies.findIndex(function(e) { return e.id === targetEnemyId; });
+                        var adjDmg = (card.id === 'electro_chain_lightning') ? 2 : card.damage;
+
+                        if (targetIdx > 0) {
+                            const leftEnemy = aliveEnemies[targetIdx - 1];
+                            setTimeout(() => {
+                                const leftEl = this.element.querySelector(`[data-enemy-id="${leftEnemy.id}"]`);
+                                if (leftEl) {
+                                    this.visualEffects.createSpellImpact(leftEl, spellType);
+                                    this.applyDamageWithElement(leftEnemy.id, adjDmg, card.element || spellType, true);
+                                    this.addToHistory(`\u26A1 ${adjDmg} ${leftEnemy.art} (chain)`, true);
+                                }
+                            }, 250);
+                        }
+                        if (targetIdx < aliveEnemies.length - 1) {
+                            const rightEnemy = aliveEnemies[targetIdx + 1];
+                            setTimeout(() => {
+                                const rightEl = this.element.querySelector(`[data-enemy-id="${rightEnemy.id}"]`);
+                                if (rightEl) {
+                                    this.visualEffects.createSpellImpact(rightEl, spellType);
+                                    this.applyDamageWithElement(rightEnemy.id, adjDmg, card.element || spellType, true);
+                                    this.addToHistory(`\u26A1 ${adjDmg} ${rightEnemy.art} (chain)`, true);
+                                }
+                            }, 450);
+                        }
+                    }
                 }
                 break;
                 
@@ -1065,6 +1095,21 @@ class GameScreen extends BaseScreen {
                     message += `Gain ${card.shield} shield! `;
                 }
                 
+                // Handle static draw (Electromancien)
+                if (card.id === 'electro_static_draw') {
+                    const shockedEnemies = this.enemies.filter(function(e) {
+                        return !e.isDying && e.health > 0 && ElementalReactionsManager.hasStatus(e, 'shocked');
+                    });
+                    if (shockedEnemies.length > 0) {
+                        this.drawMultipleCards(shockedEnemies.length);
+                        this.addToHistory(`\u26A1 +${shockedEnemies.length} \uD83D\uDCD6 (static draw)`, true);
+                        message += `Draw ${shockedEnemies.length} cards! `;
+                    } else {
+                        this.addToHistory(`\u26A1 No Electrified enemies`, true);
+                        message += 'No Electrified enemies! ';
+                    }
+                }
+
                 this.soundManager?.playSpellSound(card.id, 'cast');
                 this.showMessage(message.trim());
                 break;

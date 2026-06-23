@@ -37,13 +37,27 @@ var CLASSES = [
             { id: 'necro_bone_shield', count: 1 },
             { id: 'necro_soul_harvest', count: 1 }
         ]
+    },
+    {
+        id: 'electromancer',
+        name: 'Electromancien',
+        art: '\u26A1',
+        description: 'Maitre de la foudre en chaine. Vos sorts de Foudre infligent +2 degats aux ennemis Electrises.',
+        passive: 'electro_overcharge',
+        passiveDesc: 'Foudre +2 sur Electrise',
+        cards: [
+            { id: 'electro_lightning_bolt', count: 1 },
+            { id: 'electro_chain_lightning', count: 1 },
+            { id: 'electro_static_draw', count: 1 }
+        ]
     }
 ];
 
 var CLASS_ELEMENT_MAP = {
     pyromancer: 'fire',
     cryomancer: 'frost',
-    necromancer: 'arcane'
+    necromancer: 'arcane',
+    electromancer: 'lightning'
 };
 
 function getClassById(classId) {

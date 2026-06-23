@@ -27,6 +27,13 @@ class SpellResolverComponent {
         const enemy = screen.enemies.find(e => e.id === enemyId);
         if (!enemy) return;
 
+        // Class passive: Electromancien +2 lightning damage vs shocked enemies
+        if (elementType === 'lightning' &&
+            ElementalReactionsManager.hasStatus(enemy, 'shocked') &&
+            ClassManager.getLightningElectrifiedBonus() > 0) {
+            baseDamage += ClassManager.getLightningElectrifiedBonus();
+        }
+
         const result = ElementalReactionsManager.processReaction(enemy, elementType, baseDamage);
 
         if (result.reaction) {

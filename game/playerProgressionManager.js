@@ -24,7 +24,8 @@ class PlayerProgressionManager {
     static CLASS_UNLOCK_RULES = {
         pyromancer: null,
         cryomancer: 'pyromancer',
-        necromancer: 'cryomancer'
+        necromancer: 'cryomancer',
+        electromancer: 'necromancer'
     };
 
     static getDefaultState() {
@@ -157,6 +158,9 @@ class PlayerProgressionManager {
         if (progression.arenaWins.indexOf('cryomancer') === -1) {
             return { classId: 'necromancer', name: 'Necromancer', requirement: 'Win an arena run with Cryomancer' };
         }
+        if (progression.arenaWins.indexOf('necromancer') === -1) {
+            return { classId: 'electromancer', name: 'Electromancien', requirement: 'Win an arena run with Necromancer' };
+        }
         return null;
     }
 
@@ -168,7 +172,8 @@ class PlayerProgressionManager {
 
         var unlockMap = {
             pyromancer: 'cryomancer',
-            cryomancer: 'necromancer'
+            cryomancer: 'necromancer',
+            necromancer: 'electromancer'
         };
         var newlyUnlocked = unlockMap[classId] || null;
 
@@ -189,11 +194,13 @@ class PlayerProgressionManager {
         var locked = [];
         var classNames = {
             cryomancer: 'Cryomancer',
-            necromancer: 'Necromancer'
+            necromancer: 'Necromancer',
+            electromancer: 'Electromancien'
         };
         var requirements = {
             cryomancer: 'Win an arena run with Pyromancer',
-            necromancer: 'Win an arena run with Cryomancer'
+            necromancer: 'Win an arena run with Cryomancer',
+            electromancer: 'Win an arena run with Necromancer'
         };
         for (var classId in this.CLASS_UNLOCK_RULES) {
             if (this.CLASS_UNLOCK_RULES.hasOwnProperty(classId)) {
