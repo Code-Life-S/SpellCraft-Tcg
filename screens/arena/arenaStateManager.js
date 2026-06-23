@@ -2,22 +2,15 @@ class ArenaStateManager {
     static STORAGE_KEY = 'arenaBuilderState';
 
     static getState() {
-        try {
-            const raw = localStorage.getItem(this.STORAGE_KEY);
-            return raw ? JSON.parse(raw) : null;
-        } catch (e) {
-            console.error('Failed to load arena state:', e);
-            return null;
-        }
+        return StateManager.getState(this.STORAGE_KEY);
     }
 
     static saveState(state) {
-        state.timestamp = Date.now();
-        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(state));
+        return StateManager.saveState(this.STORAGE_KEY, state);
     }
 
     static clearState() {
-        localStorage.removeItem(this.STORAGE_KEY);
+        return StateManager.clearState(this.STORAGE_KEY);
     }
 
     static getHandSize(round) {
@@ -193,9 +186,13 @@ class ArenaStateManager {
         const choices = [];
 
         // Filter to neutral cards (no 'class' field) or current class cards
+        var progression = window.PlayerProgressionManager ?
+            PlayerProgressionManager.getProgression() : null;
         const classFilter = classId || 'pyromancer';
         const filtered = allSpells.filter(function(card) {
-            return !card.class || card.class === classFilter;
+            if (card.class) return card.class === classFilter;
+            if (progression) return PlayerProgressionManager.isCardUnlocked(card, progression);
+            return true;
         });
 
         // Pick 3 random spells from filtered pool (allow duplicates)
@@ -246,12 +243,12 @@ class ArenaStateManager {
     }
 
     static calculateHealAmount(arenaState) {
-        const round = arenaState.currentRound;
-        const minHeal = 5 + (round * 2) + (arenaState.minHealBonus || 0);
-        const maxHeal = arenaState.maxHealth - arenaState.playerHealth;
-        if (maxHeal <= 0) return 0;
-        if (minHeal >= maxHeal) return maxHeal;
-        return minHeal + Math.floor(Math.random() * (maxHeal - minHeal + 1));
+        return CombatEngineComponent.calculateHealAmount(
+            arenaState.currentRound,
+            arenaState.playerHealth,
+            arenaState.maxHealth,
+            arenaState.minHealBonus || 0
+        );
     }
 }
 

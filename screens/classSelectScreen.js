@@ -107,7 +107,19 @@ class ClassSelectScreen extends BaseScreen {
             ' background: linear-gradient(145deg, rgba(255,215,0,0.4), rgba(255,165,0,0.4));' +
             ' box-shadow: 0 5px 20px rgba(255,215,0,0.3);' +
         '}' +
-        '.class-select-confirm:disabled { opacity: 0.4; cursor: not-allowed; }';
+        '.class-select-confirm:disabled { opacity: 0.4; cursor: not-allowed; }' +
+        '.class-card.class-locked { opacity: 0.6; cursor: default; }' +
+        '.class-card.class-locked:hover { transform: none; border-color: #555; box-shadow: none; }' +
+        '.class-lock-overlay {' +
+            ' position: absolute; top: 10px; right: 10px; font-size: 28px;' +
+            ' opacity: 0.8; z-index: 2;' +
+        '}' +
+        '.class-lock-reason {' +
+            ' position: absolute; bottom: 10px; left: 10px; right: 10px;' +
+            ' background: rgba(0,0,0,0.7); color: #ff6b6b;' +
+            ' padding: 8px 12px; border-radius: 6px; font-size: 12px;' +
+            ' text-align: center; z-index: 2;' +
+        '}';
         document.head.appendChild(style);
     }
 
@@ -115,13 +127,15 @@ class ClassSelectScreen extends BaseScreen {
         var container = this.element.querySelector('#class-cards-container');
         container.innerHTML = '';
         var _this = this;
-        var classes = this.classOptions || CLASSES;
 
-        classes.forEach(function(cls) {
+        this.classOptions.forEach(function(option) {
+            var cls = option.class;
             var card = document.createElement('div');
             card.className = 'class-card';
+            if (!option.unlocked) card.classList.add('class-locked');
             card.dataset.classId = cls.id;
-            if (cls.id === _this.selectedClassId) {
+
+            if (cls.id === _this.selectedClassId && option.unlocked) {
                 card.classList.add('selected');
             }
 
@@ -158,9 +172,21 @@ class ClassSelectScreen extends BaseScreen {
             card.appendChild(passive);
             card.appendChild(previews);
 
-            card.addEventListener('click', function() {
-                _this.selectClass(cls.id);
-            });
+            if (!option.unlocked) {
+                var lockOverlay = document.createElement('div');
+                lockOverlay.className = 'class-lock-overlay';
+                lockOverlay.textContent = '🔒';
+                card.appendChild(lockOverlay);
+
+                var lockReason = document.createElement('div');
+                lockReason.className = 'class-lock-reason';
+                lockReason.textContent = option.lockedReason;
+                card.appendChild(lockReason);
+            } else {
+                card.addEventListener('click', function() {
+                    _this.selectClass(cls.id);
+                });
+            }
 
             container.appendChild(card);
         });
@@ -174,8 +200,11 @@ class ClassSelectScreen extends BaseScreen {
     }
 
     selectClass(classId) {
+        var option = this.classOptions.find(function(o) { return o.class.id === classId; });
+        if (option && !option.unlocked) return;
+
         this.selectedClassId = classId;
-        this.element.querySelector('#class-select-confirm').disabled = false;
+        this.updateConfirmButton();
         var _this = this;
         this.element.querySelectorAll('.class-card').forEach(function(c) {
             c.classList.toggle('selected', c.dataset.classId === classId);
@@ -208,24 +237,59 @@ class ClassSelectScreen extends BaseScreen {
             await window.cardManagerInstance.loadCards();
         }
 
-        if (this.mode === 'arena') {
-            this.classOptions = this.getRandomClasses(3, CLASSES);
-            this.selectedClassId = this.classOptions[0] ? this.classOptions[0].id : 'pyromancer';
+        var progression = window.PlayerProgressionManager ?
+            PlayerProgressionManager.getProgression() : null;
+
+        this.classOptions = CLASSES.map(function(cls) {
+            var unlocked = progression ?
+                PlayerProgressionManager.isClassUnlocked(cls.id, progression) : true;
+            var lockedReason = null;
+            if (!unlocked) {
+                lockedReason = PlayerProgressionManager.getClassUnlockRequirement(cls.id) || 'Locked';
+            }
+            return {
+                class: cls,
+                unlocked: unlocked,
+                lockedReason: lockedReason
+            };
+        });
+
+        var firstUnlocked = this.classOptions.find(function(o) { return o.unlocked; });
+        if (firstUnlocked) {
+            this.selectedClassId = firstUnlocked.class.id;
         } else {
-            this.classOptions = CLASSES;
-            this.selectedClassId = ClassManager.getLastClassId() || 'pyromancer';
+            this.selectedClassId = 'pyromancer';
+        }
+
+        if (this.mode === 'deck_builder') {
+            var lastClassId = ClassManager.getLastClassId() || 'pyromancer';
+            var lastClassOption = this.classOptions.find(function(o) { return o.class.id === lastClassId; });
+            if (lastClassOption && lastClassOption.unlocked) {
+                this.selectedClassId = lastClassId;
+            }
         }
 
         this.renderClassCards();
-        this.element.querySelector('#class-select-confirm').disabled = false;
+        this.updateConfirmButton();
+    }
+
+    updateConfirmButton() {
+        var confirmBtn = this.element.querySelector('#class-select-confirm');
+        if (!this.selectedClassId) {
+            confirmBtn.disabled = true;
+            return;
+        }
         var _this = this;
-        this.element.querySelectorAll('.class-card').forEach(function(c) {
-            c.classList.toggle('selected', c.dataset.classId === _this.selectedClassId);
-        });
+        var option = this.classOptions.find(function(o) { return o.class.id === _this.selectedClassId; });
+        confirmBtn.disabled = !(option && option.unlocked);
     }
 
     confirmClass() {
         if (!this.selectedClassId) return;
+        var _this = this;
+        var option = this.classOptions.find(function(o) { return o.class.id === _this.selectedClassId; });
+        if (option && !option.unlocked) return;
+
         if (this.soundManager) { this.soundManager.play('button_click'); }
         ClassManager.setActiveClass(this.selectedClassId);
 

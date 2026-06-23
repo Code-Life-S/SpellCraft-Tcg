@@ -242,9 +242,13 @@ class ArenaBuilderScreen extends BaseScreen {
         }
         
         // Filter: neutral (no 'class' field) OR matches chosen class
+        var progression = window.PlayerProgressionManager ?
+            PlayerProgressionManager.getProgression() : null;
         const classId = this.chosenClassId || ClassManager.getActiveClassId() || 'pyromancer';
         const filteredSpells = allSpells.filter(function(card) {
-            return !card.class || card.class === classId;
+            if (card.class) return card.class === classId;
+            if (progression) return PlayerProgressionManager.isCardUnlocked(card, progression);
+            return true;
         });
         
         this.currentChoices = [];

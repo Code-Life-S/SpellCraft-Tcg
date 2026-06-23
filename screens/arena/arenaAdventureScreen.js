@@ -925,40 +925,7 @@ class ArenaAdventureScreen extends BaseScreen {
     }
 
     applyDamageWithElement(enemyId, baseDamage, elementType) {
-        if (elementType === 'fire' && ClassManager.getFireDamageBonus() > 0) {
-            baseDamage += ClassManager.getFireDamageBonus();
-        }
-
-        if (!ElementalReactionsManager.isEnabled()) {
-            this.damageEnemy(enemyId, baseDamage);
-            return;
-        }
-        const enemy = this.enemies.find(e => e.id === enemyId);
-        if (!enemy) return;
-
-        const result = ElementalReactionsManager.processReaction(enemy, elementType, baseDamage);
-
-        if (result.reaction) {
-            const reactionEl = this.element.querySelector(`[data-enemy-id="${enemyId}"]`);
-            if (reactionEl) {
-                reactionEl.classList.add('reaction-flash');
-                setTimeout(() => reactionEl.classList.remove('reaction-flash'), 600);
-            }
-            this.addToHistory(result.reaction.icon + ' ' + result.reaction.name + '!', false);
-        }
-
-        this.damageEnemy(enemyId, result.damage);
-
-        if (result.aoeDamage > 0) {
-            this.enemies.forEach(other => {
-                if (other.id !== enemyId && !other.isDying && other.health > 0) {
-                    this.damageEnemy(other.id, result.aoeDamage);
-                }
-            });
-        }
-
-        ElementalReactionsManager.applyElementalStatus(enemy, null, elementType, ClassManager.getFrozenDurationBonus());
-        this.enemyBoard.updateStatusOverlay(enemyId, enemy);
+        SpellResolverComponent.applyDamageWithElement(this, enemyId, baseDamage, elementType);
     }
 
     damageEnemy(enemyId, damage) {
@@ -1030,9 +997,17 @@ class ArenaAdventureScreen extends BaseScreen {
         this.playerHandComp.deselectAll();
         this.selectedCard = null;
 
-        // Enemy attack phase
+        // Enemy attack phase via shared combat engine
         setTimeout(() => {
-            this.enemyAttackPhase();
+            CombatEngineComponent.executeEnemyAttackPhase(this, {
+                intervalMs: 350,
+                beforeAttack: (screen) => screen.processBossMechanics(),
+                onDefeat: () => {
+                    this.gameState = 'lost';
+                    setTimeout(() => this.showDefeat(), 500);
+                },
+                onPhaseEnd: () => this.startPlayerTurn()
+            });
         }, 400);
     }
 
@@ -1133,95 +1108,24 @@ class ArenaAdventureScreen extends BaseScreen {
     }
 
     enemyAttackPhase() {
-        this.enemies.forEach(function(e) { delete e.canAttack; });
-        
-        this.processEnemyStatusEffects();
-        this.processBossMechanics();
-
-        const aliveEnemies = this.enemies.filter(e => !e.isDying);
-        if (aliveEnemies.length === 0) {
-            this.startPlayerTurn();
-            return;
-        }
-
-        var attackIndex = 0;
-        const doNextAttack = () => {
-            if (attackIndex >= aliveEnemies.length || this.gameState !== 'playing') {
-                this.processEnemyAbilities();
-                this.startPlayerTurn();
-                return;
-            }
-            var enemy = aliveEnemies[attackIndex];
-            attackIndex++;
-
-            if (enemy.canAttack === false || enemy.skipAttack) {
-                setTimeout(doNextAttack, 100);
-                return;
-            }
-
-            // Skip frozen enemies
-            if (ElementalReactionsManager.shouldSkipAttack(enemy)) {
-                this.addToHistory(STATUS_EFFECTS.frozen.icon + ' ' + enemy.name + ' is frozen and cannot attack!', false);
-                this.enemyBoard.updateStatusOverlay(enemy.id, enemy);
-                this.updateUI();
-                setTimeout(doNextAttack, 100);
-                return;
-            }
-
-            // Enemy attack animation
-            this.enemyBoard.addAttackEffect(enemy.id);
-
-            // Apply damage to player (shield absorbs first)
-            let remainingDamage = enemy.attack;
-            if (this.playerShield > 0) {
-                const absorbed = Math.min(this.playerShield, remainingDamage);
-                this.playerShield -= absorbed;
-                remainingDamage -= absorbed;
-            }
-            if (remainingDamage > 0) {
-                this.arenaState.playerHealth -= remainingDamage;
-                this.soundManager?.play('player_hurt');
-                const heroEl = this.element.querySelector('.hero-portrait');
-                this.visualEffects.showDamageNumber(heroEl, remainingDamage);
-                this.updateUI();
-
-                // Check loss
-                if (this.arenaState.playerHealth <= 0) {
-                    this.arenaState.playerHealth = 0;
-                    this.updateUI();
-                    this.gameState = 'lost';
-                    setTimeout(() => this.showDefeat(), 500);
-                    return;
-                }
-            }
-
-            setTimeout(doNextAttack, 350);
-        };
-
-        doNextAttack();
+        CombatEngineComponent.executeEnemyAttackPhase(this, {
+            intervalMs: 350,
+            beforeAttack: (screen) => screen.processBossMechanics(),
+            onDefeat: () => {
+                this.gameState = 'lost';
+                setTimeout(() => this.showDefeat(), 500);
+            },
+            onPhaseEnd: () => this.startPlayerTurn()
+        });
     }
 
     startPlayerTurn() {
-        if (this.gameState !== 'playing') return;
-
-        this.isPlayerTurn = true;
-
-        // Mana ramps each turn: +1 max mana, capped at 10
-        this.currentTurn++;
-        this.maxMana = Math.min(this.currentTurn, 10);
-        this.currentMana = this.maxMana;
-
-        // Draw a card
-        const drawn = this.drawCards(1);
-        if (drawn.length > 0) {
-            this.playerHand = this.playerHand.concat(drawn);
-        }
-
-        this.addToHistory('Turn ' + this.currentTurn + ' - Mana: ' + this.currentMana + '/' + this.maxMana, true);
-
-        this.element.querySelector('#end-turn-btn').disabled = false;
-        this.renderPlayerHand();
-        this.updateUI();
+        CombatEngineComponent.startTurn(this, {
+            maxManaCap: 10,
+            onTurnStart: () => {
+                this.addToHistory('Turn ' + this.currentTurn + ' - Mana: ' + this.currentMana + '/' + this.maxMana, true);
+            }
+        });
     }
 
     checkWinCondition() {
@@ -1254,13 +1158,17 @@ class ArenaAdventureScreen extends BaseScreen {
 
         this.arenaXPAccumulator += 25;
         this.arenaState.currentShield = this.playerShield;
-        this.saveState();
 
-        // Skip upgrade/add card phases on the final round
+        // Final round check BEFORE moving to next
         if (round >= 12) {
+            this.saveState();
             this.showVictory();
             return;
         }
+
+        // Increment round NOW and save (prevents double-start on refresh during add/upgrade)
+        this.arenaState.currentRound++;
+        this.saveState();
 
         this.showAddCardPhase(healAmount, hpIncrease);
     }
@@ -1375,11 +1283,9 @@ class ArenaAdventureScreen extends BaseScreen {
         this.saveState();
         this.pendingUpgradeChoices = null;
 
-        // Hide overlay and start next round
+        // Hide overlay and start next round (round already incremented in onRoundVictory)
         const overlay = this.element.querySelector('#round-overlay');
         overlay.classList.add('hidden');
-
-        this.arenaState.currentRound++;
 
         if (this.arenaState.currentRound > 12) {
             this.showVictory();

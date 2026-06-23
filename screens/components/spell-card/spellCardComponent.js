@@ -54,10 +54,11 @@ class SpellCardComponent {
      * @returns {HTMLElement} div with card structure
      */
     static createCardElement(card, options = {}) {
-        const { baseClass = 'card', extraClasses = [], disabled = false } = options;
+        const { baseClass = 'card', extraClasses = [], disabled = false, locked = false, lockReason = '' } = options;
 
         const classes = [baseClass, card.rarity || 'common', ...extraClasses];
         if (disabled) classes.push('disabled');
+        if (locked) classes.push('locked');
         // Class-specific visual class
         if (card.class) {
             classes.push('card-class-' + card.class);
@@ -88,6 +89,20 @@ class SpellCardComponent {
         div.appendChild(artDiv);
         div.appendChild(nameDiv);
         div.appendChild(textDiv);
+
+        if (locked) {
+            var lockOverlay = document.createElement('div');
+            lockOverlay.className = 'card-lock-overlay';
+            lockOverlay.textContent = '🔒';
+            div.appendChild(lockOverlay);
+
+            if (lockReason) {
+                var label = document.createElement('div');
+                label.className = 'card-lock-label';
+                label.textContent = lockReason;
+                div.appendChild(label);
+            }
+        }
 
         return div;
     }

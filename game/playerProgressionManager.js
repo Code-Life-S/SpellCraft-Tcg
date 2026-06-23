@@ -176,6 +176,14 @@ class PlayerProgressionManager {
         return newlyUnlocked;
     }
 
+    static getClassUnlockRequirement(classId) {
+        var requirements = {
+            cryomancer: 'Win an arena run with Pyromancer',
+            necromancer: 'Win an arena run with Cryomancer'
+        };
+        return requirements[classId] || null;
+    }
+
     static getLockedClasses(progression) {
         if (!progression) progression = this.getProgression();
         var locked = [];

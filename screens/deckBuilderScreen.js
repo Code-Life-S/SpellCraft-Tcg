@@ -184,6 +184,12 @@ class DeckBuilderScreen extends BaseScreen {
         
         if (!spell) return;
 
+        // Don't allow clicking on locked cards (progression-locked)
+        if (spellCard.classList.contains('locked')) {
+            this.showMessage('Card locked - earn more XP and level up to unlock!', 'warning');
+            return;
+        }
+
         // Don't allow clicking on disabled cards
         if (spellCard.classList.contains('disabled')) {
             this.showMessage('Maximum 2 copies per card allowed!', 'warning');
@@ -267,6 +273,9 @@ class DeckBuilderScreen extends BaseScreen {
             deckCardCounts[card.id] = (deckCardCounts[card.id] || 0) + 1;
         });
 
+        var progression = window.PlayerProgressionManager ?
+            PlayerProgressionManager.getProgression() : null;
+
         // Filter and sort spells
         let filteredSpells = this.availableSpells.filter(spell => {
             // Class filter: neutral (no class field) OR matches chosen class
@@ -295,15 +304,27 @@ class DeckBuilderScreen extends BaseScreen {
         // Generate spell cards HTML
         spellGrid.innerHTML = '';
         filteredSpells.forEach(spell => {
+            var isLocked = false;
+            var lockReason = '';
+            if (!spell.class && progression) {
+                isLocked = !PlayerProgressionManager.isCardUnlocked(spell, progression);
+                if (isLocked) {
+                    var unlockLevel = PlayerProgressionManager.getCardUnlockLevel(spell.id);
+                    lockReason = 'Level ' + unlockLevel + ' required';
+                }
+            }
+
             const countInDeck = deckCardCounts[spell.id] || 0;
             const isMaxed = countInDeck >= 2;
 
             const cardEl = SpellCardComponent.createCardElement(spell, {
-                disabled: isMaxed
+                disabled: isMaxed,
+                locked: isLocked,
+                lockReason: lockReason
             });
             cardEl.dataset.spellId = spell.id;
 
-            if (countInDeck > 0) {
+            if (!isLocked && countInDeck > 0) {
                 const badge = document.createElement('div');
                 badge.className = 'card-count-indicator';
                 badge.textContent = countInDeck + '/2';

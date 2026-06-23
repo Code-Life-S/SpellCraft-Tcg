@@ -604,9 +604,168 @@ class MainMenuScreen extends BaseScreen {
     // Menu Action Methods
     async startAdventure() {
         this.playButtonSound();
-        
-        // Show deck selection dialog
-        await this.showDeckSelectionDialog();
+
+        var savedState = typeof AdventureStateManager !== 'undefined' ? AdventureStateManager.getState() : null;
+
+        if (savedState && savedState.phase === 'adventure' && savedState.runResult !== 'lost') {
+            await this.showAdventureChoiceDialog(savedState);
+        } else {
+            // No saved state — show deck selection for a new run
+            await this.showDeckSelectionDialog();
+        }
+    }
+
+    async showAdventureChoiceDialog(state) {
+        var progress = 'Wave ' + (state.currentWave || 1);
+
+        var overlay = document.createElement('div');
+        overlay.className = 'adventure-choice-overlay';
+        overlay.innerHTML = `
+            <div class="adventure-choice-panel">
+                <h2>Adventure Mode</h2>
+                <div class="adventure-choice-info">
+                    <span class="adventure-choice-progress">${progress}</span>
+                </div>
+                <div class="adventure-choice-buttons">
+                    <button class="adventure-choice-btn primary" id="adventure-continue">
+                        <span class="btn-text">Continue</span>
+                    </button>
+                    <button class="adventure-choice-btn danger" id="adventure-new-run">
+                        <span class="btn-text">New Adventure</span>
+                    </button>
+                </div>
+                <button class="adventure-choice-btn cancel" id="adventure-cancel">Cancel</button>
+            </div>
+        `;
+
+        this.addAdventureChoiceStyles();
+        document.body.appendChild(overlay);
+
+        var continueBtn = overlay.querySelector('#adventure-continue');
+        var newRunBtn = overlay.querySelector('#adventure-new-run');
+        var cancelBtn = overlay.querySelector('#adventure-cancel');
+
+        continueBtn.addEventListener('click', () => {
+            document.body.removeChild(overlay);
+            this.playButtonSound();
+            this.navigateTo('game', { resume: true });
+        });
+
+        newRunBtn.addEventListener('click', () => {
+            document.body.removeChild(overlay);
+            AdventureStateManager.clearState();
+            this.playButtonSound();
+            this.showDeckSelectionDialog();
+        });
+
+        cancelBtn.addEventListener('click', () => {
+            document.body.removeChild(overlay);
+            this.playButtonSound();
+        });
+
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) {
+                document.body.removeChild(overlay);
+            }
+        });
+    }
+
+    addAdventureChoiceStyles() {
+        if (document.getElementById('adventure-choice-styles')) return;
+
+        var style = document.createElement('style');
+        style.id = 'adventure-choice-styles';
+        style.textContent = `
+            .adventure-choice-overlay {
+                position: fixed;
+                top: 0; left: 0;
+                width: 100%; height: 100%;
+                background: rgba(0,0,0,0.8);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+                animation: fadeIn 0.3s ease-out;
+            }
+            .adventure-choice-panel {
+                background: linear-gradient(145deg, #1a1a2e, #16213e);
+                border: 2px solid #FFD700;
+                border-radius: 15px;
+                padding: 30px;
+                max-width: 420px;
+                width: 90%;
+                text-align: center;
+            }
+            .adventure-choice-panel h2 {
+                color: #FFD700;
+                margin: 0 0 20px 0;
+                font-size: 28px;
+            }
+            .adventure-choice-info {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 12px;
+                margin-bottom: 25px;
+                background: rgba(255,255,255,0.08);
+                padding: 12px 20px;
+                border-radius: 10px;
+            }
+            .adventure-choice-progress {
+                color: #87CEEB;
+                font-size: 16px;
+                font-weight: bold;
+            }
+            .adventure-choice-buttons {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                margin-bottom: 15px;
+            }
+            .adventure-choice-btn {
+                padding: 14px 20px;
+                border: 2px solid;
+                border-radius: 10px;
+                font-size: 16px;
+                font-weight: bold;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                font-family: inherit;
+            }
+            .adventure-choice-btn.primary {
+                background: linear-gradient(145deg, rgba(255,215,0,0.2), rgba(255,165,0,0.2));
+                border-color: #FFD700;
+                color: #FFD700;
+            }
+            .adventure-choice-btn.primary:hover {
+                background: linear-gradient(145deg, rgba(255,215,0,0.4), rgba(255,165,0,0.4));
+                box-shadow: 0 5px 20px rgba(255,215,0,0.3);
+            }
+            .adventure-choice-btn.danger {
+                background: transparent;
+                border-color: #DC143C;
+                color: #DC143C;
+            }
+            .adventure-choice-btn.danger:hover {
+                background: rgba(220,20,60,0.2);
+                box-shadow: 0 5px 20px rgba(220,20,60,0.3);
+            }
+            .adventure-choice-btn.cancel {
+                background: transparent;
+                border-color: #888;
+                color: #888;
+                padding: 10px 20px;
+                font-size: 14px;
+                width: auto;
+                margin: 0 auto;
+            }
+            .adventure-choice-btn.cancel:hover {
+                background: rgba(255,255,255,0.1);
+                border-color: #ccc;
+                color: #ccc;
+            }
+        `;
+        document.head.appendChild(style);
     }
 
     async showDeckSelectionDialog() {

@@ -171,6 +171,45 @@
     box-shadow: 0 10px 20px rgba(0,0,0,0.4);
 }
 
+/* Locked state (progression-locked cards) */
+.card.locked {
+    opacity: 0.5;
+    filter: grayscale(0.85);
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.card.locked:hover {
+    transform: none;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+}
+
+.card-lock-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 32px;
+    z-index: 2;
+    text-shadow: 0 0 10px rgba(0,0,0,0.5);
+    pointer-events: none;
+}
+
+.card-lock-label {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    right: 8px;
+    background: rgba(0,0,0,0.75);
+    color: #ff6b6b;
+    padding: 4px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    text-align: center;
+    pointer-events: none;
+    z-index: 2;
+}
+
 /* Mulligan replace animation */
 .card.mulligan-replacing {
     animation: mulliganReplace 0.8s ease-in-out;

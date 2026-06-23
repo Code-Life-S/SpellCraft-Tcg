@@ -14,10 +14,12 @@ class GameScreen extends BaseScreen {
         this.maxHealth = 30;
         this.playerShield = 0;
         this.currentTurn = 1;
+        this.currentWave = 0;
         this.enemies = [];
         this.enemyIdCounter = 1;
         this.gameState = 'playing'; // 'playing', 'won', 'lost'
         this.isPlayerTurn = true;
+        this.totalEnemiesKilled = 0;
         
         // Managers
         this.cardManager = null;
@@ -189,37 +191,143 @@ class GameScreen extends BaseScreen {
     }
 
     async onBeforeShow(data) {
+        if (data && data.resume) {
+            await this._resumeAdventureRun();
+        } else {
+            await this._startNewAdventureRun(data);
+        }
+    }
+
+    async _startNewAdventureRun(data) {
+        // Reset state for a new run
+        this.playerHand = [];
+        this.currentMana = 1;
+        this.maxMana = 1;
+        this.playerHealth = 30;
+        this.maxHealth = 30;
+        this.playerShield = 0;
+        this.currentTurn = 1;
+        this.currentWave = 0;
+        this.enemies = [];
+        this.enemyIdCounter = 1;
+        this.gameState = 'playing';
+        this.isPlayerTurn = true;
+        this.totalEnemiesKilled = 0;
+        this.selectedCard = null;
+        this.selectedCardIndex = null;
+        this.gameXPAccumulator = 0;
+        this._pendingWaveTransition = false;
+        this._currentDeckId = null;
+        this.actionHistoryComp?.clear();
+
+        // Hide game over overlay if visible from previous run
+        var overlay = this.element.querySelector('#gameover-overlay');
+        if (overlay) overlay.classList.add('hidden');
+
+        // Clear any saved adventure state
+        AdventureStateManager.clearState();
+
+        var deckId = 'starter_deck';
+        if (data && data.deckId) {
+            deckId = data.deckId;
+        }
+
         // Ensure active class is set (from deck if available)
-        if (data && data.deckId && this.cardManager) {
-            var deck = this.cardManager.deckStorage.getDeck(data.deckId);
+        if (this.cardManager) {
+            var deck = this.cardManager.deckStorage.getDeck(deckId);
             if (deck && deck.class) {
                 ClassManager.setActiveClass(deck.class);
             }
-        }
 
-        // Load the selected deck if provided
-        if (data && data.deckId) {
-            const success = this.cardManager.loadDeck(data.deckId);
+            var success = this.cardManager.loadDeck(deckId);
             if (success) {
-                console.log(`✅ Loaded deck for game: ${data.deckId}`);
+                console.log('Loaded deck for adventure: ' + deckId);
             } else {
-                console.warn(`⚠️ Failed to load deck ${data.deckId}, using default`);
+                console.warn('Failed to load deck ' + deckId + ', using starter deck');
                 this.cardManager.loadDeck('starter_deck');
             }
-        } else {
-            // Fallback to starter deck if no deck specified
-            console.log('🎯 No deck specified, using starter deck');
-            this.cardManager.loadDeck('starter_deck');
+            this._currentDeckId = deckId;
         }
         
         // Inject class cards into deck
         this.injectClassCards();
         
+        // Spawn initial enemies for wave 1
+        this.spawnInitialEnemies();
+        this.updateUI();
+        this.updateHistoryDisplay();
+
         // Now that deck is loaded, create cards and start mulligan
         this.createSpellCards();
         this.renderPlayerHand();
         this.updateDeckTracker();
         this.startMulliganPhase();
+    }
+
+    async _resumeAdventureRun() {
+        var savedState = AdventureStateManager.getState();
+        if (!savedState || savedState.phase !== 'adventure') {
+            console.log('No saved adventure state found, starting fresh');
+            await this._startNewAdventureRun({ deckId: 'starter_deck' });
+            return;
+        }
+
+        console.log('Resuming adventure run, wave ' + savedState.currentWave);
+
+        this._currentDeckId = savedState.deckId || 'starter_deck';
+
+        // Restore deck state
+        if (this.cardManager) {
+            this.cardManager.loadDeck(this._currentDeckId);
+            this.cardManager.remainingDeck = savedState.remainingDeck || [];
+
+            var deck = this.cardManager.deckStorage.getDeck(this._currentDeckId);
+            if (deck && deck.class) {
+                ClassManager.setActiveClass(deck.class);
+            }
+        }
+
+        // Restore game state
+        this.currentWave = savedState.currentWave || 1;
+        this.currentTurn = savedState.currentTurn || 1;
+        this.playerHealth = savedState.playerHealth != null ? savedState.playerHealth : 30;
+        this.maxHealth = savedState.maxHealth || 30;
+        this.playerShield = savedState.playerShield || 0;
+        this.currentMana = savedState.currentMana || 1;
+        this.maxMana = savedState.maxMana || 1;
+        this.totalEnemiesKilled = savedState.totalEnemiesKilled || 0;
+        this.gameXPAccumulator = savedState.gameXPAccumulator || 0;
+        this.enemies = savedState.enemies || [];
+        this.enemyIdCounter = savedState.enemyIdCounter || 1;
+        this.playerHand = savedState.playerHand || [];
+        this.selectedCard = null;
+        this.selectedCardIndex = null;
+        this.gameState = 'playing';
+        this.isPlayerTurn = true;
+        this._pendingWaveTransition = false;
+
+        // Clear mulligan state
+        this.selectedCardsForMulligan = new Set();
+
+        // Remove mulligan overlay if present
+        var mulliganOverlay = this.element.querySelector('#mulligan-overlay');
+        if (mulliganOverlay && mulliganOverlay.parentNode) {
+            mulliganOverlay.parentNode.removeChild(mulliganOverlay);
+        }
+
+        // Hide overlays
+        var overlay = this.element.querySelector('#gameover-overlay');
+        if (overlay) overlay.classList.add('hidden');
+        var roundOverlay = this.element.querySelector('#round-overlay');
+        if (roundOverlay) roundOverlay.classList.add('hidden');
+
+        // Restore UI
+        this.renderPlayerHand();
+        this.renderEnemies();
+        this.updateUI();
+        this.updateDeckTracker();
+        this.updateHistoryDisplay();
+        this.updateGameStatus('Your Turn');
     }
 
     async initializeGame() {
@@ -228,13 +336,6 @@ class GameScreen extends BaseScreen {
         
         // Initialize audio preferences
         this.initializeAudioPreferences();
-        
-        // Initialize game state (but don't create cards yet - wait for deck selection)
-        this.spawnInitialEnemies();
-        this.updateUI();
-        
-        // Initialize history display
-        this.updateHistoryDisplay();
         
         // Initialize mulligan state
         this.selectedCardsForMulligan = new Set();
@@ -319,8 +420,34 @@ class GameScreen extends BaseScreen {
     }
 
     spawnInitialEnemies() {
-        // Spawn a small group of enemies for the battle
-        const enemyTypes = [
+        this.currentWave = 1;
+        this.spawnWave(this.currentWave);
+    }
+
+    spawnWave(wave) {
+        this.enemies = [];
+        this.currentWave = wave;
+
+        // Boss every 10 waves
+        if (wave % 10 === 0 && typeof getRandomBoss === 'function') {
+            var boss = getRandomBoss();
+            boss.id = this.enemyIdCounter++;
+            this.enemies.push(boss);
+            this.renderEnemies();
+            this.addToHistory('👑 BOSS: ' + boss.name + ' appears!', false);
+            return;
+        }
+
+        // Enemy count: 2-3 base, +1 every 10 waves
+        var baseCount = 2;
+        var bonusCount = Math.floor(wave / 10);
+        var enemyCount = Math.min(7, baseCount + bonusCount + Math.floor(Math.random() * 2));
+
+        // Scaling bonuses
+        var hpBonus = Math.floor(wave / 10);
+        var atkBonus = Math.floor(wave / 20);
+
+        var enemyTypes = [
             { name: "Goblin", art: "👹", health: 3, attack: 2 },
             { name: "Orc", art: "👿", health: 5, attack: 3 },
             { name: "Skeleton", art: "💀", health: 2, attack: 1 },
@@ -335,23 +462,63 @@ class GameScreen extends BaseScreen {
             { name: "Vampire", art: "🧛", health: 4, attack: 3 }
         ];
 
-        // Spawn 3-4 enemies for the battle
-        const enemyCount = Math.floor(Math.random() * 2) + 3; // 3-4 enemies
-        
-        for (let i = 0; i < enemyCount; i++) {
-            const enemyType = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+        for (var i = 0; i < enemyCount; i++) {
+            var type = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
             this.enemies.push({
                 id: this.enemyIdCounter++,
-                name: enemyType.name,
-                art: enemyType.art,
-                health: enemyType.health,
-                maxHealth: enemyType.health,
-                attack: enemyType.attack,
+                name: type.name,
+                art: type.art,
+                health: type.health + hpBonus,
+                maxHealth: type.health + hpBonus,
+                attack: type.attack + atkBonus,
                 ability: typeof getRandomAbilityChance === 'function' ? getRandomAbilityChance() : null
             });
         }
-        
+
         this.renderEnemies();
+    }
+
+    nextWave() {
+        var newWave = this.currentWave + 1;
+
+        // Disable end turn button immediately during transition
+        var btn = this.element.querySelector('#end-turn');
+        if (btn) btn.disabled = true;
+
+        // Heal between waves (same formula as arena)
+        var healAmount = CombatEngineComponent.calculateHealAmount(
+            newWave, this.playerHealth, this.maxHealth
+        );
+        if (healAmount > 0) {
+            this.playerHealth = Math.min(this.maxHealth, this.playerHealth + healAmount);
+        }
+
+        // Reset mana to 1 for fresh start (ramps each turn from here)
+        this.currentTurn = 1;
+        this.maxMana = 1;
+        this.currentMana = 1;
+
+        // Refill deck and give fresh hand of 4 cards
+        if (this.cardManager) {
+            this.cardManager.resetDeck();
+            this.playerHand = this.cardManager.drawMultipleCardsFromDeck(4);
+        }
+
+        // Short delay before spawning next wave
+        var _this = this;
+        setTimeout(function() {
+            _this.spawnWave(newWave);
+            _this.renderPlayerHand();
+            _this.updateUI();
+            _this.updateDeckTracker();
+            _this.isPlayerTurn = true;
+
+            var endTurnBtn = _this.element.querySelector('#end-turn');
+            if (endTurnBtn) endTurnBtn.disabled = false;
+
+            // Save state after wave spawn for resume support
+            _this.saveAdventureState();
+        }, 1500);
     }
 
     renderPlayerHand() {
@@ -384,10 +551,10 @@ class GameScreen extends BaseScreen {
     async backToMenu() {
         this.soundManager?.play('button_click');
         
-        const confirmExit = confirm('Are you sure you want to return to the main menu? Your progress will be lost.');
+        const confirmExit = confirm('Are you sure you want to return to the main menu? Your progress will be saved.');
         if (confirmExit) {
-            // Save any stats before leaving
-            this.saveGameStats();
+            // Save current state before leaving (mid-wave save)
+            this.saveAdventureState();
             
             // Stop background music before leaving
             if (this.soundManager) {
@@ -402,8 +569,8 @@ class GameScreen extends BaseScreen {
     saveGameStats() {
         // Save current game stats to localStorage
         const currentBest = parseInt(localStorage.getItem('bestWave') || '0');
-        if (this.currentTurn > currentBest) {
-            localStorage.setItem('bestWave', this.currentTurn.toString());
+        if (this.currentWave > currentBest) {
+            localStorage.setItem('bestWave', this.currentWave.toString());
         }
         
         // Increment spells cast counter
@@ -411,6 +578,42 @@ class GameScreen extends BaseScreen {
         // We would track spells cast during the game and add them here
         // For now, just increment by the number of turns (rough estimate)
         localStorage.setItem('spellsCast', (currentSpellsCast + this.currentTurn).toString());
+    }
+
+    saveAdventureState() {
+        if (!this.cardManager || this.gameState === 'mulligan') return;
+        var state = {
+            phase: 'adventure',
+            deckId: this._currentDeckId,
+            currentWave: this.currentWave,
+            currentTurn: this.currentTurn,
+            playerHealth: this.playerHealth,
+            maxHealth: this.maxHealth,
+            playerShield: this.playerShield,
+            currentMana: this.currentMana,
+            maxMana: this.maxMana,
+            totalEnemiesKilled: this.totalEnemiesKilled,
+            gameXPAccumulator: this.gameXPAccumulator,
+            enemies: this.enemies.map(function(e) {
+                return {
+                    id: e.id,
+                    name: e.name,
+                    art: e.art,
+                    health: e.health,
+                    maxHealth: e.maxHealth,
+                    attack: e.attack,
+                    ability: e.ability,
+                    isDying: e.isDying,
+                    isBoss: e.isBoss,
+                    skipAttack: e.skipAttack
+                };
+            }),
+            enemyIdCounter: this.enemyIdCounter,
+            playerHand: JSON.parse(JSON.stringify(this.playerHand)),
+            remainingDeck: JSON.parse(JSON.stringify(this.cardManager.remainingDeck)),
+            runResult: null
+        };
+        AdventureStateManager.saveState(state);
     }
 
     updateAudioButtons() {
@@ -613,10 +816,11 @@ class GameScreen extends BaseScreen {
             var enemyId = parseInt(enemyElement.dataset.enemyId);
             
             if (typeof hasActiveProvoker === 'function' && hasActiveProvoker(this.enemies)) {
-                var provoker = this.enemies.find(function(e) {
-                    return e.ability === 'provoke' && !e.isDying && e.health > 0;
+                var clickedEnemy = this.enemies.find(function(e) {
+                    return e.id === enemyId;
                 });
-                if (provoker && enemyId !== provoker.id) {
+                // Block clicks on non-provoker enemies; allow clicking any provoker
+                if (clickedEnemy && clickedEnemy.ability !== 'provoke') {
                     this.showMessage('This enemy is protected by Provocation!');
                     return;
                 }
@@ -712,8 +916,9 @@ class GameScreen extends BaseScreen {
             this.updateUI();
             this.updateDeckTracker();
 
-            // Auto-end turn if player has no mana left and game is still active
-            if (this.currentMana === 0 && this.isPlayerTurn && this.gameState === 'playing') {
+            // Auto-end turn if player has no playable cards left and game is still active
+            var hasPlayableCard = this.playerHand.some(function(c) { return c.mana <= this.currentMana; }.bind(this));
+            if (!hasPlayableCard && this.isPlayerTurn && this.gameState === 'playing') {
                 setTimeout(() => {
                     this.endTurn();
                 }, 1000);
@@ -866,42 +1071,8 @@ class GameScreen extends BaseScreen {
         }
     }
 
-    applyDamageWithElement(enemyId, baseDamage, elementType, skipDeathHistory = false) {
-        // Class passive: Pyromancien +1 fire damage
-        if (elementType === 'fire' && ClassManager.getFireDamageBonus() > 0) {
-            baseDamage += ClassManager.getFireDamageBonus();
-        }
-
-        if (!ElementalReactionsManager.isEnabled()) {
-            this.damageEnemyWithEffects(enemyId, baseDamage, skipDeathHistory);
-            return;
-        }
-        const enemy = this.enemies.find(e => e.id === enemyId);
-        if (!enemy) return;
-
-        const result = ElementalReactionsManager.processReaction(enemy, elementType, baseDamage);
-
-        if (result.reaction) {
-            const reactionEl = this.element.querySelector(`[data-enemy-id="${enemyId}"]`);
-            if (reactionEl) {
-                reactionEl.classList.add('reaction-flash');
-                setTimeout(() => reactionEl.classList.remove('reaction-flash'), 600);
-            }
-            this.addToHistory(result.reaction.icon + ' ' + result.reaction.name + '!', false);
-        }
-
-        this.damageEnemyWithEffects(enemyId, result.damage, skipDeathHistory);
-
-        if (result.aoeDamage > 0) {
-            this.enemies.forEach(other => {
-                if (other.id !== enemyId && !other.isDying && other.health > 0) {
-                    this.damageEnemyWithEffects(other.id, result.aoeDamage, true);
-                }
-            });
-        }
-
-        ElementalReactionsManager.applyElementalStatus(enemy, null, elementType, ClassManager.getFrozenDurationBonus());
-        this.enemyBoard.updateStatusOverlay(enemyId, enemy);
+    applyDamageWithElement(enemyId, baseDamage, elementType, skipDeathHistory) {
+        SpellResolverComponent.applyDamageWithElement(this, enemyId, baseDamage, elementType, skipDeathHistory);
     }
 
     damageEnemyWithEffects(enemyId, damage, skipDeathHistory = false) {
@@ -918,6 +1089,7 @@ class GameScreen extends BaseScreen {
             
             if (enemy.health <= 0) {
                 this.gameXPAccumulator += 10;
+                this.totalEnemiesKilled++;
                 var deathResult = ClassManager.onEnemyDeath(this.playerHealth, this.maxHealth || 30);
                 this.playerHealth = deathResult.health;
                 this.maxHealth = deathResult.maxHealth;
@@ -958,8 +1130,14 @@ class GameScreen extends BaseScreen {
     endTurn() {
         if (this.gameState !== 'playing' || !this.isPlayerTurn) return;
         
-        // Check for victory before ending turn
-        if (this.enemies.length === 0) {
+        // Check for alive enemies (exclude dying ones still in death animation)
+        var aliveEnemies = this.enemies.filter(function(e) {
+            return !e.isDying && e.health > 0;
+        });
+        if (aliveEnemies.length === 0) {
+            this.isPlayerTurn = false;
+            this.element.querySelector('#end-turn').disabled = true;
+            this.updateGameStatus('Wave Complete!');
             this.checkGameEnd();
             return;
         }
@@ -967,10 +1145,15 @@ class GameScreen extends BaseScreen {
         this.isPlayerTurn = false;
         this.updateGameStatus('Enemy Turn');
         this.element.querySelector('#end-turn').disabled = true;
+        this.selectedCard = null;
         
-        // Enemy attack phase
+        // Enemy attack phase via shared combat engine
         setTimeout(() => {
-            this.enemyAttackPhase();
+            CombatEngineComponent.executeEnemyAttackPhase(this, {
+                intervalMs: 350,
+                onDefeat: () => this.gameOver(false),
+                onPhaseEnd: () => this.startNewTurn()
+            });
         }, 1000);
     }
 
@@ -1021,112 +1204,20 @@ class GameScreen extends BaseScreen {
     }
 
     enemyAttackPhase() {
-        if (this.enemies.length === 0) {
-            this.checkGameEnd();
-            return;
-        }
-        
-        this.enemies.forEach(function(e) { delete e.canAttack; });
-
-        this.processEnemyStatusEffects();
-
-        let attackIndex = 0;
-        const attackInterval = setInterval(() => {
-            if (attackIndex >= this.enemies.length) {
-                clearInterval(attackInterval);
-                this.processEnemyAbilities();
-                this.startNewTurn();
-                return;
-            }
-
-            var enemy = this.enemies[attackIndex];
-
-            if (enemy.canAttack === false) {
-                attackIndex++;
-                return;
-            }
-
-            // Skip frozen enemies
-            if (ElementalReactionsManager.shouldSkipAttack(enemy)) {
-                attackIndex++;
-                this.addToHistory(STATUS_EFFECTS.frozen.icon + ' ' + enemy.name + ' is frozen and cannot attack!', false);
-                this.enemyBoard.updateStatusOverlay(enemy.id, enemy);
-                this.updateUI();
-                return;
-            }
-
-            let damage = enemy.attack;
-            let shieldAbsorbed = 0;
-
-            // Trigger enemy attack animation
-            const enemyElement = this.element.querySelector(`[data-enemy-id="${enemy.id}"]`);
-            if (enemyElement) {
-                enemyElement.classList.add('attacking');
-                // Remove the class after animation completes (600ms)
-                setTimeout(() => {
-                    if (enemyElement) {
-                        enemyElement.classList.remove('attacking');
-                    }
-                }, 600);
-            }
-
-            // Apply shield protection
-            if (this.playerShield > 0) {
-                shieldAbsorbed = Math.min(this.playerShield, damage);
-                this.playerShield -= shieldAbsorbed;
-                damage -= shieldAbsorbed;
-                
-                if (shieldAbsorbed > 0) {
-                    this.soundManager?.play('shield_block');
-                }
-            }
-            
-            // Apply remaining damage
-            this.playerHealth -= damage;
-            
-            // Add enemy attack to history
-            if (shieldAbsorbed > 0 && damage === 0) {
-                this.addToHistory(`${enemy.art} - ${enemy.attack} 🛡️`, false);
-            } else if (shieldAbsorbed > 0 && damage > 0) {
-                this.addToHistory(`${enemy.art} - ${enemy.attack} ❤️`, false);
-            } else {
-                this.addToHistory(`${enemy.art} - ${damage} ❤️`, false);
-            }
-            
-            // Play player hurt sound only if damage was taken
-            if (damage > 0) {
-                this.soundManager?.play('player_hurt');
-            }
-            
-            // Check if player died
-            if (this.playerHealth <= 0) {
-                this.updateUI();
-                clearInterval(attackInterval);
-                this.gameOver(false);
-                return;
-            }
-            
-            this.updateUI();
-            attackIndex++;
-        }, 350);
+        CombatEngineComponent.executeEnemyAttackPhase(this, {
+            intervalMs: 350,
+            onDefeat: () => this.gameOver(false),
+            onPhaseEnd: () => this.startNewTurn()
+        });
     }
 
     startNewTurn() {
-        this.currentTurn++;
-        this.maxMana = Math.min(10, this.currentTurn);
-        this.currentMana = this.maxMana;
-        this.isPlayerTurn = true;
-        
-        // Play mana restore sound
-        this.soundManager?.play('mana_restore');
-        
-        // Draw a card
-        this.drawCard();
-        
-        this.updateGameStatus('Your Turn');
-        this.element.querySelector('#end-turn').disabled = false;
-        this.renderPlayerHand();
-        this.updateUI();
+        CombatEngineComponent.startTurn(this, {
+            maxManaCap: 10,
+            onTurnStart: () => {
+                this.updateGameStatus('Your Turn');
+            }
+        });
     }
 
     drawCard() {
@@ -1142,117 +1233,93 @@ class GameScreen extends BaseScreen {
     }
 
     checkGameEnd() {
+        if (this._pendingWaveTransition) return;
+        if (this.gameState === 'won' || this.gameState === 'lost') return;
+
+        // Check for alive enemies
+        var alive = this.enemies.filter(function(e) {
+            return !e.isDying && e.health > 0;
+        });
+        if (alive.length > 0) return;
+
+        // Check for dying enemies still playing death animation
+        var dying = this.enemies.filter(function(e) {
+            return e.isDying;
+        });
+        if (dying.length > 0) return;
+
         if (this.enemies.length === 0) {
-            // Victory! End the game immediately
+            // All enemies confirmed dead -> go to next wave
+            this._pendingWaveTransition = true;
             setTimeout(() => {
-                this.gameOver(true);
-            }, 1000); // Small delay to let animations finish
+                this._pendingWaveTransition = false;
+                this.gameXPAccumulator += 25;
+                this.nextWave();
+            }, 500);
         } else if (this.playerHealth <= 0) {
             this.gameOver(false);
         }
     }
 
     gameOver(playerWon) {
-        // Prevent multiple game over calls
         if (this.gameState === 'won' || this.gameState === 'lost') {
             return;
         }
-        
-        this.gameState = playerWon ? 'won' : 'lost';
+
+        this.gameState = 'lost';
         this.isPlayerTurn = false;
-        this.element.querySelector('#end-turn').disabled = true;
-        
-        if (playerWon) {
-            this.updateGameStatus('Victory!');
-            this.soundManager?.play('victory');
-            this.showMessage('🎉 Congratulations! You defeated all enemies! 🎉', 'success');
-            
-            // Update victory stats
-            const currentVictories = parseInt(localStorage.getItem('totalVictories') || '0');
-            localStorage.setItem('totalVictories', (currentVictories + 1).toString());
-        } else {
-            this.updateGameStatus('Defeat!');
-            this.soundManager?.play('defeat');
-            this.showMessage('💀 Game Over! Your hero has fallen! 💀', 'error');
-        }
-        
-        // Award XP
+        var endTurnBtn = this.element.querySelector('#end-turn');
+        if (endTurnBtn) endTurnBtn.disabled = true;
+
+        this.updateGameStatus('Defeat!');
+        this.soundManager?.play('defeat');
+
+        // Clear saved state so the run can't be resumed
+        AdventureStateManager.clearState();
+
         if (window.PlayerProgressionManager) {
-            var totalXP = this.gameXPAccumulator + (playerWon ? 75 : 20);
+            var totalXP = this.gameXPAccumulator + 20;
             PlayerProgressionManager.addXP(totalXP);
         }
 
-        // Show restart option only once
-        if (!this.gameOverDialogShown) {
-            this.gameOverDialogShown = true;
-            setTimeout(() => {
-                const restart = confirm(playerWon ? 
-                    'You won! Would you like to play again?' : 
-                    'You lost! Would you like to try again?');
-                if (restart) {
-                    // Reset game state and restart
-                    this.resetGame();
-                } else {
-                    // Stop background music before leaving
-                    if (this.soundManager) {
-                        this.soundManager.stopBackgroundMusic();
-                    }
-                    // Return to main menu
-                    this.navigateTo('mainmenu');
+        this.showEndRunScreen();
+    }
+
+    showEndRunScreen() {
+        var overlay = this.element.querySelector('#gameover-overlay');
+        if (!overlay) return;
+
+        overlay.classList.remove('hidden');
+
+        var title = overlay.querySelector('#gameover-title');
+        var message = overlay.querySelector('#gameover-message');
+        var stats = overlay.querySelector('#gameover-stats');
+
+        if (title) title.textContent = 'Defeated!';
+        if (title) title.className = 'gameover-title defeat';
+        if (message) message.textContent = 'Your adventure has ended.';
+
+        if (stats) {
+            stats.innerHTML =
+                '<div>Waves reached: ' + this.currentWave + '</div>' +
+                '<div>Enemies killed: ' + this.totalEnemiesKilled + '</div>' +
+                '<div>Turns survived: ' + this.currentTurn + '</div>' +
+                '<div>XP earned: ' + (this.gameXPAccumulator + 20) + '</div>';
+        }
+
+        var btn = overlay.querySelector('#gameover-btn');
+        if (btn) {
+            btn.onclick = function() {
+                AdventureStateManager.clearState();
+                if (this.soundManager) {
+                    this.soundManager.stopBackgroundMusic();
                 }
-            }, 3000);
+                this.navigateTo('mainmenu');
+            }.bind(this);
         }
     }
 
-    resetGame() {
-        // Reset all game state
-        this.playerHand = [];
-        this.currentMana = 1;
-        this.maxMana = 1;
-        this.playerHealth = 30;
-        this.maxHealth = 30;
-        this.playerShield = 0;
-        this.currentTurn = 1;
-        this.enemies = [];
-        this.enemyIdCounter = 1;
-        this.gameState = 'playing';
-        this.isPlayerTurn = true;
-        this.selectedCard = null;
-        this.selectedCardIndex = null;
-        this.actionHistory = [];
-        this.actionHistoryComp.clear();
-        
-        // Reset the deck to full state
-        if (this.cardManager) {
-            this.cardManager.resetDeck();
-        }
-        
-        // Reset background music state so it can restart properly
-        this.backgroundMusicStarted = false;
-        
-        // Reset game over dialog flag
-        this.gameOverDialogShown = false;
-        
-        // Re-enable end turn button
-        const endTurnButton = this.element.querySelector('#end-turn');
-        if (endTurnButton) {
-            endTurnButton.disabled = false;
-        }
-        
-        // Update game status
-        this.updateGameStatus('Your Turn');
-        
-        // Reinitialize game
-        this.createSpellCards();
-        this.spawnInitialEnemies();
-        this.renderPlayerHand();
-        this.updateUI();
-        this.updateDeckTracker();
-        this.updateHistoryDisplay();
-        
-        // Start mulligan phase for the new game
-        this.startMulliganPhase();
-    }
+
 
     updateGameStatus(status) {
         const statusElement = this.element.querySelector('#game-status');
@@ -1275,7 +1342,7 @@ class GameScreen extends BaseScreen {
         this.element.querySelector('#max-mana').textContent = `/${this.maxMana}`;
         if (this.headerComp) {
             this.headerComp.update({
-                round: this.currentTurn,
+                round: this.currentWave,
                 enemies: this.enemies.length,
                 status: this.element.querySelector('#game-status')?.textContent || ''
             });
