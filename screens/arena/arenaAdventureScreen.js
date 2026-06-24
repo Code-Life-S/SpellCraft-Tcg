@@ -29,9 +29,6 @@ class ArenaAdventureScreen extends BaseScreen {
         this.arenaXPAccumulator = 0;
         this.deckTracker = null;
         this.actionHistoryComp = null;
-        this.mulliganActive = false;
-        this.selectedCardsForMulligan = null;
-        this.sidebarStates = { history: false, deck: false };
         this.headerComp = null;
         this._lastSpellCast = null;
     }
@@ -43,6 +40,15 @@ class ArenaAdventureScreen extends BaseScreen {
         } catch (error) {
             console.error('Failed to load arena adventure template:', error);
             this.element.innerHTML = this.getFallbackHTML();
+        }
+
+        // Load shared game CSS
+        try {
+            if (window.templateLoader && typeof window.templateLoader.loadCSS === 'function') {
+                await window.templateLoader.loadCSS('screens/shared/gameCommon.css', 'screens-shared-gameCommon-css');
+            }
+        } catch (error) {
+            console.warn('Failed to load shared game CSS:', error);
         }
 
         // Load shared component CSS
@@ -68,19 +74,40 @@ class ArenaAdventureScreen extends BaseScreen {
         this.headerComp = new GameHeaderComponent({
             mode: 'arena',
             onHomeClick: () => this.backToMenu(),
-            onToggleHistory: () => this.toggleSidebar('history'),
-            onToggleDeck: () => this.toggleSidebar('deck'),
-            onToggleSound: () => this.toggleSound(),
-            onToggleMusic: () => this.toggleMusic()
+            onToggleHistory: () => this.sidebarManager.toggle('history'),
+            onToggleDeck: () => this.sidebarManager.toggle('deck'),
+            onToggleSound: () => this.audioCtrl.toggleSound(),
+            onToggleMusic: () => this.audioCtrl.toggleMusic()
         });
         const gameBoard = this.element.querySelector('.game-board');
         if (gameBoard) {
             gameBoard.prepend(this.headerComp.render());
         }
-        this.initializeUIToggles();
+        this.sidebarManager = new SidebarManagerComponent(this.element, {
+            getHistoryButton: () => this.headerComp?.getHistoryButton(),
+            getDeckButton: () => this.headerComp?.getDeckButton()
+        });
+        this.audioCtrl = new AudioController(this.soundManager);
+        this.gameOverOverlay = new GameOverOverlayComponent(this.element, {
+            defaultTitle: 'Victory!',
+            defaultMessage: 'You conquered the arena!',
+            buttonText: 'Back to Menu',
+            onButtonClick: () => {
+                ArenaStateManager.clearState();
+                this.navigateTo('mainmenu');
+            }
+        });
+        var arenaGB = this.element.querySelector('.game-board');
+        if (arenaGB) {
+            arenaGB.appendChild(this.gameOverOverlay.render());
+        }
+        this.sidebarManager.init();
+        this.audioCtrl.init();
+        this.audioCtrl.updateButtons(this.headerComp);
         this.visualEffects = new VisualEffectsComponent(this.element);
         this.enemyBoard = new EnemyBoardComponent(this.element, '#enemy-area');
         this.enemyInfoPanel = new EnemyInfoPanelComponent(this.element, '#enemy-info-panel');
+        this.mulliganComp = new MulliganComponent(this.element);
         this.playerHandComp = new PlayerHandComponent(this.element, '#player-hand');
         this.deckTracker = new DeckTrackerComponent(this.element, '.deck-tracker');
         this.actionHistoryComp = new ActionHistoryComponent(this.element, '#action-history');
@@ -179,10 +206,6 @@ class ArenaAdventureScreen extends BaseScreen {
                         '<div class="upgrade-choices" id="upgrade-choices" style="display:flex;justify-content:center;gap:20px;flex-wrap:wrap;"></div>' +
                     '</div>' +
                 '</div>' +
-            '</div>' +
-            '<div class="gameover-overlay hidden" id="gameover-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);display:flex;align-items:center;justify-content:center;z-index:10001;display:none;">' +
-                '<button class="gameover-btn" id="gameover-btn" style="background:linear-gradient(145deg,rgba(255,215,0,0.2),rgba(255,165,0,0.2));border:2px solid #FFD700;border-radius:10px;color:#FFD700;padding:14px 30px;font-size:18px;font-weight:bold;cursor:pointer;">Back to Menu</button>' +
-            '</div>' +
         '</div>';
     }
 
@@ -246,8 +269,6 @@ class ArenaAdventureScreen extends BaseScreen {
         this.selectedCard = null;
         this.selectedCardIndex = null;
         this.phase = null;
-        this.mulliganActive = false;
-        this.selectedCardsForMulligan = null;
 
         this.playerHand = snapshot.playerHand.map(function(c) { return Object.assign({}, c); });
         this.arenaDeck = snapshot.arenaDeck.map(function(c) { return Object.assign({}, c); });
@@ -272,7 +293,7 @@ class ArenaAdventureScreen extends BaseScreen {
         }
 
         this.addToHistory('Arena run resumed - Round ' + this.arenaState.currentRound + ', Turn ' + this.currentTurn, true);
-        this.updateAudioButtons();
+        this.audioCtrl.updateButtons(this.headerComp);
     }
 
     /* ------ ROUND MANAGEMENT ------ */
@@ -308,7 +329,25 @@ class ArenaAdventureScreen extends BaseScreen {
 
         // Mulligan at the start of round 1
         if (round === 1) {
-            this.startMulliganPhase();
+            var _this = this;
+            this.gameState = 'mulligan';
+            this.isPlayerTurn = false;
+            this.mulliganComp.start(this.playerHand, {
+                returnCards: function(cards) {
+                    cards.forEach(function(c) { _this.arenaDeck.push(c); });
+                    _this.shuffleArray(_this.arenaDeck);
+                },
+                drawCards: function(count) { return _this.drawCards(count); }
+            }, {
+                onComplete: function(newHand) {
+                    _this.playerHand = newHand;
+                    _this.gameState = 'playing';
+                    _this.isPlayerTurn = true;
+                    _this.renderPlayerHand();
+                    _this.updateUI();
+                    _this.addToHistory('Mulligan complete - Round ' + _this.arenaState.currentRound + ' begins!', true);
+                }
+            });
         }
     }
 
@@ -477,86 +516,6 @@ class ArenaAdventureScreen extends BaseScreen {
         }
     }
 
-    toggleSidebar(type) {
-        this.sidebarStates[type] = !this.sidebarStates[type];
-        localStorage.setItem(type === 'history' ? 'historyVisible' : 'deckVisible',
-            this.sidebarStates[type]);
-        this.updateSidebarVisibility();
-    }
-
-    updateSidebarVisibility() {
-        const leftSidebar = this.element.querySelector('#left-sidebar');
-        const rightSidebar = this.element.querySelector('#right-sidebar');
-        const mainGameArea = this.element.querySelector('.main-game-area');
-        const historyBtn = this.headerComp?.getHistoryButton();
-        const deckBtn = this.headerComp?.getDeckButton();
-
-        if (leftSidebar) {
-            leftSidebar.classList.toggle('hidden', !this.sidebarStates.history);
-            leftSidebar.classList.toggle('visible', this.sidebarStates.history);
-        }
-        if (historyBtn) {
-            historyBtn.classList.toggle('active', this.sidebarStates.history);
-        }
-
-        if (rightSidebar) {
-            rightSidebar.classList.toggle('hidden', !this.sidebarStates.deck);
-            rightSidebar.classList.toggle('visible', this.sidebarStates.deck);
-        }
-        if (deckBtn) {
-            deckBtn.classList.toggle('active', this.sidebarStates.deck);
-        }
-
-        if (mainGameArea) {
-            mainGameArea.classList.toggle('left-hidden', !this.sidebarStates.history);
-            mainGameArea.classList.toggle('right-hidden', !this.sidebarStates.deck);
-            mainGameArea.classList.toggle('sidebars-hidden',
-                !this.sidebarStates.history && !this.sidebarStates.deck);
-        }
-    }
-
-    initializeUIToggles() {
-        const isMobile = window.innerWidth <= 768;
-        this.sidebarStates = {
-            history: localStorage.getItem('historyVisible') !== null
-                ? localStorage.getItem('historyVisible') === 'true' : !isMobile,
-            deck: localStorage.getItem('deckVisible') !== null
-                ? localStorage.getItem('deckVisible') === 'true' : !isMobile
-        };
-        this.updateSidebarVisibility();
-    }
-
-    toggleSound() {
-        if (this.soundManager) {
-            this.soundManager.toggle();
-            localStorage.setItem('soundEnabled', this.soundManager.enabled);
-            this.soundManager.play('button_click');
-            this.updateAudioButtons();
-        }
-    }
-
-    toggleMusic() {
-        const musicEnabled = localStorage.getItem('musicEnabled') !== 'false';
-        if (musicEnabled) {
-            this.soundManager?.stopBackgroundMusic();
-            localStorage.setItem('musicEnabled', false);
-        } else {
-            this.soundManager?.playBackgroundMusic();
-            localStorage.setItem('musicEnabled', true);
-        }
-        this.soundManager?.play('button_click');
-        this.updateAudioButtons();
-    }
-
-    updateAudioButtons() {
-        if (this.soundManager && this.headerComp) {
-            const soundEnabled = this.soundManager.enabled;
-            const musicEnabled = localStorage.getItem('musicEnabled') !== 'false';
-            const isPlaying = this.soundManager.backgroundMusicPlaying;
-            this.headerComp.updateAudio(soundEnabled, musicEnabled, isPlaying);
-        }
-    }
-
     renderPlayerHand() {
         this.playerHandComp.render(this.playerHand, this.currentMana);
     }
@@ -570,132 +529,6 @@ class ArenaAdventureScreen extends BaseScreen {
             this.actionHistoryComp.addEntry(action, isPlayerAction, this.currentTurn || 1);
             this.actionHistory = this.actionHistoryComp.entries;
         }
-    }
-
-    /* ------ MULLIGAN SYSTEM ------ */
-
-    startMulliganPhase() {
-        if (this.element.querySelector('#mulligan-overlay')) return;
-
-        this.mulliganActive = true;
-        this.gameState = 'mulligan';
-        this.selectedCardsForMulligan = new Set();
-
-        this.showMulliganInterface();
-        this.renderPlayerHand();
-    }
-
-    showMulliganInterface() {
-        const overlay = document.createElement('div');
-        overlay.id = 'mulligan-overlay';
-        overlay.className = 'mulligan-overlay';
-        overlay.innerHTML =
-            '<div class="mulligan-panel">' +
-                '<div class="mulligan-hand" id="mulligan-hand"></div>' +
-                '<div class="mulligan-bottom">' +
-                    '<h2 class="mulligan-title">Choose cards to replace (click to toggle)</h2>' +
-                    '<button class="mulligan-confirm-btn" id="confirm-mulligan">Confirm</button>' +
-                '</div>' +
-            '</div>';
-
-        const gameBoard = this.element.querySelector('.game-board');
-        if (gameBoard) {
-            gameBoard.appendChild(overlay);
-        } else {
-            this.element.appendChild(overlay);
-        }
-
-        this.renderMulliganCards();
-        this.bindMulliganEvents();
-    }
-
-    renderMulliganCards() {
-        const container = this.element.querySelector('#mulligan-hand');
-        if (!container) return;
-        container.innerHTML = '';
-        this.playerHand.forEach((card, index) => {
-            const el = this.createMulliganCardElement(card, index);
-            container.appendChild(el);
-        });
-    }
-
-    createMulliganCardElement(card, index) {
-        const div = SpellCardComponent.createCardElement(card, {
-            baseClass: 'mulligan-card'
-        });
-        div.dataset.handIndex = index;
-        div.onclick = () => this.handleMulliganCardClick(div);
-        return div;
-    }
-
-    bindMulliganEvents() {
-        const btn = this.element.querySelector('#confirm-mulligan');
-        if (btn) {
-            btn.onclick = () => this.confirmMulligan();
-        }
-    }
-
-    handleMulliganCardClick(el) {
-        if (!this.mulliganActive) return;
-        const index = parseInt(el.dataset.handIndex);
-        if (this.selectedCardsForMulligan.has(index)) {
-            this.selectedCardsForMulligan.delete(index);
-            el.classList.remove('mulligan-selected');
-        } else {
-            this.selectedCardsForMulligan.add(index);
-            el.classList.add('mulligan-selected');
-        }
-        this.soundManager?.play('card_select');
-    }
-
-    confirmMulligan() {
-        if (this.selectedCardsForMulligan.size === 0) {
-            this.endMulliganPhase();
-            return;
-        }
-        this.performMulligan(Array.from(this.selectedCardsForMulligan));
-    }
-
-    performMulligan(indicesToReplace) {
-        // Sort descending to splice safely
-        const sorted = [...indicesToReplace].sort((a, b) => b - a);
-        const replacedCards = [];
-        sorted.forEach(idx => {
-            replacedCards.push(this.playerHand[idx]);
-            this.playerHand.splice(idx, 1);
-        });
-
-        // Return replaced cards to deck
-        replacedCards.forEach(card => this.arenaDeck.push(card));
-        this.shuffleArray(this.arenaDeck);
-
-        // Draw new cards
-        for (let i = 0; i < replacedCards.length; i++) {
-            const drawn = this.drawCards(1);
-            if (drawn.length > 0) {
-                this.playerHand.push(drawn[0]);
-            }
-        }
-
-        this.renderPlayerHand();
-        this.updateUI();
-        this.endMulliganPhase();
-    }
-
-    endMulliganPhase() {
-        this.mulliganActive = false;
-        this.gameState = 'playing';
-        this.isPlayerTurn = true;
-        this.selectedCardsForMulligan = null;
-
-        const overlay = this.element.querySelector('#mulligan-overlay');
-        if (overlay && overlay.parentNode) {
-            overlay.parentNode.removeChild(overlay);
-        }
-
-        this.renderPlayerHand();
-        this.updateUI();
-        this.addToHistory('Mulligan complete - Round ' + this.arenaState.currentRound + ' begins!', true);
     }
 
     shuffleArray(arr) {
@@ -755,14 +588,6 @@ class ArenaAdventureScreen extends BaseScreen {
                 if (choiceEl && this.roundTransitioning) {
                     this.handleChoiceClick(parseInt(choiceEl.dataset.index));
                 }
-            });
-        }
-
-        const gameoverBtn = q('#gameover-btn');
-        if (gameoverBtn) {
-            this.addEventListenerSafe(gameoverBtn, 'click', () => {
-                ArenaStateManager.clearState();
-                this.navigateTo('mainmenu');
             });
         }
 
@@ -1542,21 +1367,16 @@ class ArenaAdventureScreen extends BaseScreen {
             PlayerProgressionManager.recordArenaWin(this.arenaState.chosenClass);
         }
 
-        const overlay = this.element.querySelector('#gameover-overlay');
-        overlay.classList.remove('hidden');
-        overlay.querySelector('#gameover-title').textContent = 'Victory!';
-        overlay.querySelector('#gameover-title').className = 'gameover-title victory';
-
-        if (isTestBoss) {
-            overlay.querySelector('#gameover-message').textContent = 'Boss defeated in test mode!';
-        } else {
-            overlay.querySelector('#gameover-message').textContent = 'You conquered all 12 rounds!';
-        }
-
-        const stats = overlay.querySelector('#gameover-stats');
-        stats.innerHTML = '<div>Rounds survived: 12/12</div>' +
+        this.gameOverOverlay.show({
+            isVictory: true,
+            title: 'Victory!',
+            message: isTestBoss ? 'Boss defeated in test mode!' : 'You conquered all 12 rounds!'
+        });
+        this.gameOverOverlay.setStats(
+            '<div>Rounds survived: 12/12</div>' +
             '<div>Final HP: ' + this.arenaState.playerHealth + '/' + this.arenaState.maxHealth + '</div>' +
-            '<div>Min Heal Bonus: +' + (this.arenaState.minHealBonus || 0) + '</div>';
+            '<div>Min Heal Bonus: +' + (this.arenaState.minHealBonus || 0) + '</div>'
+        );
     }
 
     showDefeat() {
@@ -1572,16 +1392,16 @@ class ArenaAdventureScreen extends BaseScreen {
             PlayerProgressionManager.addXP(totalXP);
         }
 
-        const overlay = this.element.querySelector('#gameover-overlay');
-        overlay.classList.remove('hidden');
-        overlay.querySelector('#gameover-title').textContent = 'Defeated!';
-        overlay.querySelector('#gameover-title').className = 'gameover-title defeat';
-        overlay.querySelector('#gameover-message').textContent = isTestBoss ? 'The boss was too strong!' : 'Your arena run has ended.';
-
-        const stats = overlay.querySelector('#gameover-stats');
-        stats.innerHTML = '<div>Reached round: ' + this.arenaState.currentRound + '/12</div>' +
+        this.gameOverOverlay.show({
+            isVictory: false,
+            title: 'Defeated!',
+            message: isTestBoss ? 'The boss was too strong!' : 'Your arena run has ended.'
+        });
+        this.gameOverOverlay.setStats(
+            '<div>Reached round: ' + this.arenaState.currentRound + '/12</div>' +
             '<div>Deck size: ' + this.arenaState.arenaCards.length + ' cards</div>' +
-            '<div>Min Heal Bonus: +' + (this.arenaState.minHealBonus || 0) + '</div>';
+            '<div>Min Heal Bonus: +' + (this.arenaState.minHealBonus || 0) + '</div>'
+        );
     }
 
     /* ------ SCREEN LIFECYCLE ------ */
@@ -1596,7 +1416,7 @@ class ArenaAdventureScreen extends BaseScreen {
                 ClassManager.setActiveClass(state.chosenClass);
             }
             // Hide any lingering overlays from previous run
-            this.element.querySelector('#gameover-overlay')?.classList.add('hidden');
+            this.gameOverOverlay.hide();
             this.element.querySelector('#round-overlay')?.classList.add('hidden');
             this.arenaState = state;
 

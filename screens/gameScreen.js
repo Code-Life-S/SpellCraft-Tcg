@@ -29,10 +29,6 @@ class GameScreen extends BaseScreen {
         this.selectedCard = null;
         this.selectedCardIndex = null;
         this.actionHistory = [];
-        this.sidebarStates = {
-            history: true,
-            deck: true
-        };
         
         // Audio state
         this.backgroundMusicStarted = false;
@@ -61,6 +57,15 @@ class GameScreen extends BaseScreen {
 
         // CSS should now be loaded automatically by template loader
 
+        // Load shared game CSS
+        try {
+            if (window.templateLoader && typeof window.templateLoader.loadCSS === 'function') {
+                await window.templateLoader.loadCSS('screens/shared/gameCommon.css', 'screens-shared-gameCommon-css');
+            }
+        } catch (error) {
+            console.warn('Failed to load shared game CSS:', error);
+        }
+
         // Load shared component CSS
         const componentCSS = [
             'screens/components/spell-card/spellCardComponent.css',
@@ -84,10 +89,10 @@ class GameScreen extends BaseScreen {
         this.headerComp = new GameHeaderComponent({
             mode: 'adventure',
             onHomeClick: () => this.backToMenu(),
-            onToggleHistory: () => this.toggleSidebar('history'),
-            onToggleDeck: () => this.toggleSidebar('deck'),
-            onToggleSound: () => this.toggleSound(),
-            onToggleMusic: () => this.toggleMusic()
+            onToggleHistory: () => this.sidebarManager.toggle('history'),
+            onToggleDeck: () => this.sidebarManager.toggle('deck'),
+            onToggleSound: () => this.audioCtrl.toggleSound(),
+            onToggleMusic: () => this.audioCtrl.toggleMusic()
         });
         const gameBoard = this.element.querySelector('.game-board');
         if (gameBoard) {
@@ -96,6 +101,28 @@ class GameScreen extends BaseScreen {
         this.visualEffects = new VisualEffectsComponent(this.element);
         this.enemyBoard = new EnemyBoardComponent(this.element, '#enemy-battlefield');
         this.enemyInfoPanel = new EnemyInfoPanelComponent(this.element, '#enemy-info-panel');
+        this.sidebarManager = new SidebarManagerComponent(this.element, {
+            getHistoryButton: () => this.headerComp?.getHistoryButton(),
+            getDeckButton: () => this.headerComp?.getDeckButton()
+        });
+        this.audioCtrl = new AudioController(this.soundManager);
+        this.gameOverOverlay = new GameOverOverlayComponent(this.element, {
+            defaultTitle: 'Defeated!',
+            defaultMessage: 'Your adventure has ended.',
+            buttonText: 'Back to Menu',
+            onButtonClick: () => {
+                AdventureStateManager.clearState();
+                if (this.soundManager) {
+                    this.soundManager.stopBackgroundMusic();
+                }
+                this.backToMenu();
+            }
+        });
+        var gameBoardEl = this.element.querySelector('.game-board');
+        if (gameBoardEl) {
+            gameBoardEl.appendChild(this.gameOverOverlay.render());
+        }
+        this.mulliganComp = new MulliganComponent(this.element);
         this.playerHandComp = new PlayerHandComponent(this.element, '#player-hand');
         this.deckTracker = new DeckTrackerComponent(this.element, '.deck-tracker');
         this.actionHistoryComp = new ActionHistoryComponent(this.element, '#action-history');
@@ -230,8 +257,7 @@ class GameScreen extends BaseScreen {
         this.actionHistoryComp?.clear();
 
         // Hide game over overlay if visible from previous run
-        var overlay = this.element.querySelector('#gameover-overlay');
-        if (overlay) overlay.classList.add('hidden');
+        this.gameOverOverlay.hide();
 
         // Clear any saved adventure state
         AdventureStateManager.clearState();
@@ -270,7 +296,31 @@ class GameScreen extends BaseScreen {
         this.createSpellCards();
         this.renderPlayerHand();
         this.updateDeckTracker();
-        this.startMulliganPhase();
+
+        var _this = this;
+        this.gameState = 'mulligan';
+        this.isPlayerTurn = false;
+        this.mulliganComp.start(this.playerHand, {
+            returnCards: function(cards) { _this.cardManager.returnCardsToDeck(cards); },
+            drawCards: function(count) {
+                var drawn = [];
+                for (var i = 0; i < count; i++) {
+                    var card = _this.cardManager.getRandomCard();
+                    if (card) drawn.push(card);
+                }
+                return drawn;
+            }
+        }, {
+            onComplete: function(newHand) {
+                _this.playerHand = newHand;
+                _this.gameState = 'playing';
+                _this.isPlayerTurn = true;
+                _this.renderPlayerHand();
+                _this.updateDeckTracker();
+                _this.updateUI();
+                _this.addToHistory('Mulligan complete - Game begins!', true);
+            }
+        });
     }
 
     async _resumeAdventureRun() {
@@ -315,18 +365,8 @@ class GameScreen extends BaseScreen {
         this.isPlayerTurn = true;
         this._pendingWaveTransition = false;
 
-        // Clear mulligan state
-        this.selectedCardsForMulligan = new Set();
-
-        // Remove mulligan overlay if present
-        var mulliganOverlay = this.element.querySelector('#mulligan-overlay');
-        if (mulliganOverlay && mulliganOverlay.parentNode) {
-            mulliganOverlay.parentNode.removeChild(mulliganOverlay);
-        }
-
         // Hide overlays
-        var overlay = this.element.querySelector('#gameover-overlay');
-        if (overlay) overlay.classList.add('hidden');
+        this.gameOverOverlay.hide();
         var roundOverlay = this.element.querySelector('#round-overlay');
         if (roundOverlay) roundOverlay.classList.add('hidden');
 
@@ -341,13 +381,11 @@ class GameScreen extends BaseScreen {
 
     async initializeGame() {
         // Initialize UI toggles
-        this.initializeUIToggles();
+        this.sidebarManager.init();
         
-        // Initialize audio preferences
-        this.initializeAudioPreferences();
-        
-        // Initialize mulligan state
-        this.selectedCardsForMulligan = new Set();
+        // Initialize audio
+        this.audioCtrl.init();
+        this.audioCtrl.updateButtons(this.headerComp);
     }
 
     bindEvents() {
@@ -414,6 +452,11 @@ class GameScreen extends BaseScreen {
                 }
             }
         });
+
+        // Window resize handler for sidebar visibility
+        this.addEventListenerSafe(window, 'resize', () => {
+            this.sidebarManager.handleResize();
+        });
     }
 
     handleHpToMana() {
@@ -477,10 +520,10 @@ class GameScreen extends BaseScreen {
         this.startBackgroundMusicIfNeeded();
         
         // Update audio button states
-        this.updateAudioButtons();
+        this.audioCtrl.updateButtons(this.headerComp);
         
         // Update sidebar visibility
-        this.updateSidebarVisibility();
+        this.sidebarManager.updateVisibility();
     }
 
     // Game Logic Methods (extracted from original script.js)
@@ -722,15 +765,6 @@ class GameScreen extends BaseScreen {
         AdventureStateManager.saveState(state);
     }
 
-    updateAudioButtons() {
-        if (this.soundManager && this.headerComp) {
-            const soundEnabled = this.soundManager.enabled;
-            const musicEnabled = localStorage.getItem('musicEnabled') !== 'false';
-            const isPlaying = this.soundManager.backgroundMusicPlaying;
-            this.headerComp.updateAudio(soundEnabled, musicEnabled, isPlaying);
-        }
-    }
-
     startBackgroundMusicIfNeeded() {
         if (!this.backgroundMusicStarted && this.soundManager) {
             // Always stop any existing music first to prevent overlapping
@@ -747,144 +781,14 @@ class GameScreen extends BaseScreen {
                     // Double-check that no music is playing before starting
                     if (!this.soundManager.backgroundMusicPlaying) {
                         this.soundManager.playBackgroundMusic();
-                        this.updateAudioButtons();
+                        this.audioCtrl.updateButtons(this.headerComp);
                     }
                 }, 500);
             }
         }
     }
 
-    // Audio Control Methods
-    toggleSound() {
-        if (this.soundManager) {
-            this.soundManager.toggle();
-            localStorage.setItem('soundEnabled', this.soundManager.enabled);
-            this.soundManager.play('button_click');
-            this.updateAudioButtons();
-        }
-    }
-
-    toggleMusic() {
-        const musicEnabled = localStorage.getItem('musicEnabled') !== 'false';
-        if (musicEnabled) {
-            this.soundManager?.stopBackgroundMusic();
-            localStorage.setItem('musicEnabled', false);
-        } else {
-            this.soundManager?.playBackgroundMusic();
-            localStorage.setItem('musicEnabled', true);
-        }
-        this.soundManager?.play('button_click');
-        this.updateAudioButtons();
-    }
-
-    // Sidebar Management
-    initializeUIToggles() {
-        // Load saved preferences or set defaults based on screen size
-        const isMobile = window.innerWidth <= 768;
-        
-        // Default visibility: hidden on mobile, visible on desktop
-        this.sidebarStates = {
-            history: localStorage.getItem('historyVisible') !== null ? 
-                localStorage.getItem('historyVisible') === 'true' : !isMobile,
-            deck: localStorage.getItem('deckVisible') !== null ? 
-                localStorage.getItem('deckVisible') === 'true' : !isMobile
-        };
-        
-        // Handle window resize to auto-adjust on mobile
-        this.addEventListenerSafe(window, 'resize', () => this.handleResize());
-    }
-
-    toggleSidebar(type) {
-        this.sidebarStates[type] = !this.sidebarStates[type];
-        
-        // Save preference
-        localStorage.setItem(type === 'history' ? 'historyVisible' : 'deckVisible', 
-            this.sidebarStates[type]);
-        
-        this.updateSidebarVisibility();
-        
-        // Add haptic feedback for mobile
-        if (navigator.vibrate) {
-            navigator.vibrate(50);
-        }
-    }
-
-    updateSidebarVisibility() {
-        const leftSidebar = this.element.querySelector('#left-sidebar');
-        const rightSidebar = this.element.querySelector('#right-sidebar');
-        const mainGameArea = this.element.querySelector('.main-game-area');
-        const historyBtn = this.element.querySelector('#toggle-history');
-        const deckBtn = this.element.querySelector('#toggle-deck');
-        
-        // Update left sidebar (history)
-        if (this.sidebarStates.history) {
-            leftSidebar.classList.remove('hidden');
-            leftSidebar.classList.add('visible');
-            historyBtn.classList.add('active');
-        } else {
-            leftSidebar.classList.add('hidden');
-            leftSidebar.classList.remove('visible');
-            historyBtn.classList.remove('active');
-        }
-        
-        // Update right sidebar (deck)
-        if (this.sidebarStates.deck) {
-            rightSidebar.classList.remove('hidden');
-            rightSidebar.classList.add('visible');
-            deckBtn.classList.add('active');
-        } else {
-            rightSidebar.classList.add('hidden');
-            rightSidebar.classList.remove('visible');
-            deckBtn.classList.remove('active');
-        }
-        
-        // Update main game area classes for better spacing
-        mainGameArea.classList.toggle('left-hidden', !this.sidebarStates.history);
-        mainGameArea.classList.toggle('right-hidden', !this.sidebarStates.deck);
-        mainGameArea.classList.toggle('sidebars-hidden', 
-            !this.sidebarStates.history && !this.sidebarStates.deck);
-    }
-
-    handleResize() {
-        const isMobile = window.innerWidth <= 768;
-        
-        // On mobile, auto-hide sidebars if they weren't explicitly shown
-        if (isMobile) {
-            if (localStorage.getItem('historyVisible') === null) {
-                this.sidebarStates.history = false;
-            }
-            if (localStorage.getItem('deckVisible') === null) {
-                this.sidebarStates.deck = false;
-            }
-        } else {
-            if (localStorage.getItem('historyVisible') === null) {
-                this.sidebarStates.history = true;
-            }
-            if (localStorage.getItem('deckVisible') === null) {
-                this.sidebarStates.deck = true;
-            }
-        }
-        
-        this.updateSidebarVisibility();
-    }
-
-    initializeAudioPreferences() {
-        // Load saved audio preferences
-        const soundEnabled = localStorage.getItem('soundEnabled');
-        const musicEnabled = localStorage.getItem('musicEnabled');
-        
-        // Apply sound preference
-        if (soundEnabled !== null && this.soundManager) {
-            const enabled = soundEnabled === 'true';
-            // Set sound manager state to match saved preference
-            if (this.soundManager.enabled !== enabled) {
-                this.soundManager.toggle();
-            }
-        }
-        
-        // Update audio button states to reflect current settings
-        this.updateAudioButtons();
-    }
+    // Card and Enemy Interaction Methods
 
     // Card and Enemy Interaction Methods
     handleCardClick(cardElement) {
@@ -1615,37 +1519,17 @@ class GameScreen extends BaseScreen {
     }
 
     showEndRunScreen() {
-        var overlay = this.element.querySelector('#gameover-overlay');
-        if (!overlay) return;
-
-        overlay.classList.remove('hidden');
-
-        var title = overlay.querySelector('#gameover-title');
-        var message = overlay.querySelector('#gameover-message');
-        var stats = overlay.querySelector('#gameover-stats');
-
-        if (title) title.textContent = 'Defeated!';
-        if (title) title.className = 'gameover-title defeat';
-        if (message) message.textContent = 'Your adventure has ended.';
-
-        if (stats) {
-            stats.innerHTML =
-                '<div>Waves reached: ' + this.currentWave + '</div>' +
-                '<div>Enemies killed: ' + this.totalEnemiesKilled + '</div>' +
-                '<div>Turns survived: ' + this.currentTurn + '</div>' +
-                '<div>XP earned: ' + (this.gameXPAccumulator + 20) + '</div>';
-        }
-
-        var btn = overlay.querySelector('#gameover-btn');
-        if (btn) {
-            btn.onclick = function() {
-                AdventureStateManager.clearState();
-                if (this.soundManager) {
-                    this.soundManager.stopBackgroundMusic();
-                }
-                this.navigateTo('mainmenu');
-            }.bind(this);
-        }
+        this.gameOverOverlay.show({
+            isVictory: false,
+            title: 'Defeated!',
+            message: 'Your adventure has ended.'
+        });
+        this.gameOverOverlay.setStats(
+            '<div>Waves reached: ' + this.currentWave + '</div>' +
+            '<div>Enemies killed: ' + this.totalEnemiesKilled + '</div>' +
+            '<div>Turns survived: ' + this.currentTurn + '</div>' +
+            '<div>XP earned: ' + (this.gameXPAccumulator + 20) + '</div>'
+        );
     }
 
 
@@ -1884,216 +1768,6 @@ class GameScreen extends BaseScreen {
 
     getScreenId() {
         return 'game';
-    }
-
-    // Mulligan System
-    startMulliganPhase() {
-        // Prevent duplicate mulligan phases (only check for existing overlay)
-        if (this.element.querySelector('#mulligan-overlay')) {
-            console.log('🎴 Mulligan overlay already exists, skipping');
-            return;
-        }
-        
-        console.log('🎴 Starting mulligan phase');
-        this.gameState = 'mulligan';
-        this.isPlayerTurn = false;
-        this.selectedCardsForMulligan = new Set();
-        
-        // Update UI (no special status needed - mulligan is self-explanatory)
-        this.showMulliganInterface();
-        this.renderPlayerHand(); // Re-render with mulligan styling
-    }
-
-    showMulliganInterface() {
-        // Create mulligan UI overlay
-        const mulliganOverlay = document.createElement('div');
-        mulliganOverlay.id = 'mulligan-overlay';
-        mulliganOverlay.className = 'mulligan-overlay';
-        mulliganOverlay.innerHTML = `
-            <div class="mulligan-panel">
-                <div class="mulligan-hand" id="mulligan-hand">
-                    <!-- Mulligan cards will be rendered here -->
-                </div>
-                <div class="mulligan-bottom">
-                    <h2 class="mulligan-title">Choose the cards to replace</h2>
-                    <button class="mulligan-confirm-btn" id="confirm-mulligan">
-                        Confirm
-                    </button>
-                </div>
-            </div>
-        `;
-        
-        const gameBoard = this.element.querySelector('.game-board');
-        if (gameBoard) {
-            gameBoard.appendChild(mulliganOverlay);
-        } else {
-            this.element.appendChild(mulliganOverlay);
-        }
-        
-        // Render mulligan cards
-        this.renderMulliganCards();
-        
-        // Bind mulligan button events
-        this.bindMulliganEvents();
-    }
-
-    renderMulliganCards() {
-        const mulliganHandContainer = this.element.querySelector('#mulligan-hand');
-        mulliganHandContainer.innerHTML = '';
-
-        this.playerHand.forEach((card, index) => {
-            const cardElement = this.createMulliganCardElement(card, index);
-            mulliganHandContainer.appendChild(cardElement);
-        });
-    }
-
-    createMulliganCardElement(card, index) {
-        const cardDiv = SpellCardComponent.createCardElement(card, {
-            baseClass: 'mulligan-card',
-            extraClasses: [card.type]
-        });
-        cardDiv.dataset.cardId = card.id;
-        cardDiv.dataset.handIndex = index;
-        cardDiv.onclick = () => this.handleMulliganCardClick(cardDiv);
-
-        return cardDiv;
-    }
-
-    bindMulliganEvents() {
-        // Confirm mulligan
-        this.addEventListenerSafe(
-            this.element.querySelector('#confirm-mulligan'),
-            'click',
-            () => this.confirmMulligan()
-        );
-    }
-
-    handleMulliganCardClick(cardElement) {
-        if (this.gameState !== 'mulligan') return;
-        
-        const handIndex = parseInt(cardElement.dataset.handIndex);
-        
-        if (this.selectedCardsForMulligan.has(handIndex)) {
-            // Deselect card (back to green - keep)
-            this.selectedCardsForMulligan.delete(handIndex);
-            cardElement.classList.remove('mulligan-selected');
-        } else {
-            // Select card (red - replace)
-            this.selectedCardsForMulligan.add(handIndex);
-            cardElement.classList.add('mulligan-selected');
-        }
-        
-        // Play selection sound
-        this.soundManager?.play('card_select');
-    }
-
-    updateMulliganCount() {
-        const countElement = this.element.querySelector('#mulligan-count');
-        if (countElement) {
-            countElement.textContent = this.selectedCardsForMulligan.size;
-        }
-    }
-
-    confirmMulligan() {
-        console.log('🎴 Confirming mulligan');
-        
-        // If no cards selected, skip mulligan
-        if (this.selectedCardsForMulligan.size === 0) {
-            console.log('🎴 No cards selected - keeping all cards');
-            this.endMulliganPhase();
-            return;
-        }
-        
-        // Replace the selected (red) cards
-        const cardsToReplace = Array.from(this.selectedCardsForMulligan);
-        this.performMulligan(cardsToReplace);
-    }
-
-    skipMulligan() {
-        console.log('🎴 Skipping mulligan - keeping all cards');
-        this.endMulliganPhase();
-    }
-
-    performMulligan(indicesToReplace) {
-        console.log('🎴 Performing mulligan for indices:', indicesToReplace);
-        
-        // Store the cards being replaced
-        const replacedCards = [];
-        indicesToReplace.forEach(index => {
-            replacedCards.push(this.playerHand[index]);
-        });
-        
-        // Put the replaced cards back into the deck first
-        this.cardManager.returnCardsToDeck(replacedCards);
-        
-        // Now draw new cards from deck
-        const newCards = [];
-        indicesToReplace.forEach(index => {
-            const newCard = this.cardManager.getRandomCard();
-            if (newCard) {
-                newCards.push({ index, card: newCard });
-            }
-        });
-        
-        console.log(`🎴 Mulligan: Returned ${replacedCards.length} cards to deck, drew ${newCards.length} new cards`);
-        
-        // Apply replacements with animation
-        this.animateMulliganReplacements(newCards);
-    }
-
-    animateMulliganReplacements(replacements) {
-        // Add replacement animation to selected cards
-        replacements.forEach(({ index }, i) => {
-            const cardElement = this.element.querySelector(`[data-hand-index="${index}"]`);
-            if (cardElement) {
-                setTimeout(() => {
-                    cardElement.classList.add('mulligan-replacing');
-                }, i * 100);
-            }
-        });
-        
-        // Replace cards after animation
-        setTimeout(() => {
-            replacements.forEach(({ index, card }) => {
-                this.playerHand[index] = card;
-            });
-            
-            this.renderPlayerHand();
-            this.updateDeckTracker(); // Update deck tracker to reflect mulligan changes
-            
-            // End mulligan phase
-            setTimeout(() => {
-                this.endMulliganPhase();
-            }, 1000);
-        }, 800);
-    }
-
-    endMulliganPhase() {
-        console.log('🎴 Ending mulligan phase');
-        
-        // Remove mulligan overlay
-        const overlay = this.element.querySelector('#mulligan-overlay');
-        if (overlay) {
-            overlay.style.animation = 'mulliganFadeOut 0.5s ease-out forwards';
-            setTimeout(() => {
-                if (overlay.parentNode) {
-                    overlay.parentNode.removeChild(overlay);
-                }
-            }, 500);
-        }
-        
-        // Reset game state to normal
-        this.gameState = 'playing';
-        this.isPlayerTurn = true;
-        this.selectedCardsForMulligan.clear();
-        
-        // Update UI
-        this.updateGameStatus('Your Turn');
-        this.renderPlayerHand(); // Remove mulligan styling
-        this.updateUI();
-        
-        // Add to history
-        this.addToHistory('🎴 Mulligan complete - Game begins!', true);
     }
 }
 
