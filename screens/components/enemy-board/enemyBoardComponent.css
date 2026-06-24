@@ -352,6 +352,17 @@
     animation: burningPulse 0.8s ease-in-out infinite;
 }
 
+.status-icon-shroud {
+    animation: statusAppear 0.5s ease-out;
+    opacity: 0.8;
+}
+
+.enemy.shrouded {
+    filter: brightness(0.5) saturate(0.3);
+    opacity: 0.7;
+    transition: filter 0.4s ease, opacity 0.4s ease;
+}
+
 .status-icon-shocked {
     animation: shockedPulse 0.5s ease-in-out infinite;
 }
@@ -426,3 +437,5 @@
     animation: reactionFlash 0.6s ease-out;
     z-index: 50;
 }
+
+

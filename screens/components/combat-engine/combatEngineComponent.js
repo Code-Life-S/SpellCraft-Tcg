@@ -123,6 +123,20 @@ class CombatEngineComponent {
 
             screen.updateUI();
 
+            // Lifestrike: enemy heals half the damage it dealt
+            if (remainingDamage > 0 && enemy.ability === 'lifestrike' && !enemy.isDying) {
+                var healAmount = Math.floor(remainingDamage * (window.ENEMY_ABILITIES ? window.ENEMY_ABILITIES.lifestrike.healRatio : 0.5));
+                if (healAmount > 0) {
+                    enemy.health = Math.min(enemy.maxHealth, enemy.health + healAmount);
+                    if (screen.enemyBoard && typeof screen.enemyBoard.updateEnemyHealth === 'function') {
+                        screen.enemyBoard.updateEnemyHealth(enemy.id, enemy.health, enemy.maxHealth);
+                    }
+                    if (typeof screen.addToHistory === 'function') {
+                        screen.addToHistory(enemy.art + ' ' + enemy.name + ' drains ' + healAmount + ' HP', false);
+                    }
+                }
+            }
+
             // Check if player died
             if (healthRef.get() <= 0) {
                 healthRef.set(0);

@@ -24,6 +24,32 @@ const ENEMY_ABILITIES = {
         icon: '\u{1F52E}',
         desc: 'Invoque un sbire 1/1 en fin de tour',
         trigger: 'endOfTurn'
+    },
+    divineShield: {
+        name: 'Bouclier Divin',
+        icon: '\u{1F4AB}',
+        desc: 'Bloque le prochain sort subi',
+        trigger: 'damage'
+    },
+    lifestrike: {
+        name: 'Vol de Vie',
+        icon: '\u{2764}\uFE0F',
+        desc: 'Se soigne de la moitie des degats infliges',
+        trigger: 'attack',
+        healRatio: 0.5
+    },
+    sacrifice: {
+        name: 'Sacrifice',
+        icon: '\u{1F480}',
+        desc: 'A sa mort, donne +2 ATK a un allie',
+        trigger: 'death',
+        bonusAttack: 2
+    },
+    shroud: {
+        name: 'Camouflage',
+        icon: '\u{1F441}\u200D\u{1F5E8}\uFE0F',
+        desc: 'Ne peut pas etre cible 1 tour sur 2',
+        trigger: 'turnStart'
     }
 };
 
@@ -43,15 +69,22 @@ function getRandomAbilityKey() {
 function getAbilityForRound(round) {
     if (round <= 3) return null;
     if (round <= 7) {
-        const available = ['provoke', 'healer'];
+        const available = ['provoke', 'healer', 'enrage', 'summoner'];
         return available[Math.floor(Math.random() * available.length)];
     }
     return getRandomAbilityKey();
 }
 
-function getRandomAbilityChance() {
+function getRandomAbilityChance(wave) {
+    if (!wave || wave <= 3) return null;
+    if (wave <= 7) {
+        if (Math.random() < 0.5) return null;
+        var earlyKeys = ['provoke', 'healer', 'enrage', 'summoner'];
+        return earlyKeys[Math.floor(Math.random() * earlyKeys.length)];
+    }
     if (Math.random() < 0.5) return null;
-    return getRandomAbilityKey();
+    var keys = Object.keys(ENEMY_ABILITIES);
+    return keys[Math.floor(Math.random() * keys.length)];
 }
 
 function hasActiveProvoker(enemies) {

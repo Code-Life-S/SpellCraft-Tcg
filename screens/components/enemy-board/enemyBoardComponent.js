@@ -182,6 +182,17 @@ class EnemyBoardComponent {
 
         overlay.innerHTML = '';
 
+        // Shroud visual
+        if (enemy.shrouded) {
+            el.classList.add('shrouded');
+            var shroudIcon = document.createElement('span');
+            shroudIcon.className = 'status-icon status-icon-shroud';
+            shroudIcon.textContent = '\u{1F441}\u200D\u{1F5E8}\uFE0F';
+            overlay.appendChild(shroudIcon);
+        } else {
+            el.classList.remove('shrouded');
+        }
+
         if (!window.ElementalReactionsManager || !ElementalReactionsManager.isEnabled()) return;
 
         const classes = ElementalReactionsManager.getStatusVisualClasses(enemy);

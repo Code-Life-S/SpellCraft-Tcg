@@ -51,7 +51,8 @@ class ArenaAdventureScreen extends BaseScreen {
             'screens/components/visual-effects/visualEffectsComponent.css',
             'screens/components/enemy-board/enemyBoardComponent.css',
             'screens/components/mulligan/mulligan.css',
-            'screens/components/game-header/gameHeaderComponent.css'
+            'screens/components/game-header/gameHeaderComponent.css',
+            'screens/components/enemy-info-panel/enemyInfoPanelComponent.css'
         ];
         for (const cssPath of componentCSS) {
             try {
@@ -79,6 +80,7 @@ class ArenaAdventureScreen extends BaseScreen {
         this.initializeUIToggles();
         this.visualEffects = new VisualEffectsComponent(this.element);
         this.enemyBoard = new EnemyBoardComponent(this.element, '#enemy-area');
+        this.enemyInfoPanel = new EnemyInfoPanelComponent(this.element, '#enemy-info-panel');
         this.playerHandComp = new PlayerHandComponent(this.element, '#player-hand');
         this.deckTracker = new DeckTrackerComponent(this.element, '.deck-tracker');
         this.actionHistoryComp = new ActionHistoryComponent(this.element, '#action-history');
@@ -396,6 +398,7 @@ class ArenaAdventureScreen extends BaseScreen {
             var baseHp = Math.round(ArenaAdventureScreen.ENEMY_BASE_HP + (round * ArenaAdventureScreen.ENEMY_HP_PER_ROUND) + (Math.random() * 3 - 1));
             var baseAttack = Math.max(1, Math.round(ArenaAdventureScreen.ENEMY_BASE_ATTACK + (round * ArenaAdventureScreen.ENEMY_ATTACK_PER_ROUND) + (Math.random() * 2 - 1)));
             var type = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+            var ability = typeof getAbilityForRound === 'function' ? getAbilityForRound(round) : null;
             this.enemies.push({
                 id: this.enemyIdCounter++,
                 name: type.name,
@@ -404,7 +407,9 @@ class ArenaAdventureScreen extends BaseScreen {
                 maxHealth: baseHp,
                 attack: baseAttack,
                 isDying: false,
-                ability: typeof getAbilityForRound === 'function' ? getAbilityForRound(round) : null
+                ability: ability,
+                divineShieldActive: ability === 'divineShield' ? true : undefined,
+                shrouded: ability === 'shroud' ? false : undefined
             });
         }
     }
@@ -760,6 +765,28 @@ class ArenaAdventureScreen extends BaseScreen {
                 this.navigateTo('mainmenu');
             });
         }
+
+        // Enemy hover: show info panel
+        this.addEventListenerSafe(document, 'mouseover', (e) => {
+            var enemyEl = e.target.closest('.enemy');
+            if (enemyEl) {
+                var enemyId = parseInt(enemyEl.dataset.enemyId);
+                var enemy = this.enemies.find(function(e) { return e.id === enemyId; });
+                if (enemy && this.enemyInfoPanel) {
+                    this.enemyInfoPanel.update(enemy);
+                }
+            }
+        });
+
+        // Enemy mouse leave: hide info panel
+        this.addEventListenerSafe(document, 'mouseout', (e) => {
+            var enemyEl = e.target.closest('.enemy');
+            if (enemyEl && !enemyEl.contains(e.relatedTarget)) {
+                if (this.enemyInfoPanel) {
+                    this.enemyInfoPanel.hide();
+                }
+            }
+        });
     }
 
     handleCardClick(cardEl) {
@@ -798,28 +825,51 @@ class ArenaAdventureScreen extends BaseScreen {
                 }
             }
             this.enemyBoard.enableTargeting();
+            // Remove targeting from shrouded enemies (Camouflage)
+            var _this2 = this;
+            this.enemies.forEach(function(e) {
+                if (e.shrouded) {
+                    var el = _this2.enemyBoard.container.querySelector('[data-enemy-id="' + e.id + '"]');
+                    if (el) el.classList.remove('targetable');
+                }
+            });
         }
     }
 
     handleEnemyClick(enemyEl) {
-        if (!this.selectedCard || this.selectedCard.targetType !== 'single') return;
-
         var enemyId = parseInt(enemyEl.dataset.enemyId);
 
-        if (typeof hasActiveProvoker === 'function' && hasActiveProvoker(this.enemies)) {
-            var provoker = this.enemies.find(function(e) {
-                return e.ability === 'provoke' && !e.isDying && e.health > 0;
-            });
-            if (provoker && enemyId !== provoker.id) {
-                this.showMessage('This enemy is protected by Provocation!');
+        if (this.selectedCard && this.selectedCard.targetType === 'single') {
+            // During spell targeting: panel already shown by hover, just proceed
+            var targetEnemy = this.enemies.find(function(e) { return e.id === enemyId; });
+            if (targetEnemy && targetEnemy.shrouded) {
+                this.showMessage('This enemy is camouflaged and cannot be targeted!');
                 return;
             }
+
+            if (typeof hasActiveProvoker === 'function' && hasActiveProvoker(this.enemies)) {
+                var provoker = this.enemies.find(function(e) {
+                    return e.ability === 'provoke' && !e.isDying && e.health > 0;
+                });
+                if (provoker && enemyId !== provoker.id) {
+                    this.showMessage('This enemy is protected by Provocation!');
+                    return;
+                }
+            }
+
+            this.enemyBoard.disableTargeting();
+            this.playerHandComp.deselectAll();
+
+            this.castSpell(this.selectedCard, this.selectedCardIndex, enemyId);
+        } else {
+            // No spell selected: toggle panel on click
+            if (this._lastSelectedEnemyId === enemyId) {
+                this._lastSelectedEnemyId = null;
+                if (this.enemyInfoPanel) this.enemyInfoPanel.hide();
+            } else {
+                this._lastSelectedEnemyId = enemyId;
+            }
         }
-
-        this.enemyBoard.disableTargeting();
-        this.playerHandComp.deselectAll();
-
-        this.castSpell(this.selectedCard, this.selectedCardIndex, enemyId);
     }
 
     /* ------ SPELL CASTING ------ */
@@ -1052,6 +1102,14 @@ class ArenaAdventureScreen extends BaseScreen {
         const enemy = this.enemies.find(e => e.id === enemyId);
         if (!enemy || enemy.health <= 0) return;
 
+        // Divine Shield: blocks all damage once
+        if (enemy.divineShieldActive) {
+            enemy.divineShieldActive = false;
+            this.addToHistory('\u{1F947} ' + enemy.name + '\'s Divine Shield blocks the spell!', false);
+            this.enemyBoard.addDamageEffect(enemyId);
+            return;
+        }
+
         const el = this.enemyBoard.container.querySelector(`[data-enemy-id="${enemyId}"]`);
         this.visualEffects.showDamageNumber(el, damage);
         this.enemyBoard.addDamageEffect(enemyId);
@@ -1063,6 +1121,16 @@ class ArenaAdventureScreen extends BaseScreen {
         }
 
         if (enemy.health <= 0) {
+            // Sacrifice: on death, buff a random ally
+            if (enemy.ability === 'sacrifice') {
+                var allies = this.enemies.filter(function(e) { return e.id !== enemy.id && !e.isDying && e.health > 0; });
+                if (allies.length > 0) {
+                    var target = allies[Math.floor(Math.random() * allies.length)];
+                    target.attack += (window.ENEMY_ABILITIES ? window.ENEMY_ABILITIES.sacrifice.bonusAttack : 2);
+                    this.addToHistory('\u{1F525} ' + enemy.name + ' sacrifices! ' + target.name + ' gains +2 ATK', false);
+                }
+            }
+
             this.arenaXPAccumulator += 10;
             var deathResult = ClassManager.onEnemyDeath(this.arenaState.playerHealth, this.arenaState.maxHealth);
             this.arenaState.playerHealth = deathResult.health;
@@ -1099,6 +1167,16 @@ class ArenaAdventureScreen extends BaseScreen {
         this.enemyBoard.disableTargeting();
         this.playerHandComp.deselectAll();
         this.selectedCard = null;
+
+        // Toggle shroud for enemies with Camouflage ability
+        this.enemies.forEach(function(e) {
+            if (e.ability === 'shroud') {
+                e.shrouded = !e.shrouded;
+            }
+        });
+        if (this.enemyBoard && typeof this.enemyBoard.updateAllStatusOverlays === 'function') {
+            this.enemyBoard.updateAllStatusOverlays(this.enemies);
+        }
 
         // Enemy attack phase via shared combat engine
         setTimeout(() => {
