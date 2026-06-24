@@ -320,26 +320,6 @@
     border-color: #FFD700 !important;
 }
 
-/* Boss Shield Bar */
-.boss-shield-bar {
-    position: absolute;
-    bottom: 2px;
-    left: 10px;
-    right: 10px;
-    height: 6px;
-    background: rgba(0, 0, 0, 0.5);
-    border-radius: 3px;
-    overflow: hidden;
-    display: none;
-}
-
-.boss-shield-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #4169E1, #00BFFF);
-    border-radius: 3px;
-    transition: width 0.3s ease;
-}
-
 /* Status Overlays */
 .status-overlays {
     position: absolute;

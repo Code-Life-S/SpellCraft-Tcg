@@ -63,15 +63,6 @@ class EnemyBoardComponent {
             bossLabel.className = 'boss-label';
             bossLabel.textContent = 'BOSS';
             enemyDiv.appendChild(bossLabel);
-
-            var shieldBar = document.createElement('div');
-            shieldBar.className = 'boss-shield-bar';
-            shieldBar.id = 'boss-shield-' + enemy.id;
-            var shieldFill = document.createElement('div');
-            shieldFill.className = 'boss-shield-bar-fill';
-            shieldFill.id = 'boss-shield-fill-' + enemy.id;
-            shieldBar.appendChild(shieldFill);
-            enemyDiv.appendChild(shieldBar);
         }
 
         return enemyDiv;
@@ -219,18 +210,6 @@ class EnemyBoardComponent {
         enemies.forEach(enemy => {
             this.updateStatusOverlay(enemy.id, enemy);
         });
-    }
-
-    updateBossShieldBar(enemyId, shieldValue, maxShield) {
-        var fill = this.container.querySelector('#boss-shield-fill-' + enemyId);
-        var bar = this.container.querySelector('#boss-shield-' + enemyId);
-        if (!fill || !bar) return;
-        if (shieldValue > 0) {
-            bar.style.display = '';
-            fill.style.width = Math.round((shieldValue / maxShield) * 100) + '%';
-        } else {
-            bar.style.display = 'none';
-        }
     }
 
     getEnemyCount() {

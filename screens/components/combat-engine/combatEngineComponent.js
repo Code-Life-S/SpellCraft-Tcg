@@ -15,12 +15,14 @@ class CombatEngineComponent {
      * @param {Function} [options.onDefeat] - Called when player health reaches 0
      * @param {Function} [options.onPhaseEnd] - Called after all enemies have attacked
      * @param {Function} [options.beforeAttack] - Called before each attack (for boss mechanics, etc.)
+     * @param {Function} [options.afterAttack] - Called after all enemies have attacked, before onPhaseEnd (for end-of-turn boss mechanics)
      */
     static executeEnemyAttackPhase(screen, options = {}) {
         const intervalMs = options.intervalMs || 350;
         const onDefeat = options.onDefeat || (() => screen.gameOver(false));
         const onPhaseEnd = options.onPhaseEnd || (() => screen.startNewTurn());
         const beforeAttack = options.beforeAttack || null;
+        const afterAttack = options.afterAttack || null;
 
         // Reset attack flags
         screen.enemies.forEach(e => { delete e.canAttack; });
@@ -50,6 +52,9 @@ class CombatEngineComponent {
 
             // All enemies have attacked
             if (attackIndex >= aliveEnemies.length) {
+                if (afterAttack) {
+                    afterAttack(screen);
+                }
                 screen.processEnemyAbilities();
                 onPhaseEnd(screen);
                 return;

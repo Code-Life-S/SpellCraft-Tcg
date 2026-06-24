@@ -91,8 +91,35 @@
         <span>Made with ❤️</span>
     </div>
 
+    <!-- Boss Test Overlay -->
+    <div class="boss-test-overlay hidden" id="boss-test-overlay">
+        <div class="boss-test-panel">
+            <h2>Test a Boss</h2>
+            <p>Choose a boss to fight with a random class and upgraded deck</p>
+            <div class="boss-test-choices" id="boss-test-choices">
+                <div class="boss-test-card" data-boss-id="skeleton_king">
+                    <div class="boss-test-art">👑</div>
+                    <div class="boss-test-name">Roi Squelette</div>
+                    <div class="boss-test-desc">20 HP · 4 ATK · Summons skeletons each turn</div>
+                </div>
+                <div class="boss-test-card" data-boss-id="dark_mage">
+                    <div class="boss-test-art">🧙</div>
+                    <div class="boss-test-name">Mage Noir</div>
+                    <div class="boss-test-desc">15 HP · 3 ATK · Shield + reflects 50% damage</div>
+                </div>
+                <div class="boss-test-card" data-boss-id="dragon">
+                    <div class="boss-test-art">🐉</div>
+                    <div class="boss-test-name">Dragon</div>
+                    <div class="boss-test-desc">30 HP · 5 ATK · +2 ATK each turn, enrages</div>
+                </div>
+            </div>
+            <button class="boss-test-cancel" id="boss-test-cancel">Cancel</button>
+        </div>
+    </div>
+
     <!-- Audio Controls and Options -->
     <div class="menu-audio-controls">
+        <button class="audio-btn test-btn" id="test-boss" title="Test a Boss">🧪</button>
         <button class="audio-btn" id="options" title="Options">⚙️</button>
         <button class="audio-btn" id="menu-toggle-sound" title="Toggle Sound Effects">🔊</button>
         <button class="audio-btn" id="menu-toggle-music" title="Toggle Background Music">🎵</button>

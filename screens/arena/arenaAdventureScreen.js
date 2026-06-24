@@ -327,7 +327,8 @@ class ArenaAdventureScreen extends BaseScreen {
         classCardIds.forEach(function(cardId) {
             var cardData = _this.cardManager.getCardById(cardId);
             if (cardData) {
-                _this.arenaDeck.push({ ...cardData, instanceId: Date.now() + Math.random() });
+                var upgraded = ArenaStateManager.getUpgradedCard({ ...cardData }, _this.arenaState.deckUpgrades);
+                _this.arenaDeck.push({ ...upgraded, instanceId: Date.now() + Math.random() });
             }
         });
         this.shuffleArray(this.arenaDeck);
@@ -349,9 +350,15 @@ class ArenaAdventureScreen extends BaseScreen {
         this.enemies = [];
         this.enemyIdCounter = 1;
 
-        // Boss round at round 12
+        // Boss round at round 12 (or test boss override)
         if (round >= 12 && typeof getRandomBoss === 'function') {
-            var bossTemplate = getRandomBoss();
+            var bossTemplate;
+            if (this.arenaState && this.arenaState.testBossId) {
+                var testId = this.arenaState.testBossId;
+                bossTemplate = BOSSES.find(function(b) { return b.id === testId; }) || getRandomBoss();
+            } else {
+                bossTemplate = getRandomBoss();
+            }
             var boss = {
                 id: this.enemyIdCounter++,
                 name: bossTemplate.name,
@@ -362,8 +369,6 @@ class ArenaAdventureScreen extends BaseScreen {
                 ability: bossTemplate.ability || null,
                 isBoss: true,
                 bossMechanics: bossTemplate.bossMechanics,
-                bossShield: 0,
-                stunnedNextTurn: false,
                 isDying: false
             };
             this.enemies.push(boss);
@@ -1047,23 +1052,6 @@ class ArenaAdventureScreen extends BaseScreen {
         const enemy = this.enemies.find(e => e.id === enemyId);
         if (!enemy || enemy.health <= 0) return;
 
-        // Boss shield absorption
-        if (enemy.bossShield > 0) {
-            var absorbed = Math.min(enemy.bossShield, damage);
-            enemy.bossShield -= absorbed;
-            damage -= absorbed;
-            var maxShield = enemy.bossMechanics && enemy.bossMechanics.shieldPerTurn ? enemy.bossMechanics.shieldPerTurn * 3 : 10;
-            this.enemyBoard.updateBossShieldBar(enemy.id, enemy.bossShield, maxShield);
-            if (enemy.bossShield === 0 && absorbed > 0) {
-                enemy.stunnedNextTurn = true;
-                this.addToHistory(enemy.art + ' ' + enemy.name + '\'s shield shatters!', false);
-            }
-            if (damage <= 0) {
-                this.enemyBoard.addDamageEffect(enemyId);
-                return;
-            }
-        }
-
         const el = this.enemyBoard.container.querySelector(`[data-enemy-id="${enemyId}"]`);
         this.visualEffects.showDamageNumber(el, damage);
         this.enemyBoard.addDamageEffect(enemyId);
@@ -1116,7 +1104,8 @@ class ArenaAdventureScreen extends BaseScreen {
         setTimeout(() => {
             CombatEngineComponent.executeEnemyAttackPhase(this, {
                 intervalMs: 350,
-                beforeAttack: (screen) => screen.processBossMechanics(),
+                beforeAttack: (screen) => screen.processBossPreMechanics(),
+                afterAttack: (screen) => screen.processBossPostMechanics(),
                 onDefeat: () => {
                     this.gameState = 'lost';
                     setTimeout(() => this.showDefeat(), 500);
@@ -1172,67 +1161,62 @@ class ArenaAdventureScreen extends BaseScreen {
         }
     }
 
-    processBossMechanics() {
+    /* ------ BOSS MECHANICS ------ */
+
+    processBossPreMechanics() {
         var boss = this.enemies.find(function(e) { return e.isBoss && !e.isDying; });
         if (!boss) return;
 
         boss.skipAttack = false;
+        var mech = boss.bossMechanics;
+        if (!mech) return;
 
-        if (boss.stunnedNextTurn) {
-            boss.stunnedNextTurn = false;
-            boss.skipAttack = true;
-            this.addToHistory(boss.art + ' ' + boss.name + ' is stunned and cannot act!', false);
-            return;
+        switch (mech.type) {
+            case 'dark_mage':
+                boss.health = Math.min(boss.maxHealth, boss.health + mech.healPerTurn);
+                this.enemyBoard.updateEnemyHealth(boss.id, boss.health, boss.maxHealth);
+                this.updateUI();
+                this.addToHistory(boss.art + ' ' + boss.name + ' heals ' + mech.healPerTurn + ' HP', false);
+                break;
+
+            case 'dragon':
+                boss.attack += mech.attackRamp;
+                this.renderEnemies();
+                this.updateUI();
+                this.addToHistory(boss.art + ' ' + boss.name + ' rampages! ATK rises to ' + boss.attack, false);
+                break;
         }
+    }
+
+    processBossPostMechanics() {
+        var boss = this.enemies.find(function(e) { return e.isBoss && !e.isDying; });
+        if (!boss) return;
 
         var mech = boss.bossMechanics;
         if (!mech) return;
 
         switch (mech.type) {
             case 'skeleton_king':
-                for (var si = 0; si < mech.summonCount; si++) {
-                    if (typeof createSummonMinion === 'function') {
-                        var minion = createSummonMinion(this.enemyIdCounter);
-                        this.enemyIdCounter++;
-                        delete minion.canAttack;
-                        this.enemies.push(minion);
-                        this.addToHistory(boss.art + ' ' + boss.name + ' summons a ' + minion.name, false);
-                    }
+                var bossIndex = this.enemies.indexOf(boss);
+                if (bossIndex >= 0) {
+                    // Left skeleton
+                    this.enemies.splice(bossIndex, 0, {
+                        id: this.enemyIdCounter++, name: 'Skeleton', art: '\u{1F480}',
+                        health: 1, maxHealth: 1, attack: 1, isDying: false
+                    });
+                    // Right skeleton (boss shifted right by 1 after splice)
+                    this.enemies.splice(bossIndex + 2, 0, {
+                        id: this.enemyIdCounter++, name: 'Skeleton', art: '\u{1F480}',
+                        health: 1, maxHealth: 1, attack: 1, isDying: false
+                    });
                 }
                 this.renderEnemies();
-                break;
-
-            case 'dark_mage':
-                boss.bossShield += mech.shieldPerTurn;
-                var drain = mech.lifeDrain;
-                boss.health = Math.min(boss.maxHealth, boss.health + drain);
-                this.arenaState.playerHealth -= drain;
-                this.updateUI();
-                var maxShield = mech.shieldPerTurn * 3;
-                this.enemyBoard.updateBossShieldBar(boss.id, boss.bossShield, maxShield);
-                this.addToHistory(boss.art + ' ' + boss.name + ' drains ' + drain + ' HP and gains ' + mech.shieldPerTurn + ' shield', false);
-                break;
-
-            case 'dragon':
-                var breathDmg = mech.breathDamage;
-                this.arenaState.playerHealth -= breathDmg;
-                this.addToHistory(boss.art + ' ' + boss.name + ' uses Breath! -' + breathDmg + ' HP', false);
-                this.updateUI();
+                this.addToHistory(boss.art + ' ' + boss.name + ' summons 2 Skeletons!', false);
                 break;
         }
     }
 
-    enemyAttackPhase() {
-        CombatEngineComponent.executeEnemyAttackPhase(this, {
-            intervalMs: 350,
-            beforeAttack: (screen) => screen.processBossMechanics(),
-            onDefeat: () => {
-                this.gameState = 'lost';
-                setTimeout(() => this.showDefeat(), 500);
-            },
-            onPhaseEnd: () => this.startPlayerTurn()
-        });
-    }
+
 
     handleHpToMana() {
         if (ClassManager.getActiveClassId() !== 'ombrelumiere') return;
@@ -1472,7 +1456,9 @@ class ArenaAdventureScreen extends BaseScreen {
         this.arenaState.phase = 'completed';
         this.saveState();
 
-        if (window.PlayerProgressionManager) {
+        var isTestBoss = !!this.arenaState.testBossId;
+
+        if (!isTestBoss && window.PlayerProgressionManager) {
             var totalXP = this.arenaXPAccumulator + 50;
             PlayerProgressionManager.addXP(totalXP);
             PlayerProgressionManager.recordArenaWin(this.arenaState.chosenClass);
@@ -1482,7 +1468,12 @@ class ArenaAdventureScreen extends BaseScreen {
         overlay.classList.remove('hidden');
         overlay.querySelector('#gameover-title').textContent = 'Victory!';
         overlay.querySelector('#gameover-title').className = 'gameover-title victory';
-        overlay.querySelector('#gameover-message').textContent = 'You conquered all 12 rounds!';
+
+        if (isTestBoss) {
+            overlay.querySelector('#gameover-message').textContent = 'Boss defeated in test mode!';
+        } else {
+            overlay.querySelector('#gameover-message').textContent = 'You conquered all 12 rounds!';
+        }
 
         const stats = overlay.querySelector('#gameover-stats');
         stats.innerHTML = '<div>Rounds survived: 12/12</div>' +
@@ -1496,7 +1487,9 @@ class ArenaAdventureScreen extends BaseScreen {
         this.arenaState.phase = 'completed';
         this.saveState();
 
-        if (window.PlayerProgressionManager) {
+        var isTestBoss = !!this.arenaState.testBossId;
+
+        if (!isTestBoss && window.PlayerProgressionManager) {
             var totalXP = this.arenaXPAccumulator + 20;
             PlayerProgressionManager.addXP(totalXP);
         }
@@ -1505,7 +1498,7 @@ class ArenaAdventureScreen extends BaseScreen {
         overlay.classList.remove('hidden');
         overlay.querySelector('#gameover-title').textContent = 'Defeated!';
         overlay.querySelector('#gameover-title').className = 'gameover-title defeat';
-        overlay.querySelector('#gameover-message').textContent = 'Your arena run has ended.';
+        overlay.querySelector('#gameover-message').textContent = isTestBoss ? 'The boss was too strong!' : 'Your arena run has ended.';
 
         const stats = overlay.querySelector('#gameover-stats');
         stats.innerHTML = '<div>Reached round: ' + this.arenaState.currentRound + '/12</div>' +

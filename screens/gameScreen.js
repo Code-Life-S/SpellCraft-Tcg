@@ -495,8 +495,19 @@ class GameScreen extends BaseScreen {
 
         // Boss every 10 waves
         if (wave % 10 === 0 && typeof getRandomBoss === 'function') {
-            var boss = getRandomBoss();
-            boss.id = this.enemyIdCounter++;
+            var bossTemplate = getRandomBoss();
+            var boss = {
+                id: this.enemyIdCounter++,
+                name: bossTemplate.name,
+                art: bossTemplate.art,
+                health: bossTemplate.health,
+                maxHealth: bossTemplate.health,
+                attack: bossTemplate.attack,
+                ability: bossTemplate.ability || null,
+                isBoss: true,
+                bossMechanics: bossTemplate.bossMechanics,
+                isDying: false
+            };
             this.enemies.push(boss);
             this.renderEnemies();
             this.addToHistory('👑 BOSS: ' + boss.name + ' appears!', false);
@@ -670,7 +681,8 @@ class GameScreen extends BaseScreen {
                     ability: e.ability,
                     isDying: e.isDying,
                     isBoss: e.isBoss,
-                    skipAttack: e.skipAttack
+                    skipAttack: e.skipAttack,
+                    bossMechanics: e.bossMechanics
                 };
             }),
             enemyIdCounter: this.enemyIdCounter,
@@ -1257,8 +1269,8 @@ class GameScreen extends BaseScreen {
             this.visualEffects.showDamageNumber(enemyElement, damage);
             this.enemyBoard.addDamageEffect(enemyId);
             enemy.health -= damage;
-            
-            if (typeof checkAndTriggerEnrage === 'function' && checkAndTriggerEnrage(enemy)) {
+
+        if (typeof checkAndTriggerEnrage === 'function' && checkAndTriggerEnrage(enemy)) {
                 this.addToHistory(enemy.art + ' ' + enemy.name + ' is ENRAGED! +2 ATK', false);
             }
             
@@ -1326,10 +1338,68 @@ class GameScreen extends BaseScreen {
         setTimeout(() => {
             CombatEngineComponent.executeEnemyAttackPhase(this, {
                 intervalMs: 350,
+                beforeAttack: (screen) => screen.processBossPreMechanics(),
+                afterAttack: (screen) => screen.processBossPostMechanics(),
                 onDefeat: () => this.gameOver(false),
                 onPhaseEnd: () => this.startNewTurn()
             });
         }, 1000);
+    }
+
+    /* ------ BOSS MECHANICS ------ */
+
+    processBossPreMechanics() {
+        var boss = this.enemies.find(function(e) { return e.isBoss && !e.isDying; });
+        if (!boss) return;
+
+        boss.skipAttack = false;
+        var mech = boss.bossMechanics;
+        if (!mech) return;
+
+        switch (mech.type) {
+            case 'dark_mage':
+                boss.health = Math.min(boss.maxHealth, boss.health + mech.healPerTurn);
+                this.enemyBoard.updateEnemyHealth(boss.id, boss.health, boss.maxHealth);
+                this.updateUI();
+                this.addToHistory(boss.art + ' ' + boss.name + ' heals ' + mech.healPerTurn + ' HP', false);
+                break;
+
+            case 'dragon':
+                boss.attack += mech.attackRamp;
+                this.renderEnemies();
+                this.updateUI();
+                this.addToHistory(boss.art + ' ' + boss.name + ' rampages! ATK rises to ' + boss.attack, false);
+                break;
+        }
+    }
+
+    processBossPostMechanics() {
+        var boss = this.enemies.find(function(e) { return e.isBoss && !e.isDying; });
+        if (!boss) return;
+
+        var mech = boss.bossMechanics;
+        if (!mech) return;
+
+        switch (mech.type) {
+            case 'skeleton_king':
+                var bossIndex = this.enemies.indexOf(boss);
+                if (bossIndex >= 0) {
+                    if (!this.enemyIdCounter) this.enemyIdCounter = 0;
+                    // Left skeleton
+                    this.enemies.splice(bossIndex, 0, {
+                        id: this.enemyIdCounter++, name: 'Skeleton', art: '\u{1F480}',
+                        health: 1, maxHealth: 1, attack: 1, isDying: false
+                    });
+                    // Right skeleton (boss shifted right by 1 after splice)
+                    this.enemies.splice(bossIndex + 2, 0, {
+                        id: this.enemyIdCounter++, name: 'Skeleton', art: '\u{1F480}',
+                        health: 1, maxHealth: 1, attack: 1, isDying: false
+                    });
+                }
+                this.renderEnemies();
+                this.addToHistory(boss.art + ' ' + boss.name + ' summons 2 Skeletons!', false);
+                break;
+        }
     }
 
     processEnemyStatusEffects() {

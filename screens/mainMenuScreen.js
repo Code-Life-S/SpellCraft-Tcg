@@ -50,6 +50,31 @@ class MainMenuScreen extends BaseScreen {
                             </button>
                         </div>
                     </div>
+                    <!-- Boss Test Overlay (fallback) -->
+                    <div class="boss-test-overlay hidden" id="boss-test-overlay">
+                        <div class="boss-test-panel">
+                            <h2>Test a Boss</h2>
+                            <p>Choose a boss to fight with a random class and upgraded deck</p>
+                            <div class="boss-test-choices" id="boss-test-choices">
+                                <div class="boss-test-card" data-boss-id="skeleton_king">
+                                    <div class="boss-test-art">👑</div>
+                                    <div class="boss-test-name">Roi Squelette</div>
+                                    <div class="boss-test-desc">20 HP 4 ATK - Summons skeletons each turn</div>
+                                </div>
+                                <div class="boss-test-card" data-boss-id="dark_mage">
+                                    <div class="boss-test-art">🧙</div>
+                                    <div class="boss-test-name">Mage Noir</div>
+                                    <div class="boss-test-desc">15 HP 3 ATK - Shield + reflects 50% damage</div>
+                                </div>
+                                <div class="boss-test-card" data-boss-id="dragon">
+                                    <div class="boss-test-art">🐉</div>
+                                    <div class="boss-test-name">Dragon</div>
+                                    <div class="boss-test-desc">30 HP 5 ATK - +2 ATK each turn, enrages</div>
+                                </div>
+                            </div>
+                            <button class="boss-test-cancel" id="boss-test-cancel">Cancel</button>
+                        </div>
+                    </div>
                 </div>
             `;
             // Add fallback styles
@@ -411,6 +436,34 @@ class MainMenuScreen extends BaseScreen {
             this.element.querySelector('#options'),
             'click',
             () => this.openOptions()
+        );
+
+        // Test Boss button
+        this.addEventListenerSafe(
+            this.element.querySelector('#test-boss'),
+            'click',
+            () => this.openTestBossMenu()
+        );
+
+        // Boss test overlay click delegation
+        this.addEventListenerSafe(
+            this.element.querySelector('#boss-test-overlay'),
+            'click',
+            (e) => {
+                var card = e.target.closest('.boss-test-card');
+                if (card) {
+                    this.launchTestBoss(card.dataset.bossId);
+                }
+            }
+        );
+
+        this.addEventListenerSafe(
+            this.element.querySelector('#boss-test-cancel'),
+            'click',
+            () => {
+                var overlay = this.element.querySelector('#boss-test-overlay');
+                if (overlay) overlay.classList.add('hidden');
+            }
         );
 
         this.addEventListenerSafe(
@@ -1262,6 +1315,88 @@ class MainMenuScreen extends BaseScreen {
         }
         
         this.playButtonSound();
+    }
+
+    openTestBossMenu() {
+        this.playButtonSound();
+        var overlay = this.element.querySelector('#boss-test-overlay');
+        if (overlay) overlay.classList.remove('hidden');
+    }
+
+    async launchTestBoss(bossId) {
+        this.playButtonSound();
+        var overlay = this.element.querySelector('#boss-test-overlay');
+        if (overlay) overlay.classList.add('hidden');
+
+        // Get random class from all available
+        var allClasses = window.CLASSES || [];
+        if (allClasses.length === 0) return;
+        var chosenClass = allClasses[Math.floor(Math.random() * allClasses.length)].id;
+
+        ClassManager.setActiveClass(chosenClass);
+
+        // Build deck: class cards + neutral cards
+        var cardManager = window.cardManagerInstance;
+        if (!cardManager && window.CardManager) {
+            cardManager = new CardManager();
+            await cardManager.loadCards();
+        }
+        var allSpells = cardManager ? cardManager.allSpells : [];
+        if (allSpells.length === 0) return;
+
+        var classSpells = allSpells.filter(function(c) { return c.class === chosenClass; });
+        var neutralSpells = allSpells.filter(function(c) { return !c.class; });
+
+        var arenaCards = [];
+
+        // Add class spells (up to count)
+        classSpells.forEach(function(c) {
+            if (arenaCards.length < 20) {
+                arenaCards.push(JSON.parse(JSON.stringify(c)));
+            }
+        });
+
+        // Fill remaining with neutral spells
+        var shuffledNeutrals = neutralSpells.slice().sort(function() { return Math.random() - 0.5; });
+        shuffledNeutrals.forEach(function(c) {
+            if (arenaCards.length < 20) {
+                arenaCards.push(JSON.parse(JSON.stringify(c)));
+            }
+        });
+
+        // Shuffle
+        arenaCards = arenaCards.sort(function() { return Math.random() - 0.5; });
+
+        // Apply random upgrades (simulate ~11 upgrades from rounds 1-11)
+        var deckUpgrades = {};
+        var upgradeTypes = ['damageBonus', 'healBonus', 'shieldBonus', 'manaReduction'];
+        var upgradeCount = Math.min(11, arenaCards.length);
+        for (var i = 0; i < upgradeCount; i++) {
+            var card = arenaCards[i];
+            if (!deckUpgrades[card.id]) deckUpgrades[card.id] = {};
+            var type = upgradeTypes[Math.floor(Math.random() * upgradeTypes.length)];
+            deckUpgrades[card.id][type] = (deckUpgrades[card.id][type] || 0) + 1;
+        }
+
+        // Build arena state
+        var arenaState = {
+            arenaCards: arenaCards,
+            chosenClass: chosenClass,
+            phase: 'adventure',
+            currentRound: 12,
+            playerHealth: 30,
+            maxHealth: 30,
+            deckUpgrades: deckUpgrades,
+            minHealBonus: 0,
+            currentShield: 0,
+            testBossId: bossId,
+            runResult: null,
+            timestamp: Date.now()
+        };
+
+        ArenaStateManager.saveState(arenaState);
+
+        await this.navigateTo('arena-adventure');
     }
 
     handleKeyboard(e) {
