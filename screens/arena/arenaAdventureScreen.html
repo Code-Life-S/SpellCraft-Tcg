@@ -2,8 +2,16 @@
     <div class="game-board">
         <!-- Main Game Area with Sidebars -->
         <div class="main-game-area">
-            <!-- Left Sidebar - Action History -->
+            <!-- Left Sidebar - Enemy Info + Action History -->
             <div class="left-sidebar" id="left-sidebar">
+                <div class="enemy-info-panel" id="enemy-info-panel">
+                    <div class="info-panel-header">
+                        <span>Enemy Data</span>
+                    </div>
+                    <div class="info-panel-content" id="info-panel-content">
+                        <div class="info-panel-placeholder">No enemies on the field</div>
+                    </div>
+                </div>
                 <div class="history-panel">
                     <h3>Action History</h3>
                     <div class="history-content" id="action-history">
@@ -16,14 +24,6 @@
                 <div class="battlefield-row">
                     <div class="enemy-battlefield" id="enemy-battlefield">
                         <div class="enemy-area" id="enemy-area">
-                        </div>
-                    </div>
-                    <div class="enemy-info-panel" id="enemy-info-panel">
-                        <div class="info-panel-header">
-                            <span>-- Enemy Data --</span>
-                        </div>
-                        <div class="info-panel-content" id="info-panel-content">
-                            <div class="info-panel-placeholder">Select an enemy to view details</div>
                         </div>
                     </div>
                 </div>

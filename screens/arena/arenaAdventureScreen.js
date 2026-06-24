@@ -522,6 +522,16 @@ class ArenaAdventureScreen extends BaseScreen {
 
     renderEnemies() {
         this.enemyBoard.renderEnemies(this.enemies);
+        var firstAlive = null;
+        for (var i = 0; i < this.enemies.length; i++) {
+            if (!this.enemies[i].isDying && this.enemies[i].health > 0) {
+                firstAlive = this.enemies[i];
+                break;
+            }
+        }
+        if (this.enemyInfoPanel) {
+            this.enemyInfoPanel.update(firstAlive);
+        }
     }
 
     addToHistory(action, isPlayerAction) {
@@ -603,15 +613,7 @@ class ArenaAdventureScreen extends BaseScreen {
             }
         });
 
-        // Enemy mouse leave: hide info panel
-        this.addEventListenerSafe(document, 'mouseout', (e) => {
-            var enemyEl = e.target.closest('.enemy');
-            if (enemyEl && !enemyEl.contains(e.relatedTarget)) {
-                if (this.enemyInfoPanel) {
-                    this.enemyInfoPanel.hide();
-                }
-            }
-        });
+
     }
 
     handleCardClick(cardEl) {
@@ -663,10 +665,10 @@ class ArenaAdventureScreen extends BaseScreen {
 
     handleEnemyClick(enemyEl) {
         var enemyId = parseInt(enemyEl.dataset.enemyId);
+        var targetEnemy = this.enemies.find(function(e) { return e.id === enemyId; });
 
         if (this.selectedCard && this.selectedCard.targetType === 'single') {
             // During spell targeting: panel already shown by hover, just proceed
-            var targetEnemy = this.enemies.find(function(e) { return e.id === enemyId; });
             if (targetEnemy && targetEnemy.shrouded) {
                 this.showMessage('This enemy is camouflaged and cannot be targeted!');
                 return;
@@ -687,12 +689,9 @@ class ArenaAdventureScreen extends BaseScreen {
 
             this.castSpell(this.selectedCard, this.selectedCardIndex, enemyId);
         } else {
-            // No spell selected: toggle panel on click
-            if (this._lastSelectedEnemyId === enemyId) {
-                this._lastSelectedEnemyId = null;
-                if (this.enemyInfoPanel) this.enemyInfoPanel.hide();
-            } else {
-                this._lastSelectedEnemyId = enemyId;
+            // No spell selected: update info panel with clicked enemy
+            if (targetEnemy && this.enemyInfoPanel) {
+                this.enemyInfoPanel.update(targetEnemy);
             }
         }
     }

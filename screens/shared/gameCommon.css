@@ -100,20 +100,15 @@
 
 /* Enemy Info Panel */
 .enemy-info-panel {
-    width: 220px;
-    min-width: 220px;
     background: rgba(15, 15, 20, 0.95);
     border: 2px solid #FFD700;
     border-radius: 10px;
-    padding: 12px;
-    display: none;
+    padding: 8px;
+    display: flex;
     flex-direction: column;
     overflow-y: auto;
-    max-height: 320px;
-}
-
-.enemy-info-panel.visible {
-    display: flex;
+    height: 260px;
+    margin-bottom: 8px;
 }
 
 /* Player Area */
@@ -308,7 +303,8 @@
 .deck-tracker, .history-panel {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    flex: 1;
+    min-height: 0;
 }
 
 .deck-tracker h3, .history-panel h3 {
@@ -392,7 +388,7 @@
 /* History Panel Styles */
 .history-content {
     flex: 1;
-    overflow-y: auto;
+    overflow-y: hidden;
     font-size: 12px;
     min-height: 0;
 }

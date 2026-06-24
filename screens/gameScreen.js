@@ -443,16 +443,6 @@ class GameScreen extends BaseScreen {
             }
         });
 
-        // Enemy mouse leave: hide info panel
-        this.addEventListenerSafe(document, 'mouseout', (e) => {
-            var enemyEl = e.target.closest('.enemy');
-            if (enemyEl && !enemyEl.contains(e.relatedTarget)) {
-                if (this.enemyInfoPanel) {
-                    this.enemyInfoPanel.hide();
-                }
-            }
-        });
-
         // Window resize handler for sidebar visibility
         this.addEventListenerSafe(window, 'resize', () => {
             this.sidebarManager.handleResize();
@@ -672,7 +662,17 @@ class GameScreen extends BaseScreen {
     }
 
     renderEnemies() {
-        const dyingEnemies = this.enemies.filter(e => e.isDying);
+        var firstAlive = null;
+        for (var i = 0; i < this.enemies.length; i++) {
+            if (!this.enemies[i].isDying && this.enemies[i].health > 0) {
+                firstAlive = this.enemies[i];
+                break;
+            }
+        }
+        if (this.enemyInfoPanel) {
+            this.enemyInfoPanel.update(firstAlive);
+        }
+        var dyingEnemies = this.enemies.filter(function(e) { return e.isDying; });
         if (dyingEnemies.length === 0) {
             this.enemyBoard.renderEnemies(this.enemies);
         } else {
@@ -829,12 +829,12 @@ class GameScreen extends BaseScreen {
 
     handleEnemyClick(enemyElement) {
         var enemyId = parseInt(enemyElement.dataset.enemyId);
+        var clickedEnemy = this.enemies.find(function(e) {
+            return e.id === enemyId;
+        });
 
         if (this.selectedCard && (this.selectedCard.targetType === 'single')) {
             // During spell targeting: panel already shown by hover, just proceed
-            var clickedEnemy = this.enemies.find(function(e) {
-                return e.id === enemyId;
-            });
             
             // Camouflage: shrouded enemies cannot be targeted
             if (clickedEnemy && clickedEnemy.shrouded) {
@@ -858,12 +858,9 @@ class GameScreen extends BaseScreen {
                 this.castSpell(this.selectedCard, this.selectedCardIndex, enemyId);
             }.bind(this), 200);
         } else {
-            // No spell selected: toggle panel on click
-            if (this._lastSelectedEnemyId === enemyId) {
-                this._lastSelectedEnemyId = null;
-                if (this.enemyInfoPanel) this.enemyInfoPanel.hide();
-            } else {
-                this._lastSelectedEnemyId = enemyId;
+            // No spell selected: update info panel with clicked enemy
+            if (clickedEnemy && this.enemyInfoPanel) {
+                this.enemyInfoPanel.update(clickedEnemy);
             }
         }
     }

@@ -2,16 +2,15 @@ class EnemyInfoPanelComponent {
     constructor(rootElement, panelSelector) {
         this.panel = rootElement.querySelector(panelSelector || '#enemy-info-panel');
         this.content = this.panel ? this.panel.querySelector('.info-panel-content') : null;
-        this._hide();
+        this.showPlaceholder();
     }
 
     update(enemy) {
         if (!this.panel || !this.content) return;
         if (!enemy || enemy.isDying || enemy.health <= 0) {
-            this._hide();
+            this.showPlaceholder();
             return;
         }
-        this._show();
         var html = '';
         html += '<div class="info-enemy-name">' + enemy.art + ' ' + enemy.name + '</div>';
         html += '<div class="info-enemy-stats">';
@@ -44,19 +43,9 @@ class EnemyInfoPanelComponent {
         this.content.innerHTML = html;
     }
 
-    hide() {
-        this._hide();
-    }
-
-    _show() {
-        if (this.panel) {
-            this.panel.classList.add('visible');
-        }
-    }
-
-    _hide() {
-        if (this.panel) {
-            this.panel.classList.remove('visible');
+    showPlaceholder() {
+        if (this.content) {
+            this.content.innerHTML = '<div class="info-panel-placeholder">Select an enemy to view details</div>';
         }
     }
 }
