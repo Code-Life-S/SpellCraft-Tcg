@@ -400,6 +400,49 @@ div.hero-stats {
     flex-direction: row !important;
 }
 
+/* HP to Mana button */
+.hero-hp-to-mana {
+    cursor: pointer;
+    font-size: 20px;
+    padding: 4px 8px;
+    border-radius: 8px;
+    background: rgba(156, 39, 176, 0.3);
+    border: 2px solid rgba(156, 39, 176, 0.6);
+    transition: all 0.3s ease;
+    user-select: none;
+}
+
+.hero-hp-to-mana:hover {
+    background: rgba(156, 39, 176, 0.5);
+    border-color: #e040fb;
+    transform: scale(1.1);
+}
+
+.hero-hp-to-mana.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    filter: grayscale(0.5);
+}
+
+.hero-hp-to-mana.disabled:hover {
+    transform: none;
+    background: rgba(156, 39, 176, 0.3);
+    border-color: rgba(156, 39, 176, 0.6);
+}
+
+/* Spell counter */
+.hero-spell-counter {
+    font-size: 14px;
+    color: #87CEEB;
+    font-weight: bold;
+    padding: 4px 10px;
+    background: rgba(0, 188, 212, 0.2);
+    border: 2px solid rgba(0, 188, 212, 0.4);
+    border-radius: 8px;
+    min-width: 40px;
+    text-align: center;
+}
+
 /* Audio Controls - Copy exact .ui-btn styles from global CSS */
 .audio-controls {
     display: flex;

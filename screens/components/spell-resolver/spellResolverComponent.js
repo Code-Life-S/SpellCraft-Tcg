@@ -89,4 +89,94 @@ class SpellResolverComponent {
             fn.call(screen, enemyId, damage, skipDeathHistory);
         }
     }
+
+    /**
+     * Handle spell copy mechanic: add a copy of the card to the player's hand.
+     * @param {Object} screen - Screen instance
+     * @param {Object} card - The card to copy
+     */
+    static handleCopy(screen, card) {
+        if (!card.copy) return;
+        if (typeof screen.playerHand !== 'undefined') {
+            var copy = Object.assign({}, card, { instanceId: Date.now() + Math.random() });
+            screen.playerHand.push(copy);
+            if (typeof screen.renderPlayerHand === 'function') {
+                screen.renderPlayerHand();
+            }
+            if (typeof screen.addToHistory === 'function') {
+                screen.addToHistory(card.art + ' ' + card.name + ' copied to hand', true);
+            }
+        }
+    }
+
+    /**
+     * Handle spell recall mechanic: return the previous spell to the player's hand.
+     * @param {Object} screen - Screen instance
+     */
+    static handleRecall(screen) {
+        var lastSpell = screen._lastSpellCast;
+        if (!lastSpell) return false;
+        var recallCard = Object.assign({}, lastSpell, { instanceId: Date.now() + Math.random() });
+        screen.playerHand.push(recallCard);
+        if (typeof screen.renderPlayerHand === 'function') {
+            screen.renderPlayerHand();
+        }
+        if (typeof screen.addToHistory === 'function') {
+            screen.addToHistory('\uD83D\uDD04 ' + lastSpell.name + ' recalled to hand', true);
+        }
+        return true;
+    }
+
+    /**
+     * Check if recall can be used (a spell was cast before this one).
+     * @param {Object} screen - Screen instance
+     */
+    static canRecall(screen) {
+        return !!screen._lastSpellCast;
+    }
+
+    /**
+     * Handle selfDamage mechanic
+     * @param {Object} screen - Screen instance
+     * @param {Object} card - The card with selfDamage
+     */
+    static handleSelfDamage(screen, card) {
+        if (!card.selfDamage) return;
+        // Deduct health from player
+        if (typeof screen.playerHealth !== 'undefined') {
+            screen.playerHealth -= card.selfDamage;
+            if (typeof screen.updateUI === 'function') {
+                screen.updateUI();
+            }
+            // Handle arena screen differently (uses arenaState.playerHealth)
+            if (screen.arenaState && typeof screen.arenaState.playerHealth !== 'undefined') {
+                screen.arenaState.playerHealth -= card.selfDamage;
+            }
+            if (typeof screen.addToHistory === 'function') {
+                screen.addToHistory('\uD83D\uDD3A Dark Pact: lose ' + card.selfDamage + ' Health', true);
+            }
+            // Show damage on player hero
+            var heroEl = (screen.element || screen).querySelector('.hero-portrait');
+            if (!heroEl && screen.element) heroEl = screen.element.querySelector('.hero-portrait');
+            if (heroEl && screen.visualEffects && typeof screen.visualEffects.showDamageNumber === 'function') {
+                screen.visualEffects.showDamageNumber(heroEl, card.selfDamage);
+            }
+        }
+    }
+
+    /**
+     * Calculate damage for missing HP formula
+     * @param {Object} screen - Screen instance
+     * @param {Object} card - The card with damageFormula
+     * @returns {number} Calculated damage
+     */
+    static getFormulaDamage(screen, card) {
+        if (card.damageFormula !== 'missingHp') return card.damage || 0;
+
+        var currentHealth = screen.arenaState ? screen.arenaState.playerHealth : screen.playerHealth;
+        var maxHealth = screen.arenaState ? screen.arenaState.maxHealth : (screen.maxHealth || 30);
+        var cap = card.maxDamage || 6;
+        var missing = maxHealth - currentHealth;
+        return Math.max(0, Math.min(missing, cap));
+    }
 }

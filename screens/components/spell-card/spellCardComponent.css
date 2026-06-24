@@ -129,6 +129,9 @@
 .card-class-pyromancer .card-art { background: linear-gradient(135deg, #ff6b35, #ffd700); }
 .card-class-cryomancer .card-art { background: linear-gradient(135deg, #4fc3f7, #b3e5fc); }
 .card-class-necromancer .card-art { background: linear-gradient(135deg, #7b1fa2, #ce93d8); }
+.card-class-electromancer .card-art { background: linear-gradient(135deg, #ffd700, #ffaa00); }
+.card-class-archimage .card-art { background: linear-gradient(135deg, #00bcd4, #7c4dff); }
+.card-class-ombrelumiere .card-art { background: linear-gradient(135deg, #1a1a1a, #e0e0e0); }
 
 .card-name {
     text-align: center;

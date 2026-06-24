@@ -61,6 +61,69 @@ var ClassManager = {
             return { health: playerHealth + 1, maxHealth: maxHealth + 1 };
         }
         return { health: playerHealth, maxHealth: maxHealth };
+    },
+
+    /* Archimage: spell counter */
+    getSpellCount: function() {
+        if (this._activeClassId === 'archimage') {
+            return this._spellCount || 0;
+        }
+        return 0;
+    },
+
+    incrementSpellCount: function() {
+        if (this._activeClassId === 'archimage') {
+            this._spellCount = (this._spellCount || 0) + 1;
+        }
+    },
+
+    resetSpellCount: function() {
+        this._spellCount = 0;
+    },
+
+    shouldDrawFromSpellCount: function() {
+        if (this._activeClassId !== 'archimage') return false;
+        var count = this._spellCount || 0;
+        if (count >= 3) {
+            this._spellCount = count - 3;
+            return true;
+        }
+        return false;
+    },
+
+    getSpellCountProgress: function() {
+        if (this._activeClassId !== 'archimage') return 0;
+        return this._spellCount || 0;
+    },
+
+    /* Ombrelumiere: HP to mana */
+    canUseHpToMana: function() {
+        if (this._activeClassId !== 'ombrelumiere') return false;
+        return !this._hpToManaUsedThisTurn;
+    },
+
+    useHpToMana: function() {
+        if (this._activeClassId !== 'ombrelumiere') return false;
+        if (this._hpToManaUsedThisTurn) return false;
+        this._hpToManaUsedThisTurn = true;
+        return true;
+    },
+
+    resetHpToMana: function() {
+        this._hpToManaUsedThisTurn = false;
+    },
+
+    /* Ombrelumiere: missing HP damage calculation */
+    getMissingHpDamage: function(currentHealth, maxHealth, cap) {
+        if (this._activeClassId !== 'ombrelumiere') return 0;
+        var missing = maxHealth - currentHealth;
+        var capped = Math.min(missing, cap || 6);
+        return Math.max(0, capped);
+    },
+
+    /* Reset per-turn state */
+    resetPerTurnState: function() {
+        this.resetHpToMana();
     }
 };
 

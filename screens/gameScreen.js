@@ -39,6 +39,9 @@ class GameScreen extends BaseScreen {
 
         // XP tracking
         this.gameXPAccumulator = 0;
+
+        // Archimage / Ombrelumiere state
+        this._lastSpellCast = null;
     }
 
     async setupContent() {
@@ -146,9 +149,13 @@ class GameScreen extends BaseScreen {
                         <div class="player-hero">
                             <div class="hero-portrait">
                                 <div class="hero-stats">
-                                    <span class="hero-health" id="player-health">❤️ 30/30</span>
+                                    <span class="hero-hp-to-mana" id="hp-to-mana-btn" title="Sacrifice 2 HP for 1 Mana">💉→💎</span>
+                                    <span class="hero-health" id="player-health">❤️ 30</span>
                                     <span class="hero-shield" id="player-shield" style="display: none;">🛡️0</span>
+                                    <span class="hero-spell-counter" id="spell-counter" style="display: none;">0/3</span>
                                 </div>
+                            </div>
+                        </div>
                             </div>
                         </div>
                         
@@ -368,6 +375,13 @@ class GameScreen extends BaseScreen {
             }
         );
 
+        // HP to Mana button (Ombrelumiere)
+        this.addEventListenerSafe(
+            this.element.querySelector('#hp-to-mana-btn'),
+            'click',
+            () => this.handleHpToMana()
+        );
+
         // Animation system is working properly!
 
         // Card hover effects
@@ -376,6 +390,57 @@ class GameScreen extends BaseScreen {
                 this.showCardDetails(e.target.closest('.card'));
             }
         });
+    }
+
+    handleHpToMana() {
+        if (ClassManager.getActiveClassId() !== 'ombrelumiere') return;
+        if (!ClassManager.canUseHpToMana()) return;
+        if (this.playerHealth <= 2) {
+            this.showMessage('Not enough health!');
+            return;
+        }
+        if (this.currentMana >= 10) {
+            this.showMessage('Mana is already full!');
+            return;
+        }
+        ClassManager.useHpToMana();
+        this.playerHealth -= 2;
+        this.currentMana = Math.min(this.currentMana + 1, 10);
+        this.updateUI();
+        this._updateHpToManaButton();
+        var heroEl = this.element.querySelector('.hero-portrait');
+        if (heroEl && this.visualEffects) {
+            this.visualEffects.showDamageNumber(heroEl, 2);
+            this.visualEffects.showManaBoostEffect(this.element.querySelector('#current-mana'));
+        }
+        this.addToHistory('\u{1F489} Sacrifice 2 HP for 1 Mana', true);
+    }
+
+    _updateArchimageCounter() {
+        var counterEl = this.element.querySelector('#spell-counter');
+        if (!counterEl) return;
+        if (ClassManager.getActiveClassId() === 'archimage') {
+            var progress = ClassManager.getSpellCountProgress();
+            counterEl.textContent = progress + '/3';
+            counterEl.style.display = '';
+        } else {
+            counterEl.style.display = 'none';
+        }
+    }
+
+    _updateHpToManaButton() {
+        var btn = this.element.querySelector('#hp-to-mana-btn');
+        if (!btn) return;
+        if (ClassManager.getActiveClassId() === 'ombrelumiere') {
+            btn.style.display = '';
+            if (ClassManager.canUseHpToMana() && this.playerHealth > 2 && this.currentMana < 10) {
+                btn.classList.remove('disabled');
+            } else {
+                btn.classList.add('disabled');
+            }
+        } else {
+            btn.style.display = 'none';
+        }
     }
 
     async onAfterShow() {
@@ -790,6 +855,12 @@ class GameScreen extends BaseScreen {
         const handIndex = parseInt(cardElement.dataset.handIndex);
         const card = this.playerHand[handIndex];
 
+        // Deja Vu check: can't be used if no previous spell was cast
+        if (card.recall && !this._lastSpellCast) {
+            this.showMessage('No previous spell to recall!');
+            return;
+        }
+
         if (card.mana <= this.currentMana) {
             this.selectedCard = card;
             this.selectedCardIndex = handIndex;
@@ -899,7 +970,15 @@ class GameScreen extends BaseScreen {
         
         // Deduct mana
         this.currentMana -= card.mana;
-        
+
+        // Track last spell cast (before this card is removed from hand)
+        if (!card.recall) {
+            this._lastSpellCast = card;
+        }
+
+        // Archimage: increment spell counter
+        ClassManager.incrementSpellCount();
+
         // Clear selection
         this.selectedCard = null;
         this.selectedCardIndex = null;
@@ -915,6 +994,18 @@ class GameScreen extends BaseScreen {
             this.renderPlayerHand();
             this.updateUI();
             this.updateDeckTracker();
+
+            // Archimage: check if we should draw from spell count
+            if (ClassManager.shouldDrawFromSpellCount()) {
+                this.drawCard();
+                this.addToHistory('\uD83D\uDD2E Spell counter complete! Draw 1', true);
+                this.showMessage('Spell counter complete! Draw 1');
+            }
+
+            // Update counter display
+            if (ClassManager.getActiveClassId() === 'archimage') {
+                this._updateArchimageCounter();
+            }
 
             // Auto-end turn if player has no playable cards left and game is still active
             var hasPlayableCard = this.playerHand.some(function(c) { return c.mana <= this.currentMana; }.bind(this));
@@ -986,7 +1077,14 @@ class GameScreen extends BaseScreen {
                 break;
                 
             case 'all':
-                this.addToHistory(`${card.art} - ${card.damage} 🌍`, true);
+                // Handle damageFormula (e.g. missingHp for Shadow Explosion)
+                var aoeDamage = card.damageFormula === 'missingHp'
+                    ? SpellResolverComponent.getFormulaDamage(this, card)
+                    : (card.damage || 0);
+                this.addToHistory(`${card.art} - ${aoeDamage} 🌍`, true);
+                if (card.damageFormula === 'missingHp') {
+                    this.addToHistory('Missing HP: ' + ((this.maxHealth || 30) - this.playerHealth) + ' -> ' + aoeDamage + ' dmg', true);
+                }
                 // Create a copy of enemies array to avoid modification during iteration
                 const enemiesSnapshot = [...this.enemies];
                 var totalDamage = 0;
@@ -994,13 +1092,13 @@ class GameScreen extends BaseScreen {
                     setTimeout(() => {
                         const enemyEl = this.element.querySelector(`[data-enemy-id="${enemy.id}"]`);
                         this.visualEffects.createSpellImpact(enemyEl, spellType);
-                        this.applyDamageWithElement(enemy.id, card.damage, card.element || spellType);
+                        this.applyDamageWithElement(enemy.id, aoeDamage, card.element || spellType);
                         // Play impact sounds with slight delay
                         setTimeout(() => {
                             this.soundManager?.playSpellSound(card.id, 'impact');
                         }, 300);
                     }, index * 150); // Stagger the damage application
-                    totalDamage += Math.min(card.damage, enemy.health || 999);
+                    totalDamage += Math.min(aoeDamage, enemy.health || 999);
                 });
                 // Lifesteal for AOE
                 if (card.lifesteal && totalDamage > 0) {
@@ -1016,6 +1114,10 @@ class GameScreen extends BaseScreen {
                 const gameBoard = this.element.querySelector('.game-board');
                 this.visualEffects.createScreenShake(gameBoard);
                 this.soundManager?.play('screen_shake');
+                // Copy mechanic (Arcane Explosion)
+                if (card.copy) {
+                    SpellResolverComponent.handleCopy(this, card);
+                }
                 break;
                 
             case 'random':
@@ -1058,6 +1160,18 @@ class GameScreen extends BaseScreen {
                 
             case 'self':
                 let message = '';
+
+                // Handle selfDamage (Ombrelumiere - Dark Pact)
+                if (card.selfDamage) {
+                    var currentHealth = this.playerHealth;
+                    this.playerHealth -= card.selfDamage;
+                    var playerHeroEl = this.element.querySelector('.hero-portrait');
+                    if (this.visualEffects && playerHeroEl) {
+                        this.visualEffects.showDamageNumber(playerHeroEl, card.selfDamage);
+                    }
+                    this.addToHistory(`${card.art} - Lose ${card.selfDamage} HP`, true);
+                    message += `Lose ${card.selfDamage} health! `;
+                }
                 
                 // Handle healing
                 if (card.healing) {
@@ -1108,6 +1222,22 @@ class GameScreen extends BaseScreen {
                         this.addToHistory(`\u26A1 No Electrified enemies`, true);
                         message += 'No Electrified enemies! ';
                     }
+                }
+
+                // Handle recall (Archimage - Deja Vu)
+                if (card.recall) {
+                    var recalled = SpellResolverComponent.handleRecall(this);
+                    if (recalled) {
+                        message += ' Previous spell recalled! ';
+                    } else {
+                        message += ' No previous spell to recall! ';
+                    }
+                }
+                
+                // Handle copy (post-resolution, e.g. if a self-targeting spell also has copy)
+                if (card.copy) {
+                    SpellResolverComponent.handleCopy(this, card);
+                    message += ' Spell copied to hand! ';
                 }
 
                 this.soundManager?.playSpellSound(card.id, 'cast');
@@ -1257,6 +1387,9 @@ class GameScreen extends BaseScreen {
     }
 
     startNewTurn() {
+        // Reset per-turn class state
+        ClassManager.resetPerTurnState();
+
         CombatEngineComponent.startTurn(this, {
             maxManaCap: 10,
             onTurnStart: () => {
@@ -1416,6 +1549,10 @@ class GameScreen extends BaseScreen {
         
         // Update end turn button based on playable cards
         this.updateEndTurnButton();
+
+        // Update Archimage counter and Ombrelumiere button
+        this._updateArchimageCounter();
+        this._updateHpToManaButton();
     }
 
     updateEndTurnButton() {

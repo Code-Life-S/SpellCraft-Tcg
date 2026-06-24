@@ -33,6 +33,7 @@ class ArenaAdventureScreen extends BaseScreen {
         this.selectedCardsForMulligan = null;
         this.sidebarStates = { history: false, deck: false };
         this.headerComp = null;
+        this._lastSpellCast = null;
     }
 
     async setupContent() {
@@ -151,8 +152,10 @@ class ArenaAdventureScreen extends BaseScreen {
                     '<div class="player-hero" style="display:flex;align-items:center;gap:15px;margin-bottom:15px;">' +
                         '<div class="hero-portrait" id="hero-portrait" style="display:flex;align-items:center;justify-content:center;">' +
                             '<div class="hero-stats" style="display:flex;gap:15px;align-items:center;justify-content:center;">' +
+                                '<span class="hero-hp-to-mana" id="hp-to-mana-btn" title="Sacrifice 2 HP for 1 Mana" style="cursor:pointer;font-size:20px;">' + '\u{1F489}\u2192\u{1F48E}' + '</span>' +
                                 '<span class="hero-health" id="player-health" style="min-width:80px;height:50px;border-radius:12px;background:linear-gradient(45deg,#32CD32,#228B22);display:flex;align-items:center;justify-content:center;border:3px solid #FFD700;font-weight:bold;font-size:16px;color:#fff;padding:8px 12px;">30</span>' +
                                 '<span class="hero-shield" id="player-shield" style="display:none;min-width:80px;height:50px;border-radius:12px;background:linear-gradient(45deg,#4169E1,#1E90FF);color:white;align-items:center;justify-content:center;border:3px solid #FFD700;font-weight:bold;font-size:16px;padding:8px 12px;">0</span>' +
+                                '<span class="hero-spell-counter" id="spell-counter" style="display:none;font-size:14px;color:#87CEEB;font-weight:bold;">0/3</span>' +
                             '</div>' +
                         '</div>' +
                     '</div>' +
@@ -449,6 +452,10 @@ class ArenaAdventureScreen extends BaseScreen {
 
         // Update deck tracker
         if (this.deckTracker) this.deckTracker.update();
+
+        // Update Archimage counter and Ombrelumiere button
+        this._updateArchimageCounter();
+        this._updateHpToManaButton();
     }
 
     backToMenu() {
@@ -714,6 +721,12 @@ class ArenaAdventureScreen extends BaseScreen {
             this.addEventListenerSafe(endTurnBtn, 'click', () => this.endPlayerTurn());
         }
 
+        // HP to Mana button (Ombrelumiere)
+        const hpToManaBtn = q('#hp-to-mana-btn');
+        if (hpToManaBtn) {
+            this.addEventListenerSafe(hpToManaBtn, 'click', () => this.handleHpToMana());
+        }
+
         this.addEventListenerSafe(this.element, 'click', (e) => {
             const cardEl = e.target.closest('.card');
             if (cardEl && this.gameState === 'playing' && this.isPlayerTurn) {
@@ -753,6 +766,12 @@ class ArenaAdventureScreen extends BaseScreen {
 
         if (card.mana > this.currentMana) {
             this.showMessage('Not enough mana! Need ' + card.mana + ', have ' + this.currentMana);
+            return;
+        }
+
+        // Deja Vu check: can't be used if no previous spell was cast
+        if (card.recall && !this._lastSpellCast) {
+            this.showMessage('No previous spell to recall!');
             return;
         }
 
@@ -808,11 +827,41 @@ class ArenaAdventureScreen extends BaseScreen {
         this.selectedCard = null;
         this.selectedCardIndex = null;
 
+        // Track last spell cast (before this card is removed from hand)
+        if (!card.recall) {
+            this._lastSpellCast = card;
+        }
+
+        // Archimage: increment spell counter
+        ClassManager.incrementSpellCount();
+
         setTimeout(() => {
             this.applySpellEffect(card, targetEnemyId);
+
+            // Handle copy (need to do before splice to get instanceId from card)
+            if (card.copy) {
+                SpellResolverComponent.handleCopy(this, card);
+            }
+
             this.playerHand.splice(handIndex, 1);
             this.renderPlayerHand();
             this.updateUI();
+
+            // Archimage: check if we should draw from spell count
+            if (ClassManager.shouldDrawFromSpellCount()) {
+                var drawn = this.drawCards(1);
+                if (drawn.length > 0) {
+                    this.playerHand = this.playerHand.concat(drawn);
+                }
+                this.renderPlayerHand();
+                this.updateUI();
+                this.addToHistory('\uD83D\uDD2E Spell counter complete! Draw 1', true);
+            }
+
+            // Update counter display
+            if (ClassManager.getActiveClassId() === 'archimage') {
+                this._updateArchimageCounter();
+            }
 
             const targetText = targetEnemyId ? ' on enemy ' + targetEnemyId : '';
             this.addToHistory('Cast ' + card.name + targetText, true);
@@ -873,6 +922,10 @@ class ArenaAdventureScreen extends BaseScreen {
                 }
                 break;
             case 'all':
+                // Handle damageFormula (e.g. missingHp for Shadow Explosion)
+                var aoeDamage = card.damageFormula === 'missingHp'
+                    ? SpellResolverComponent.getFormulaDamage(this, card)
+                    : (card.damage || 0);
                 const battlefieldEl = this.element.querySelector('.game-board');
                 this.visualEffects.createScreenShake(battlefieldEl);
                 var totalLifestealAll = 0;
@@ -881,15 +934,18 @@ class ArenaAdventureScreen extends BaseScreen {
                         if (guard()) return;
                         const enemyEl = this.element.querySelector(`[data-enemy-id="${enemy.id}"]`);
                         this.visualEffects.createSpellImpact(enemyEl, spellType);
-                        this.applyDamageWithElement(enemy.id, card.damage || 0, card.element || spellType);
+                        this.applyDamageWithElement(enemy.id, aoeDamage, card.element || spellType);
                     }, i * 150);
-                    totalLifestealAll += Math.min(card.damage || 0, enemy.health);
+                    totalLifestealAll += Math.min(aoeDamage, enemy.health);
                 });
                 if (card.lifesteal && totalLifestealAll > 0) {
                     var selfAll = this;
                     setTimeout(function() {
                         selfAll.applyLifesteal(totalLifestealAll);
                     }, this.enemies.length * 150 + 100);
+                }
+                if (card.damageFormula === 'missingHp') {
+                    this.addToHistory('Missing HP: ' + ((this.arenaState.maxHealth || 30) - (this.arenaState.playerHealth || 30)) + ' -> ' + aoeDamage + ' dmg', true);
                 }
                 break;
             case 'random':
@@ -917,6 +973,17 @@ class ArenaAdventureScreen extends BaseScreen {
                         this.applyDamageWithElement(target.id, card.damage, card.element || spellType);
                     }
                 }
+
+                // Handle selfDamage (Ombrelumiere - Dark Pact)
+                if (card.selfDamage) {
+                    this.arenaState.playerHealth -= card.selfDamage;
+                    var heroElDmg = this.element.querySelector('.hero-portrait');
+                    if (heroElDmg && this.visualEffects) {
+                        this.visualEffects.showDamageNumber(heroElDmg, card.selfDamage);
+                    }
+                    this.addToHistory(card.art + ' Lose ' + card.selfDamage + ' HP', true);
+                }
+
                 if (card.healing) {
                     this.applyHeal(card.healing);
                 }
@@ -939,6 +1006,11 @@ class ArenaAdventureScreen extends BaseScreen {
                         this.renderPlayerHand();
                         this.updateUI();
                     }
+                }
+
+                // Handle recall (Archimage - Deja Vu)
+                if (card.recall) {
+                    SpellResolverComponent.handleRecall(this);
                 }
                 break;
         }
@@ -1162,7 +1234,62 @@ class ArenaAdventureScreen extends BaseScreen {
         });
     }
 
+    handleHpToMana() {
+        if (ClassManager.getActiveClassId() !== 'ombrelumiere') return;
+        if (!ClassManager.canUseHpToMana()) return;
+        if (!this.arenaState || this.arenaState.playerHealth <= 2) {
+            this.showMessage('Not enough health!');
+            return;
+        }
+        if (this.currentMana >= 10) {
+            this.showMessage('Mana is already full!');
+            return;
+        }
+        ClassManager.useHpToMana();
+        this.arenaState.playerHealth -= 2;
+        this.currentMana = Math.min(this.currentMana + 1, 10);
+        this.updateUI();
+        this._updateHpToManaButton();
+        var heroEl = this.element.querySelector('.hero-portrait');
+        if (heroEl && this.visualEffects) {
+            this.visualEffects.showDamageNumber(heroEl, 2);
+            this.visualEffects.showManaBoostEffect(this.element.querySelector('#current-mana'));
+        }
+        this.addToHistory('\u{1F489} Sacrifice 2 HP for 1 Mana', true);
+    }
+
+    _updateArchimageCounter() {
+        var counterEl = this.element.querySelector('#spell-counter');
+        if (!counterEl) return;
+        if (ClassManager.getActiveClassId() === 'archimage') {
+            var progress = ClassManager.getSpellCountProgress();
+            counterEl.textContent = progress + '/3';
+            counterEl.style.display = '';
+        } else {
+            counterEl.style.display = 'none';
+        }
+    }
+
+    _updateHpToManaButton() {
+        var btn = this.element.querySelector('#hp-to-mana-btn');
+        if (!btn) return;
+        if (ClassManager.getActiveClassId() === 'ombrelumiere') {
+            btn.style.display = '';
+            var canUse = ClassManager.canUseHpToMana() && this.arenaState && this.arenaState.playerHealth > 2 && this.currentMana < 10;
+            if (canUse) {
+                btn.classList.remove('disabled');
+            } else {
+                btn.classList.add('disabled');
+            }
+        } else {
+            btn.style.display = 'none';
+        }
+    }
+
     startPlayerTurn() {
+        // Reset per-turn class state
+        ClassManager.resetPerTurnState();
+
         CombatEngineComponent.startTurn(this, {
             maxManaCap: 10,
             onTurnStart: () => {

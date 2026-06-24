@@ -24,8 +24,10 @@ class PlayerProgressionManager {
     static CLASS_UNLOCK_RULES = {
         pyromancer: null,
         cryomancer: 'pyromancer',
-        necromancer: 'cryomancer',
-        electromancer: 'necromancer'
+        electromancer: 'cryomancer',
+        necromancer: 'electromancer',
+        archimage: 'necromancer',
+        ombrelumiere: 'archimage'
     };
 
     static getDefaultState() {
@@ -156,10 +158,16 @@ class PlayerProgressionManager {
             return { classId: 'cryomancer', name: 'Cryomancer', requirement: 'Win an arena run with Pyromancer' };
         }
         if (progression.arenaWins.indexOf('cryomancer') === -1) {
-            return { classId: 'necromancer', name: 'Necromancer', requirement: 'Win an arena run with Cryomancer' };
+            return { classId: 'electromancer', name: 'Electromancien', requirement: 'Win an arena run with Cryomancer' };
+        }
+        if (progression.arenaWins.indexOf('electromancer') === -1) {
+            return { classId: 'necromancer', name: 'Necromancer', requirement: 'Win an arena run with Electromancien' };
         }
         if (progression.arenaWins.indexOf('necromancer') === -1) {
-            return { classId: 'electromancer', name: 'Electromancien', requirement: 'Win an arena run with Necromancer' };
+            return { classId: 'archimage', name: 'Archimage', requirement: 'Win an arena run with Necromancer' };
+        }
+        if (progression.arenaWins.indexOf('archimage') === -1) {
+            return { classId: 'ombrelumiere', name: 'OmbreLumiere', requirement: 'Win an arena run with Archimage' };
         }
         return null;
     }
@@ -172,8 +180,10 @@ class PlayerProgressionManager {
 
         var unlockMap = {
             pyromancer: 'cryomancer',
-            cryomancer: 'necromancer',
-            necromancer: 'electromancer'
+            cryomancer: 'electromancer',
+            electromancer: 'necromancer',
+            necromancer: 'archimage',
+            archimage: 'ombrelumiere'
         };
         var newlyUnlocked = unlockMap[classId] || null;
 
@@ -184,7 +194,10 @@ class PlayerProgressionManager {
     static getClassUnlockRequirement(classId) {
         var requirements = {
             cryomancer: 'Win an arena run with Pyromancer',
-            necromancer: 'Win an arena run with Cryomancer'
+            electromancer: 'Win an arena run with Cryomancer',
+            necromancer: 'Win an arena run with Electromancien',
+            archimage: 'Win an arena run with Necromancer',
+            ombrelumiere: 'Win an arena run with Archimage'
         };
         return requirements[classId] || null;
     }
@@ -194,13 +207,17 @@ class PlayerProgressionManager {
         var locked = [];
         var classNames = {
             cryomancer: 'Cryomancer',
+            electromancer: 'Electromancien',
             necromancer: 'Necromancer',
-            electromancer: 'Electromancien'
+            archimage: 'Archimage',
+            ombrelumiere: 'OmbreLumiere'
         };
         var requirements = {
             cryomancer: 'Win an arena run with Pyromancer',
-            necromancer: 'Win an arena run with Cryomancer',
-            electromancer: 'Win an arena run with Necromancer'
+            electromancer: 'Win an arena run with Cryomancer',
+            necromancer: 'Win an arena run with Electromancien',
+            archimage: 'Win an arena run with Necromancer',
+            ombrelumiere: 'Win an arena run with Archimage'
         };
         for (var classId in this.CLASS_UNLOCK_RULES) {
             if (this.CLASS_UNLOCK_RULES.hasOwnProperty(classId)) {
