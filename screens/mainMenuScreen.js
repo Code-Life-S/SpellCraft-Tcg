@@ -1262,9 +1262,15 @@ class MainMenuScreen extends BaseScreen {
 
     async openAchievements() {
         this.playButtonSound();
-        this.showMessage('Achievements coming soon!', 'info');
-        // TODO: Navigate to achievements when implemented
-        // await this.navigateTo('achievements');
+
+        var self = this;
+        var achievementsScreen = new window.AchievementsScreen({
+            onBack: function() {
+                self.element.style.display = '';
+            }
+        });
+        this.element.style.display = 'none';
+        await achievementsScreen.show();
     }
 
 

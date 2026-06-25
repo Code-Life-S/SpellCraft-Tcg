@@ -253,6 +253,11 @@ class GameScreen extends BaseScreen {
         this.selectedCardIndex = null;
         this.gameXPAccumulator = 0;
         this._pendingWaveTransition = false;
+        this._spellsCastThisTurn = 0;
+        this._turnStartHealth = 30;
+        this._combatReactions = 0;
+        this._combatFrozenEnemies = new Set();
+        this._combatEnemiesFrozenThisTurn = 0;
         this._currentDeckId = null;
         this.actionHistoryComp?.clear();
 
@@ -283,9 +288,6 @@ class GameScreen extends BaseScreen {
             }
             this._currentDeckId = deckId;
         }
-        
-        // Inject class cards into deck
-        this.injectClassCards();
         
         // Spawn initial enemies for wave 1
         this.spawnInitialEnemies();
@@ -517,21 +519,6 @@ class GameScreen extends BaseScreen {
     }
 
     // Game Logic Methods (extracted from original script.js)
-    injectClassCards() {
-        var classCards = ClassManager.getClassCardIds(ClassManager.getActiveClassId());
-        var _this = this;
-        classCards.forEach(function(cardId) {
-            var cardData = _this.cardManager.getCardById(cardId);
-            if (cardData) {
-                _this.cardManager.currentDeck.push({
-                    ...cardData,
-                    deckIndex: _this.cardManager.currentDeck.length
-                });
-            }
-        });
-        _this.cardManager.resetDeck();
-    }
-
     createSpellCards() {
         // Get starting hand from deck (4 cards for mulligan)
         this.playerHand = this.cardManager.getStartingHand(4);
@@ -562,6 +549,7 @@ class GameScreen extends BaseScreen {
                 attack: bossTemplate.attack,
                 ability: bossTemplate.ability || null,
                 isBoss: true,
+                bossId: bossTemplate.id,
                 bossMechanics: bossTemplate.bossMechanics,
                 isDying: false
             };
@@ -945,6 +933,12 @@ class GameScreen extends BaseScreen {
         // Archimage: increment spell counter
         ClassManager.incrementSpellCount();
 
+        // Achievement tracking: spell cast
+        this._spellsCastThisTurn = (this._spellsCastThisTurn || 0) + 1;
+        if (window.AchievementManager) {
+            AchievementManager.incrementStat('totalSpellsCast');
+        }
+
         // Clear selection
         this.selectedCard = null;
         this.selectedCardIndex = null;
@@ -1173,6 +1167,14 @@ class GameScreen extends BaseScreen {
                     this.visualEffects.showShieldNumber(playerHero, card.shield);
                     this.addToHistory(`${card.art} - +${card.shield} 🛡️`, true);
                     message += `Gain ${card.shield} shield! `;
+
+                    // Achievement tracking: max shield in combat
+                    if (window.AchievementManager) {
+                        var maxShield = AchievementManager.getCombatStat('maxShieldInCombat') || 0;
+                        if (this.playerShield > maxShield) {
+                            AchievementManager.setCombatStat('maxShieldInCombat', this.playerShield);
+                        }
+                    }
                 }
                 
                 // Handle static draw (Electromancien)
@@ -1253,6 +1255,15 @@ class GameScreen extends BaseScreen {
                 this.playerHealth = deathResult.health;
                 this.maxHealth = deathResult.maxHealth;
                 this.soundManager?.play('enemy_death');
+
+                // Achievement tracking: enemy killed
+                if (window.AchievementManager) {
+                    AchievementManager.incrementStat('totalEnemiesKilled');
+                    if (enemy.isBoss) {
+                        AchievementManager.incrementStat('totalBossDefeated.' + (enemy.bossId || 'unknown'));
+                    }
+                }
+
                 enemy.isDying = true;
                 this.enemyBoard.startDeathAnimation(enemyId, 1800, () => {
                     if (!skipDeathHistory) {
@@ -1284,6 +1295,14 @@ class GameScreen extends BaseScreen {
         this.renderPlayerHand();
         const handElement = this.element.querySelector('#player-hand');
         this.visualEffects.createCardDrawEffect(handElement);
+
+        // Achievement tracking: max hand size
+        if (window.AchievementManager && this.playerHand.length > 0) {
+            var maxSize = AchievementManager.getCombatStat('maxHandSize') || 0;
+            if (this.playerHand.length > maxSize) {
+                AchievementManager.setCombatStat('maxHandSize', this.playerHand.length);
+            }
+        }
     }
 
     endTurn() {
@@ -1439,6 +1458,19 @@ class GameScreen extends BaseScreen {
     }
 
     startNewTurn() {
+        // Achievement tracking: check max spells last turn
+        if (window.AchievementManager) {
+            var spellsThisTurn = this._spellsCastThisTurn || 0;
+            var maxSpells = AchievementManager.getCombatStat('maxSpellsInOneTurn') || 0;
+            if (spellsThisTurn > maxSpells) {
+                AchievementManager.setCombatStat('maxSpellsInOneTurn', spellsThisTurn);
+            }
+        }
+
+        // Reset per-turn counters
+        this._spellsCastThisTurn = 0;
+        this._combatEnemiesFrozenThisTurn = 0;
+
         // Reset per-turn class state
         ClassManager.resetPerTurnState();
 
@@ -1503,6 +1535,15 @@ class GameScreen extends BaseScreen {
 
         this.updateGameStatus('Defeat!');
         this.soundManager?.play('defeat');
+
+        // Save game stats
+        this.saveGameStats();
+
+        // Achievement tracking: game over (defeat)
+        if (window.AchievementManager) {
+            AchievementManager.incrementStat('totalGamesPlayed');
+            AchievementManager.resetCombatStats();
+        }
 
         // Clear saved state so the run can't be resumed
         AdventureStateManager.clearState();

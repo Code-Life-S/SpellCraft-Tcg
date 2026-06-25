@@ -102,6 +102,9 @@ class MulliganComponent {
     _confirm() {
         if (this.selectedIndices.size === 0) {
             this._end();
+            if (this.onComplete) {
+                this.onComplete(this.hand.slice());
+            }
             return;
         }
 

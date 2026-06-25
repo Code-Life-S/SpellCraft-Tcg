@@ -132,11 +132,14 @@ class ArenaAdventureScreen extends BaseScreen {
                 return counts;
             },
             (id) => {
+                // First try cardManager
                 if (this.cardManager) {
                     const card = this.cardManager.getCardById(id);
                     if (card) return card;
                 }
-                return null;
+                // Fallback: find card directly from arenaDeck
+                const found = this.arenaDeck.find(c => (c.id || c.name) === id);
+                return found || null;
             }
         );
 
@@ -313,7 +316,6 @@ class ArenaAdventureScreen extends BaseScreen {
 
         const handSize = ArenaStateManager.getHandSize(round);
         this.arenaDeck = this.buildShuffledDeck();
-        this.injectClassCards();
         this.playerHand = this.drawCards(handSize);
 
         this.spawnEnemies(round);
@@ -362,19 +364,6 @@ class ArenaAdventureScreen extends BaseScreen {
         return deck;
     }
 
-    injectClassCards() {
-        var classCardIds = ClassManager.getClassCardIds(ClassManager.getActiveClassId());
-        var _this = this;
-        classCardIds.forEach(function(cardId) {
-            var cardData = _this.cardManager.getCardById(cardId);
-            if (cardData) {
-                var upgraded = ArenaStateManager.getUpgradedCard({ ...cardData }, _this.arenaState.deckUpgrades);
-                _this.arenaDeck.push({ ...upgraded, instanceId: Date.now() + Math.random() });
-            }
-        });
-        this.shuffleArray(this.arenaDeck);
-    }
-
     drawCards(count) {
         const drawn = [];
         for (let i = 0; i < count; i++) {
@@ -409,6 +398,7 @@ class ArenaAdventureScreen extends BaseScreen {
                 attack: bossTemplate.attack,
                 ability: bossTemplate.ability || null,
                 isBoss: true,
+                bossId: bossTemplate.id,
                 bossMechanics: bossTemplate.bossMechanics,
                 isDying: false
             };
@@ -714,6 +704,12 @@ class ArenaAdventureScreen extends BaseScreen {
         // Archimage: increment spell counter
         ClassManager.incrementSpellCount();
 
+        // Achievement tracking: spell cast
+        this._spellsCastThisTurn = (this._spellsCastThisTurn || 0) + 1;
+        if (window.AchievementManager) {
+            AchievementManager.incrementStat('totalSpellsCast');
+        }
+
         setTimeout(() => {
             this.applySpellEffect(card, targetEnemyId);
 
@@ -870,6 +866,14 @@ class ArenaAdventureScreen extends BaseScreen {
                     this.playerShield += card.shield;
                     const heroEl = this.element.querySelector('.hero-portrait');
                     this.visualEffects.showShieldNumber(heroEl, card.shield);
+
+                    // Achievement tracking: max shield in combat
+                    if (window.AchievementManager) {
+                        var maxShield = AchievementManager.getCombatStat('maxShieldInCombat') || 0;
+                        if (this.playerShield > maxShield) {
+                            AchievementManager.setCombatStat('maxShieldInCombat', this.playerShield);
+                        }
+                    }
                 }
 
                 // Static draw (Electromancien)
@@ -959,6 +963,15 @@ class ArenaAdventureScreen extends BaseScreen {
             var deathResult = ClassManager.onEnemyDeath(this.arenaState.playerHealth, this.arenaState.maxHealth);
             this.arenaState.playerHealth = deathResult.health;
             this.arenaState.maxHealth = deathResult.maxHealth;
+
+            // Achievement tracking: enemy killed
+            if (window.AchievementManager) {
+                AchievementManager.incrementStat('totalEnemiesKilled');
+                if (enemy.isBoss) {
+                    AchievementManager.incrementStat('totalBossDefeated.' + (enemy.bossId || 'unknown'));
+                }
+            }
+
             enemy.isDying = true;
             this.soundManager?.play('enemy_death');
             this.enemyBoard.startSimpleDeathEffect(enemyId, () => {
@@ -1173,6 +1186,18 @@ class ArenaAdventureScreen extends BaseScreen {
     }
 
     startPlayerTurn() {
+        // Achievement tracking: check max spells last turn
+        if (window.AchievementManager) {
+            var spellsThisTurn = this._spellsCastThisTurn || 0;
+            var maxSpells = AchievementManager.getCombatStat('maxSpellsInOneTurn') || 0;
+            if (spellsThisTurn > maxSpells) {
+                AchievementManager.setCombatStat('maxSpellsInOneTurn', spellsThisTurn);
+            }
+        }
+
+        // Reset per-turn counters
+        this._spellsCastThisTurn = 0;
+
         // Reset per-turn class state
         ClassManager.resetPerTurnState();
 
@@ -1366,6 +1391,40 @@ class ArenaAdventureScreen extends BaseScreen {
             PlayerProgressionManager.recordArenaWin(this.arenaState.chosenClass);
         }
 
+        // Achievement tracking: arena victory
+        if (window.AchievementManager && !isTestBoss) {
+            AchievementManager.incrementStat('totalGamesWon');
+            AchievementManager.incrementStat('totalGamesPlayed');
+            AchievementManager.incrementStat('totalArenaRunsWon');
+            AchievementManager.incrementStat('arenaWinsConsecutive');
+
+            // Track arena win by class
+            var classId = this.arenaState.chosenClass;
+            if (classId) {
+                AchievementManager.updateStat('arenaWinsByClass.' + classId, true);
+            }
+
+            // Check if no damage was taken (full HP)
+            if (this.arenaState.playerHealth >= this.arenaState.maxHealth) {
+                AchievementManager.setCombatStat('hasWonArenaWithoutDamage', true);
+            }
+
+            AchievementManager.resetCombatStats();
+
+            // Check if entire deck is neutral (Full deck achievement)
+            if (this.arenaState.arenaCards && this.arenaState.arenaCards.length > 0) {
+                var allNeutral = this.arenaState.arenaCards.every(function(card) {
+                    return !card.class;
+                });
+                if (allNeutral) {
+                    var state = AchievementManager.getState();
+                    state.stats.combatStats.hasDraftedAllNeutral = true;
+                    AchievementManager.saveState(state);
+                    AchievementManager._checkAllAchievements(state);
+                }
+            }
+        }
+
         this.gameOverOverlay.show({
             isVictory: true,
             title: 'Victory!',
@@ -1389,6 +1448,13 @@ class ArenaAdventureScreen extends BaseScreen {
         if (!isTestBoss && window.PlayerProgressionManager) {
             var totalXP = this.arenaXPAccumulator + 20;
             PlayerProgressionManager.addXP(totalXP);
+        }
+
+        // Achievement tracking: arena defeat
+        if (window.AchievementManager && !isTestBoss) {
+            AchievementManager.incrementStat('totalGamesPlayed');
+            AchievementManager.updateStat('arenaWinsConsecutive', 0);
+            AchievementManager.resetCombatStats();
         }
 
         this.gameOverOverlay.show({

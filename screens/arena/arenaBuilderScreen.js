@@ -158,7 +158,7 @@ class ArenaBuilderScreen extends BaseScreen {
                 // If in adventure phase, redirect to adventure screen
                 if (state.phase === 'adventure') {
                     this.navigateTo('arena-adventure');
-                    throw new Error('Redirecting to adventure screen');
+                    return;
                 }
 
                 // If completed, start fresh
@@ -203,7 +203,7 @@ class ArenaBuilderScreen extends BaseScreen {
     startNewArena(classId) {
         this.arenaCards = [];
         this.isArenaComplete = false;
-        this.chosenClassId = classId || this.chosenClassId || ClassManager.getActiveClassId() || 'pyromancer';
+        this.chosenClassId = classId || this.chosenClassId || 'pyromancer';
         this.saveArenaState();
         
         // Hide resume button

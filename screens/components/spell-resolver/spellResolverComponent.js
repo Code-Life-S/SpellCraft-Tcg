@@ -45,6 +45,24 @@ class SpellResolverComponent {
             if (typeof screen.addToHistory === 'function') {
                 screen.addToHistory(result.reaction.icon + ' ' + result.reaction.name + '!', false);
             }
+
+            // Achievement tracking: elemental reaction triggered
+            if (window.AchievementManager) {
+                AchievementManager.incrementStat('totalReactionsTriggered');
+                var combatReactions = (screen._combatReactions || 0) + 1;
+                screen._combatReactions = combatReactions;
+                var maxReactions = AchievementManager.getCombatStat('maxReactionsInCombat') || 0;
+                if (combatReactions > maxReactions) {
+                    AchievementManager.setCombatStat('maxReactionsInCombat', combatReactions);
+                }
+            }
+        }
+
+        // Achievement tracking: fire damage
+        if (elementType === 'fire' && window.AchievementManager) {
+            var currentFireDamage = AchievementManager.getCombatStat('maxFireDamageInCombat') || 0;
+            var newFireDamage = currentFireDamage + result.damage;
+            AchievementManager.setCombatStat('maxFireDamageInCombat', newFireDamage);
         }
 
         SpellResolverComponent._callDamageFn(screen, enemyId, result.damage, skipDeathHistory);

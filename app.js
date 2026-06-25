@@ -48,6 +48,26 @@ class SpellCasterApp {
             if (window.PlayerProgressionManager) {
                 PlayerProgressionManager.initialize();
             }
+
+            // Initialize AchievementManager
+            if (window.AchievementManager) {
+                AchievementManager.initialize();
+            }
+
+            // Initialize AchievementToast
+            if (window.AchievementToast) {
+                window.achievementToast = new AchievementToast();
+                window.achievementToast.init();
+
+                // Register toast as achievement listener
+                if (window.AchievementManager) {
+                    AchievementManager.onUpdate(function(eventType, data) {
+                        if (eventType === 'unlocked' && data.def) {
+                            window.achievementToast.show({ def: data.def });
+                        }
+                    });
+                }
+            }
             
             // Start the application
             await this.startApplication();
@@ -232,7 +252,6 @@ class SpellCasterApp {
         // Register deck list screen
         this.screenManager.registerScreen('deck-list', window.DeckListScreen);
         // this.screenManager.registerScreen('options', OptionsScreen);
-        // this.screenManager.registerScreen('achievements', AchievementsScreen);
         // this.screenManager.registerScreen('credits', CreditsScreen);
     }
 

@@ -94,6 +94,12 @@ class PlayerProgressionManager {
 
         this.saveProgression(state);
 
+        // Sync level and XP to AchievementManager for level-based achievements
+        if (window.AchievementManager) {
+            AchievementManager.updateStat('level', state.level);
+            AchievementManager.updateStat('totalXpEarned', state.totalXpEarned);
+        }
+
         return {
             leveledUp: newLevels > 0,
             newLevel: newLevels > 0 ? state.level : null,
