@@ -1,7 +1,9 @@
 # Enemy Abilities System
 
+Status: COMPLETED
+
 ## Goal
-Implement 4 enemy abilities (Provocation, Enrage, Soigneur, Invocateur) for both GameScreen and ArenaAdventureScreen.
+Implement enemy abilities for both GameScreen and ArenaAdventureScreen.
 
 ## Status
 
@@ -40,8 +42,8 @@ Implement 4 enemy abilities (Provocation, Enrage, Soigneur, Invocateur) for both
 
 ### Arena Progression
 - Rounds 1-3: No abilities
-- Rounds 4-7: Provocation, Soigneur
-- Rounds 8+: All 4 abilities
+- Rounds 4-7: Provocation, Soigneur, Enrage, Invocateur
+- Rounds 8+: All 8 abilities (including Divine Shield, Lifesteal, Sacrifice, Camouflage)
 
 ## Boss System (Phase 2)
 
@@ -74,8 +76,8 @@ Implement 4 enemy abilities (Provocation, Enrage, Soigneur, Invocateur) for both
 | Mage Noir | 15 | 3 | - | 3 shield/turn, life drain 2, stun on shield break |
 | Dragon | 30 | 5 | Enrage | Breath 2 AOE, enrage at <50% |
 
-### Next Steps
-1. Test and debug ability interactions + boss fights
-2. Add more abilities in future iterations
-3. Campaign boss system (for non-arena mode)
-4. Boss companions (1-2 minions with boss, optional)
+### Next Steps (ALL COMPLETED)
+1. [x] Test and debug ability interactions + boss fights
+2. [x] Add more abilities in future iterations (8 total abilities now)
+3. [x] Campaign boss system (for non-arena mode) - bosses in endless wave mode
+4. [ ] Boss companions (1-2 minions with boss, optional) - future feature

@@ -1,6 +1,29 @@
 # Vision MVP Store - Spell Caster TCG
 
-Date: 20 Juin 2026
+Date: 25 Juin 2026
+
+---
+
+## Etat actuel du projet
+
+### Mecaniques implementees
+- 31 sorts (16 neutres + 15 de classe)
+- 6 classes jouables (Pyromancien, Cryomancien, Necromancien, Electromancien, Archimage, OmbreLumiere)
+- 8 capacites ennemies (Provocation, Enrage, Soigneur, Invocateur, Bouclier Divin, Vol de Vie, Sacrifice, Camouflage)
+- 3 Boss (Roi Squelette, Mage Noir, Dragon) - tous les 10 vagues
+- Systeme de reactions elementaires (Melt, Overload, Shatter)
+- Mode vague infini avec scaling de difficulte
+- Mode Arena (12 rounds, draft, upgrades)
+- Deck Builder (30 cartes, filtres par classe)
+- Systeme XP / niveaux / deblocage de cartes et classes
+- Sauvegarde/reprise d'aventure
+- Audio synthetise (Web Audio API, pas de vrais fichiers audio)
+
+### Ce qui reste a faire
+- Systeme de succes (24 succes prevus, voir todo/Success_System.md)
+- 15 nouvelles cartes (voir todo/New_Cards.md)
+- Defi quotidien (voir todo/Daily_Challenge.md)
+- Vrais fichiers audio (voir todo/Real_Audio_Files.md)
 
 ---
 
@@ -13,14 +36,14 @@ Date: 20 Juin 2026
 **Jeu de base payant (~8-10$)** avec demo gratuite (3 premieres vagues).
 
 Contenu du jeu de base :
-- 3 classes : Pyromancien, Cryomancien, Necromancien
-- Campagne 10 vagues + boss final
-- Mode sans fin (post-campagne)
+- 6 classes : Pyromancien, Cryomancien, Necromancien, Electromancien, Archimage, OmbreLumiere
+- Mode vague infini avec boss tous les 10 niveaux
+- Mode Arena (12 rounds, draft, upgrades)
 - Toutes les cartes de base deblocables en jouant (XP/paliers)
 
 **DLC (vente additionnelle) :**
-- DLC "Maitres de l'Arcane" (~4-5$) : 4 classes (Tempetier, Archimage, Ombrelumiere, Elementaliste) + 1 boss + 5-10 cartes
-- DLC "Heros Legendaires" (~6-7$) : 2 classes avancees + boss bonus + cartes
+- DLC "Forces de la Nature" (~4-5$) : 3 classes (Geomancien, Aeromancien, Chaman) + 1 boss + 10 cartes
+- DLC "Dimensions Cachees" (~4-5$) : 3 classes (Aquamancien, Chronomancien, Paladin) + 1 boss + 10-15 cartes
 - Pack "Collection Complete" (~10-12$)
 
 Alternative : classes vendues a l'unite (~2$ chacune) + pack bundle.
@@ -56,7 +79,7 @@ Note : Avoir le jeu payant sur Steam mais gratuit sur mobile n'est pas derangean
 - Les deux audiences ne se chevauchent que partiellement
 - Exemples reussis : Dead Cells, Minecraft
 
-### Plateauformes (ordre de priorite)
+### Plateformes (ordre de priorite)
 
 1. **Steam** (PC) -- MVP dans 3-6 mois
 2. **Mobile** (Play Store / App Store) -- portage 6-12 mois plus tard
@@ -68,13 +91,13 @@ Note : Avoir le jeu payant sur Steam mais gratuit sur mobile n'est pas derangean
 
 **3 couches, inspirees de Balatro + Hearthstone :**
 
-### Couche 1 : XP et paliers (toutes les parties)
-- XP gagne a chaque partie (meme perdue), proportionnel a la performance
+### Couche 1 : XP et paliers (toutes les parties) -- FAIT
+- XP gagnee a chaque partie (meme perdue), proportionnel a la performance
 - Palier tous les X XP : debloque une nouvelle carte
 - ~20-30 cartes total, 10 de base, les autres a debloquer
 - Debloque aussi : ennemis, boss, fonds d'ecran, titres
 
-### Couche 2 : Succes / Hauts-faits
+### Couche 2 : Succes / Hauts-faits -- A FAIRE
 Objectifs varies qui recompensent l'exploration et la maitrise :
 - "Gagner une partie sans utiliser de soin"
 - "Infliger 50 degats en un tour"
@@ -84,162 +107,163 @@ Objectifs varies qui recompensent l'exploration et la maitrise :
 - Etc.
 - Chaque succes debloque une recompense (carte, cosmetique, titre)
 
-### Couche 3 : Defi quotidien
+Voir `todo/Success_System.md` pour les details.
+
+### Couche 3 : Defi quotidien -- A FAIRE
 - 1 run par jour avec des regles speciales (modificateurs)
 - Recompense unique (parchemin ancien, essence, etc.)
 - Fidelise les joueurs, donne une raison de revenir chaque jour
 
+Voir `todo/Daily_Challenge.md` pour les details.
+
 ---
 
-## Campagne : Mode principal
+## Mode de jeu principal : Vague Infini
 
-**Lineaire** (pas d'arbre de choix comme Slay the Spire).
+**Infini** (pas de fin, difficulte croissante).
 
 Raisons :
-- "Chill, sans prise de tete" -- le joueur lance et joue
-- La strategie est dans le choix des sorts pendant le combat, pas dans la route
-- La rejouabilite vient de la composition de deck aleatoire + boss/enemis variables
+- Le joueur lance et joue immediatement
+- La strategie est dans le choix des sorts pendant le combat
+- La rejouabilite vient de la difficulte croissante et des boss
 
 ### Structure d'une run
 
 ```
-Ecran titre -> Choix deck -> Vagues 1-9 (croissantes) -> BOSS -> Victoire/Defaite
-                                |
-                        Recompenses entre vagues
-                        (soin, ajout carte, upgrade)
+Ecran titre -> Choix deck -> Vague 1 -> Vague 2 -> ... -> Boss (vague 10) -> Vague 11 -> ...
+                                |              |              |
+                        Recompenses      Scaling HP/ATK    Boss unique
+                        (XP, or)         +1 ennemi/10v     (mecaniques)
 ```
 
-- ~10 vagues + boss final
-- Vagues 1-4 : 2 ennemis (apprentissage)
-- Vagues 5-7 : 3 ennemis + capacites
-- Vagues 8-9 : 4 ennemis + mecaniques de vagues
-- Vague 10 : BOSS
+- Vagues 1-9 : 2-3 ennemis, scaling progressif
+- Vague 10 : BOSS unique (Roi Squelette, Mage Noir, ou Dragon)
+- Apres le boss : retour aux vagues normales, difficulte continue d'augmenter
+- Scaling : +1 ennemi toutes les 10 vagues (max 7), +1 HP/10 vagues, +1 ATK/20 vagues
+- Capacites ennemies : vagues 1-3 = aucune, vagues 4-7 = basiques, vagues 8+ = toutes
 
-### Mode sans fin (post-campagne)
-- Vagues infinies, difficulte croissante
-- Score base sur vagues survécues + degats infliges + tresors collectes
-- High score local (et global plus tard)
+### Mode Arena (post-campagne)
+- 12 rounds, difficulte croissante
+- Draft de 10 cartes au depart
+- Upgrades entre rounds (ajout carte, upgrade carte, bonus permanent)
+- Boss au round 12
+- Defaite = fin de run
 
 ---
 
 ## Cartes
 
-### Etat actuel : 16 sorts
+### Etat actuel : 31 sorts
 
+**Neutres (16) :**
 fire_bolt, magic_missile, meteor, thunder_storm, frost_nova, flame_burst, divine_wrath, arcane_missiles, healing_light, minor_heal, greater_heal, arcane_study, mystical_insight, quickdraw, mana_surge, arcane_shield
 
-### Nouvelles cartes a ajouter (~15-20)
+**De classe (15) :**
+- Pyromancien : Conflagration
+- Cryomancien : Blizzard, Ice Barrier, Frost Nova
+- Necromancien : Soul Drain, Soul Harvest, Bone Shield
+- Electromancien : Chain Lightning, Lightning Rod, Thunder Shield
+- Archimage : Arcane Explosion, Mana Surge, Echo
+- OmbreLumiere : Shadow Bolt, Life Tap, Dark Pact
 
-| Type | Exemple | Mecanique |
-|---|---|---|
-| Degats conditionnels | "4 degats si l'ennemi est gele" | Synergie elementaire |
-| Degats en chaine | "2 degats, puis 1 degat a l'ennemi a cote" | Positionnement |
-| Boost temporaire | "Ce tour, vos sorts coutent 1 de moins" | Mana manipulation |
-| Armes | "Invoque une arme qui frappe chaque tour (2 degats)" | Degats passifs |
-| Pieges | "Piege : 3 degats au premier ennemi qui attaque" | Controle |
-| Vol de vie | "3 degats, vous soigne de la moitie" | Sustain |
-| Multi-element | "1 degat a tous, gele les ennemis" | Double effet |
-| Rituel | "Coute 3 mana, pioche 2 cartes, gagne 5 bouclier" | Multi-effet |
-| Malefice | "L'ennemi cible perd 2 d'attaque pour ce tour" | Debuff |
-| Invocation | "Invoque un bouclier qui absorbe 3 degats" | Defense passive |
-| Echo | "Relance le dernier sort joue (cout 0)" | Combo |
-| Prophecie | "Regarde les 3 prochaines cartes, pioche-en 1" | Selection |
-| Explosion | "Detruit un ennemi, inflige autant de degats aux autres" | Risque/Recompense |
-| Surcharge | "Inflige le double de degats mais vous prend 2 degats" | Risque/Recompense |
+### Nouvelles cartes a ajouter (~15)
+
+Voir `todo/New_Cards.md` pour les details.
 
 ---
 
 ## Ennemis
 
-### Etat actuel : 12 types generiques (attaque seule)
+### Etat actuel : 8 capacites
 
-Goblin, Orc, Skeleton, Wolf, Bandit, Spider, Dark Mage, Minotaur, Wraith, Gargoyle, Demon, Vampire
+| Capacite | Comportement | Declencheur |
+|----------|--------------|-------------|
+| Provocation | Doit etre tue avant de pouvoir cibler les autres | Targeting |
+| Enrage | +2 attaque quand ses PV passent sous 50% | Damage |
+| Soigneur | Soigne un allie de 2 chaque tour | End of turn |
+| Invocateur | Invoque un sbire 1/1 au debut de son tour | End of turn |
+| Bouclier Divin | Bloque le prochain sort subi (1 fois) | Damage |
+| Vol de Vie | Se soigne de la moitie des degats infliges | Attack |
+| Sacrifice | A sa mort, donne +2 ATK a un allie | Death |
+| Camouflage | Ne peut pas etre cible 1 tour sur 2 | Turn start |
 
-### Capacites a ajouter (4-5 types pour le MVP)
+### Capacites futures (non prioritaire pour l'instant)
 
-| Capacite | Comportement | Ennemi exemple |
-|---|---|---|
-| **Soigneur** | Soigne un allie de 2 chaque tour | Dark Priest |
-| **Tank** | A 50% plus de HP, gagne 2 bouclier au debut | Shieldbearer |
-| **Berserker** | +1 attaque a chaque fois qu'il perd 2 HP | Frenzied Orc |
-| **Invocateur** | Invoque un sbire 1/1 au debut de son tour | Summoner |
-| **Voleur de mana** | Vous vole 1 mana au debut de son tour | Mana Thief |
-| **Explosif** | Inflige 3 degats a tous les ennemis (alliés compris) a sa mort | Bomb Lobber |
+| Capacite | Comportement |
+|----------|--------------|
+| Aura de Soin | Soigne tous les allies de 1 PV en fin de tour |
+| Rancune | +1 ATK permanent a chaque fois qu'il subit un sort |
+| Brulure de Mana | Quand il attaque le hero, vous perdez 1 mana |
+| Absorption | Quand un allie meurt a cote de lui, il gagne ses stats |
 
 ---
 
-## Boss (priorite #1)
+## Boss
 
-Ajouter 2-3 boss pour le MVP. Mecaniques uniques, phases, defi memorable.
+### Etat actuel : 3 boss (tous les 10 vagues)
 
-### Boss 1 : Roi Squelette (invocateur)
-- Invoque 2 Skeletiques 1/1 au debut de chaque tour
-- Ses sbires peuvent etre geles/brules/electrises normalement
-- Mechanique : "Tant que des sbires sont vivants, le Roi a bouclier"
+| Boss | HP | ATK | Mecanique |
+|------|-----|-----|-----------|
+| Roi Squelette | 20 | 4 | Invoque 2 squelettes au debut de chaque tour |
+| Mage Noir | 15 | 3 | +3 bouclier/tour, drain 2 PV, stun si bouclier brise |
+| Dragon | 30 | 5 | Souffle 2 degats AOE, enrage a <50% HP |
 
-### Boss 2 : Mage Noir (bouclier + sorts)
-- Gagne 3 bouclier au debut de son tour
-- Lance "Drain de vie" : vous vole 2 HP et se soigne
-- Quand son bouclier est brise, il stun 1 tour
-
-### Boss 3 : Dragon (phases)
-- Phase 1 (100%-50%) : attaque normale + souffle (degats a tous les ennemis du joueur -- les cartes dans la main ? Non, degats au hero)
-- Phase 2 (50%-0%) : "Enrage" -- +2 attaque, attaque 2 fois par tour
-- Visuellement impressionnant (grand, effets de particules)
-
-### Idees pour plus tard
+### Boss futurs (idées pour plus tard)
 - Double Boss (tank + dps, si l'un meurt l'autre s'enrage)
-- Horloge (compte a rebours 5 tours, apres = degats massifs ou game over)
+- Horloge (compte a rebours 5 tours, apres = degats massifs)
 - Ombre (invisible 1 tour sur 2, ne peut pas etre ciblee)
 
 ---
 
-## Leviers d'addiction pour le MVP (sans multi)
+## Leviers d'addiction pour le MVP
 
-| Levier | Effort | Impact |
-|---|---|---|
-| Recompenses de run (or/essence) | Faible | Haut |
-| Succes / Hauts-faits | Faible | Haut |
-| Records personnels (score, degats, etc.) | Faible | Moyen |
-| XP/Paliers de progression | Faible | Tres haut |
-| Defi quotidien | Moyen | Tres haut |
-| Classement local (high score sur la machine) | Faible | Moyen |
-| Seed partageable (defi du jour "meme partie que tout le monde") | Faible | Moyen |
+| Levier | Effort | Impact | Statut |
+|--------|--------|--------|--------|
+| Recompenses de run (or/essence) | Faible | Haut | FAIT (XP) |
+| XP/Paliers de progression | Faible | Tres haut | FAIT |
+| Records personnels (score, degats) | Faible | Moyen | FAIT (bestWave) |
+| Succes / Hauts-faits | Faible | Haut | A FAIRE |
+| Defi quotidien | Moyen | Tres haut | A FAIRE |
+| Classement local (high score) | Faible | Moyen | A FAIRE |
+| Seed partageable | Faible | Moyen | A FAIRE |
 
 ---
 
-## Roadmap proposee
+## Roadmap
 
-### Phase 1 (1-2 mois) : Coeur du jeu
-- Campagne lineaire (10 vagues + boss final)
-- Ennemis avec capacites (4-5 types)
-- 2 boss avec mecaniques uniques
-- **Systeme de classes** : 3 classes de base (Pyromancien, Cryomancien, Necromancien)
-  - Chaque classe : passif + 3 cartes de classe
-  - Selection de classe avant chaque run
-- Progression XP + deblocage de cartes
-- Succes / Hauts-faits
+### Phase 1 (1-2 mois) : Coeur du jeu -- TERMINE
 
-### Phase 2 (1 mois) : Contenu
-- 10+ nouvelles cartes
-- Mode sans fin (post-campagne)
-- 1 boss supplementaire
-- Defi quotidien
-- 2 classes supplementaires (Tempetier, Archimage)
+- [x] Mode vague infini avec boss tous les 10 niveaux
+- [x] Ennemis avec capacites (8 types)
+- [x] 3 boss avec mecaniques uniques
+- [x] Systeme de classes : 6 classes
+- [x] Progression XP + deblocage de cartes et classes
+- [x] Mode Arena (12 rounds, draft, upgrades)
+- [x] Deck Builder
+- [x] Sauvegarde/reprise d'aventure
+- [x] Reactions elementaires
+- [x] Audio synthetise
+
+### Phase 2 (1 mois) : Contenu -- EN COURS
+
+- [ ] 15 nouvelles cartes (voir `todo/New_Cards.md`)
+- [ ] Systeme de succes (voir `todo/Success_System.md`)
+- [ ] Defi quotidien (voir `todo/Daily_Challenge.md`)
+- [ ] Vrais fichiers audio (voir `todo/Real_Audio_Files.md`)
 
 ### Phase 3 (1-2 mois) : Polish & Store
-- Sons IA / libres de droits
-- Page Steam (capsule, trailer, screenshots)
-- Demo gratuite (3 premieres vagues)
-- Build final + bugfix
-- DLC prets pour le lancement (classes restantes en packs)
+
+- [ ] Page Steam (capsule, trailer, screenshots)
+- [ ] Demo gratuite (3 premieres vagues)
+- [ ] Build final + bugfix
+- [ ] DLC prets pour le lancement (classes restantes en packs)
 
 ### Post-MVP (apres sortie Steam)
-- Portage mobile (F2P avec rotation de classes)
-- Gacha cosmetique "Parchemins anciens"
-- Nouvelles campagnes / boss
-- Evenements temporaires (Double Classe, Boss de la Semaine, etc.)
-- Mode Aventure (choix de chemin, optionnel)
+
+- [ ] Portage mobile (F2P avec rotation de classes)
+- [ ] Gacha cosmetique "Parchemins anciens"
+- [ ] Nouvelles campagnes / boss
+- [ ] Evenements temporaires (Double Classe, Boss de la Semaine, etc.)
 
 ---
 

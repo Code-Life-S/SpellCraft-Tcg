@@ -2,71 +2,100 @@
 
 A unique spell-focused wave defense game inspired by TCG mechanics, built with HTML5, CSS3, and JavaScript.
 
-## 🎮 Features
+## Features
 
+### Gameplay
 - **Spell-Only Gameplay**: Cast powerful spells to defeat enemy waves
-- **Wave Defense System**: Face increasingly challenging enemy waves
-- **Mana System**: Strategic mana management for spell casting
-- **Spell Targeting**: Single target, area of effect, and random targeting spells
+- **Endless Wave System**: Face increasingly challenging enemy waves with bosses every 10 waves
+- **Mana System**: Strategic mana management (1-10, ramps each turn)
+- **Spell Targeting**: Single target, area of effect, random targeting, and self-cast spells
 - **Visual Effects**: Beautiful spell card rendering with rarity-based styling
-- **Progressive Difficulty**: Enemies get stronger with each wave
 
-## 🃏 Spell System
+### Classes (6 playable)
+- **Pyromancer**: Fire damage focus, +1 fire damage passive
+- **Cryomancer**: Frost/control, extended freeze duration passive
+- **Necromancer**: Sustain/lifesteal, +1 max HP on enemy death passive
+- **Electromancer**: Chain lightning, adjacent damage passive
+- **Archimage**: Card cycling, draw every 3 spells passive
+- **OmbreLumiere**: Risk/reward, spend HP for mana passive
 
-### Spell Types
-- **Single Target**: Deal focused damage to one enemy
-- **Area of Effect**: Damage all enemies at once
-- **Random Target**: Multiple hits on random enemies
-- **Self-Healing**: Restore your health
+### Elemental Reactions
+- **Melt**: Fire on Frozen = double damage
+- **Overload**: Fire on Shocked = +2 AOE damage
+- **Shatter**: Lightning on Frozen = +3 bonus damage
 
-### Spell Examples
-- **Fire Bolt** (1 mana): Deal 3 damage to target enemy
-- **Thunder Storm** (3 mana): Deal 2 damage to all enemies
-- **Meteor** (5 mana): Deal 8 damage to target enemy
-- **Healing Light** (2 mana): Restore 5 health to yourself
+### Enemy Abilities (8 types)
+- Provocation, Enrage, Healer, Summoner
+- Divine Shield, Lifesteal, Sacrifice, Camouflage
 
-### Rarity Levels
-- **Common** (Gray border) - Basic spells
-- **Rare** (Blue border) - Enhanced effects
-- **Epic** (Purple border) - Powerful magic
-- **Legendary** (Orange border with glow) - Ultimate spells
+### Bosses (every 10 waves)
+- **Roi Squelette**: Summons 2 skeletons each turn
+- **Mage Noir**: 3 shield/turn, life drain, stun on shield break
+- **Dragon**: Breath attack, enrage at <50% HP
 
-## 🚀 Getting Started
+### Game Modes
+- **Endless Adventure**: Wave defense with bosses every 10 waves, save/resume support
+- **Arena Mode**: Draft 10 cards, 12 rounds, upgrades between rounds, boss at round 12
+- **Deck Builder**: Create/edit 30-card decks with class filtering
 
-1. Clone this repository
-2. Open `index.html` in your web browser
-3. Click "Next Wave" to spawn enemies
-4. Select spells from your hand and target enemies
-5. Survive as many waves as possible!
+### Progression System
+- XP gained from combat (10 per kill, 25 per round, 50/20 victory/defeat)
+- Level up to unlock new cards (levels 1-7)
+- Unlock new classes by winning arena runs with prerequisites
+- Full localStorage persistence
 
-## 🎯 How to Play
+## How to Play
 
-1. **Select a Spell**: Click on a spell card in your hand
-2. **Target Enemies**: Click on enemies for single-target spells (AoE spells cast automatically)
-3. **Manage Mana**: Each spell costs mana - plan your attacks wisely
-4. **Complete Waves**: Defeat all enemies to unlock the next wave
-5. **Survive**: Each wave brings stronger and more numerous enemies
+### Adventure Mode
+1. Select a deck from the deck list (shows class icon)
+2. Click "Start Adventure" to begin endless wave defense
+3. Each wave: draw cards, spend mana, cast spells to defeat enemies
+4. Survive as many waves as possible! Bosses appear every 10 waves
+5. You can quit and resume your adventure later
 
-## 🔮 Planned Features
+### Arena Mode
+1. Click "Arena Mode" in main menu
+2. Choose from 3 random classes
+3. Draft 10 cards (pick 1 of 3, repeat until deck complete)
+4. Play 12 rounds with escalating difficulty
+5. Between rounds: heal + pick upgrade (add card, upgrade card, or bonus heal)
+6. Beat round 12 boss to win!
 
-- [ ] More spell varieties and mechanics
-- [ ] Special enemy abilities and resistances
-- [ ] Power-ups and temporary buffs
-- [ ] Boss enemies with unique mechanics
-- [ ] Spell upgrade system
-- [ ] Achievement system
-- [ ] Sound effects and animations
+### Deck Builder
+1. Click "Deck Builder" in main menu
+2. Create new deck (choose class) or edit existing
+3. Filter cards by name, mana cost, rarity, or class
+4. Build 30-card deck (max 2 copies per card)
 
-## 🛠️ Technologies Used
+## Planned Features
+
+- [ ] Achievement system (24 planned achievements)
+- [ ] 15 new spells (conditional damage, traps, echoes, etc.)
+- [ ] Daily challenge mode (special rules, unique rewards)
+- [ ] Real audio files (replace synthesized sounds)
+- [ ] Steam page and demo
+
+## Documentation
+
+See `MD_files/` for detailed documentation:
+- `README.md` - This file
+- `ARCHITECTURE.md` - Technical architecture
+- `CODING_STANDARDS.md` - Coding conventions
+- `Vision_MVP_Store.md` - Business vision and MVP roadmap
+- `Content_Roadmap.md` - Content planning (cards, achievements, etc.)
+- `Gameplay_Idees.md` - Future gameplay ideas
+- `DLC_Plan.md` - DLC planning
+- `done/` - Completed tasks documentation
+- `todo/` - Pending tasks documentation
+- `archive/` - Historical snapshots
+
+## Technologies
 
 - HTML5
 - CSS3 (with animations and gradients)
 - Vanilla JavaScript (ES6+ classes)
+- Web Audio API (synthesized sounds)
 
-## 📝 License
+## License
 
 This project is for educational purposes and game development learning.
-
----
-
-*Inspired by Hearthstone's card game mechanics and visual design.*

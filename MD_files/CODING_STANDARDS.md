@@ -1,5 +1,9 @@
 # Spell Caster - Coding Standards
 
+Date: 25 Juin 2026
+
+---
+
 ## File Organisation
 
 ### Screen Modules (screens/)
@@ -25,6 +29,8 @@ Component CSS is loaded dynamically via `templateLoader.loadCSS()` in the consum
 CSS shared between multiple screens lives in `screens/shared/`.
 Each screen loads shared CSS via `templateLoader.loadCSS()` before its own component CSS.
 
+---
+
 ## DRY Principles
 
 ### Eliminate Duplication
@@ -38,6 +44,8 @@ Create a component when the same UI/logic appears in 2+ screens. A component sho
 - Not import or reference specific screen modules
 - Communicate results via callbacks
 - Manage its own DOM within a container element provided by the screen
+
+---
 
 ## Event Binding
 
@@ -61,6 +69,8 @@ this.addEventListenerSafe(this.playerHandEl, 'click', function(e) {
 ### Exceptions
 Components may use raw `addEventListener` when they manage their own lifecycle (and clean up in a `destroy()` method).
 
+---
+
 ## CSS Rules
 
 ### Shared First
@@ -74,6 +84,8 @@ Use CSS classes (not inline styles) for state changes:
 
 ### Specificity
 Use minimal specificity. Prefer class selectors over ID selectors. Avoid chaining selectors when not needed.
+
+---
 
 ## JavaScript Conventions
 
@@ -103,6 +115,8 @@ component.start(data, {
 });
 ```
 
+---
+
 ## Template Architecture
 
 ### Screen Lifecycle
@@ -115,6 +129,42 @@ component.start(data, {
 
 ### No Inline HTML in JS
 HTML structure belongs in `.html` template files, not in JS strings. The `templateLoader` fetches templates at runtime.
+
+---
+
+## Documentation Maintenance
+
+### Après chaque tâche
+Après avoir terminé une tâche de développement, mettre à jour la documentation :
+
+1. **Déplacer le fichier de tâche** de `todo/` vers `done/`
+   - Renommer si nécessaire pour cohérence (snake_case -> PascalCase)
+   - Mettre à jour le statut dans le fichier (ajouter "Status: COMPLETED")
+2. **Créer/supprimer des fichiers MD** quand nécessaire
+   - Nouvelle tâche = créer un fichier dans `todo/`
+   - Tâche terminée = déplacer vers `done/`
+   - Info obsolète = supprimer ou archiver dans `archive/`
+3. **Mettre à jour les fichiers racine** si nécessaire :
+   - `README.md` : features, planned features
+   - `Vision_MVP_Store.md` : état actuel, roadmap
+   - `Content_Roadmap.md` : priorités, statuts
+4. **Regrouper/splitter** des infos dans des fichiers MD si plus clair/lisible
+   - Ex: extraire les specs d'un système dans son propre fichier
+   - Ex: fusionner des petits fichiers liés en un seul
+
+### Convention de nommage
+- Fichiers `done/` : PascalCase (ex: `Class_System.md`)
+- Fichiers `todo/` : PascalCase (ex: `Success_System.md`)
+- Fichiers `archive/` : tel quel (ex: `Etat_24_06_2026.md`)
+
+### Vérification finale
+Avant de valider une tâche, vérifier que :
+- [ ] Le fichier de tâche est déplacé de `todo/` vers `done/`
+- [ ] Le statut est mis à jour dans le fichier de tâche
+- [ ] Les fichiers racine sont mis à jour si nécessaire
+- [ ] La structure de dossiers est cohérente
+
+---
 
 ## Refactoring Priority
 
