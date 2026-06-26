@@ -10,7 +10,7 @@ Date: 25 Juin 2026
 - 31 sorts (16 neutres + 15 de classe)
 - 6 classes jouables (Pyromancien, Cryomancien, Necromancien, Electromancien, Archimage, OmbreLumiere)
 - 8 capacites ennemies (Provocation, Enrage, Soigneur, Invocateur, Bouclier Divin, Vol de Vie, Sacrifice, Camouflage)
-- 3 Boss (Roi Squelette, Mage Noir, Dragon) - tous les 10 vagues
+- 7 Boss (Roi Squelette, Mage Noir, Dragon, Phenix de Cendre, Golem de Cristal, Spectre de l'Esprit, Cracheur de Venin)
 - Systeme de reactions elementaires (Melt, Overload, Shatter)
 - Mode vague infini avec scaling de difficulte
 - Mode Arena (12 rounds, draft, upgrades)
@@ -20,10 +20,12 @@ Date: 25 Juin 2026
 - Audio synthetise (Web Audio API, pas de vrais fichiers audio)
 
 ### Ce qui reste a faire
-- Systeme de succes (24 succes prevus, voir todo/Success_System.md)
-- 15 nouvelles cartes (voir todo/New_Cards.md)
-- Defi quotidien (voir todo/Daily_Challenge.md)
-- Vrais fichiers audio (voir todo/Real_Audio_Files.md)
+- [x] Systeme de succes (28/28, voir `done/Success_System.md`)
+- [ ] 15 nouvelles cartes (voir `todo/New_Cards.md`)
+- [ ] Defi quotidien (voir `todo/Daily_Challenge.md`)
+- [ ] Vrais fichiers audio (voir `todo/Real_Audio_Files.md`)
+- [ ] Bonus passifs inter-vagues (voir `todo/Passive_Bonuses.md`)
+- [ ] Systeme d'upgrades deblocables + artefacts (voir `todo/Upgrades_Artifacts.md`)
 
 ---
 
@@ -89,7 +91,7 @@ Note : Avoir le jeu payant sur Steam mais gratuit sur mobile n'est pas derangean
 
 ## Progression du joueur
 
-**3 couches, inspirees de Balatro + Hearthstone :**
+**4 couches, inspirees de Balatro + Hearthstone + Hades 2 :**
 
 ### Couche 1 : XP et paliers (toutes les parties) -- FAIT
 - XP gagnee a chaque partie (meme perdue), proportionnel a la performance
@@ -97,17 +99,17 @@ Note : Avoir le jeu payant sur Steam mais gratuit sur mobile n'est pas derangean
 - ~20-30 cartes total, 10 de base, les autres a debloquer
 - Debloque aussi : ennemis, boss, fonds d'ecran, titres
 
-### Couche 2 : Succes / Hauts-faits -- A FAIRE
+### Couche 2 : Succes / Hauts-faits -- FAIT (28/28)
 Objectifs varies qui recompensent l'exploration et la maitrise :
-- "Gagner une partie sans utiliser de soin"
-- "Infliger 50 degats en un tour"
-- "Geler 3 ennemis en meme temps"
-- "Remporter une partie avec chaque deck"
-- "Finir la campagne en moins de X tours"
+- "Gagner sa premiere partie"
+- "Infliger 50 degats de feu en un combat"
+- "Geler 4 ennemis differents en un combat"
+- "Gagner l'arene avec chaque classe"
+- "Finir un combat en 2 tours ou moins"
 - Etc.
-- Chaque succes debloque une recompense (carte, cosmetique, titre)
+- Chaque succes debloque une recompense (titre, icone, skin)
 
-Voir `todo/Success_System.md` pour les details.
+Voir `done/Success_System.md` pour les details.
 
 ### Couche 3 : Defi quotidien -- A FAIRE
 - 1 run par jour avec des regles speciales (modificateurs)
@@ -115,6 +117,13 @@ Voir `todo/Success_System.md` pour les details.
 - Fidelise les joueurs, donne une raison de revenir chaque jour
 
 Voir `todo/Daily_Challenge.md` pour les details.
+
+### Couche 4 : Upgrades deblocables et artefacts (Arena) -- A FAIRE
+- Debloquer des upgrades permanentes via succes et victoires de classe
+- Equiper des artefacts avant chaque run pour orienter le pool d'upgrades
+- Inspire de Hades 2 (dieux favoris / weight system)
+
+Voir `todo/Upgrades_Artifacts.md` pour les details.
 
 ---
 
@@ -200,13 +209,17 @@ Voir `todo/New_Cards.md` pour les details.
 
 ## Boss
 
-### Etat actuel : 3 boss (tous les 10 vagues)
+### Etat actuel : 7 boss
 
 | Boss | HP | ATK | Mecanique |
 |------|-----|-----|-----------|
-| Roi Squelette | 20 | 4 | Invoque 2 squelettes au debut de chaque tour |
-| Mage Noir | 15 | 3 | +3 bouclier/tour, drain 2 PV, stun si bouclier brise |
-| Dragon | 30 | 5 | Souffle 2 degats AOE, enrage a <50% HP |
+| Roi Squelette | 20 | 4 | Invoque 2 squelettes apres chaque attaque |
+| Mage Noir | 15 | 3 | Se soigne de 3 PV par tour |
+| Dragon | 30 | 3 | +1 ATK par tour, enrage sous 50% HP |
+| Phenix de Cendre | 20 | 3 | Ressuscite 1x avec 20 HP +2 ATK, aura brulure |
+| Golem de Cristal | 22 | 2 | Gagne 2 bouclier/tour, reflete degats |
+| Spectre de l'Esprit | 16 | 3 | Defausse 1 carte aleatoire si >=3 en main |
+| Cracheur de Venin | 20 | 4 | Poison cumulatif chaque tour |
 
 ### Boss futurs (idées pour plus tard)
 - Double Boss (tank + dps, si l'un meurt l'autre s'enrage)
@@ -222,7 +235,9 @@ Voir `todo/New_Cards.md` pour les details.
 | Recompenses de run (or/essence) | Faible | Haut | FAIT (XP) |
 | XP/Paliers de progression | Faible | Tres haut | FAIT |
 | Records personnels (score, degats) | Faible | Moyen | FAIT (bestWave) |
-| Succes / Hauts-faits | Faible | Haut | A FAIRE |
+| Succes / Hauts-faits | Faible | Haut | FAIT (28/28) |
+| Bonus passifs inter-vagues | Moyen | Tres haut | A FAIRE |
+| Upgrades deblocables + artefacts | Moyen | Tres haut | A FAIRE |
 | Defi quotidien | Moyen | Tres haut | A FAIRE |
 | Classement local (high score) | Faible | Moyen | A FAIRE |
 | Seed partageable | Faible | Moyen | A FAIRE |
@@ -244,10 +259,13 @@ Voir `todo/New_Cards.md` pour les details.
 - [x] Reactions elementaires
 - [x] Audio synthetise
 
-### Phase 2 (1 mois) : Contenu -- EN COURS
+### Phase 2 (1-2 mois) : Contenu -- EN COURS
 
+- [x] 4 nouveaux boss (Phenix de Cendre, Golem de Cristal, Spectre de l'Esprit, Cracheur de Venin)
+- [x] Systeme de succes (28/28, voir `done/Success_System.md`)
 - [ ] 15 nouvelles cartes (voir `todo/New_Cards.md`)
-- [ ] Systeme de succes (voir `todo/Success_System.md`)
+- [ ] Bonus passifs inter-vagues (voir `todo/Passive_Bonuses.md`)
+- [ ] Systeme d'upgrades deblocables + artefacts (voir `todo/Upgrades_Artifacts.md`)
 - [ ] Defi quotidien (voir `todo/Daily_Challenge.md`)
 - [ ] Vrais fichiers audio (voir `todo/Real_Audio_Files.md`)
 

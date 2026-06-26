@@ -20,9 +20,11 @@ Date: 25 Juin 2026
 
 ### A faire
 - [ ] 15 nouvelles cartes (voir `todo/New_Cards.md`)
-- [ ] Systeme de succes (voir `todo/Success_System.md`)
+- [x] Systeme de succes (28/28, voir `done/Success_System.md`)
 - [ ] Defi quotidien (voir `todo/Daily_Challenge.md`)
 - [ ] Vrais fichiers audio (voir `todo/Real_Audio_Files.md`)
+- [ ] Bonus passifs inter-vagues (voir `todo/Passive_Bonuses.md`)
+- [ ] Systeme d'upgrades deblocables + artefacts (voir `todo/Upgrades_Artifacts.md`)
 
 ---
 
@@ -82,16 +84,20 @@ Voir `todo/New_Cards.md` pour les details completes.
 
 ---
 
-## Bloc C -- Systeme de succes (24) -- A FAIRE
+## Bloc C -- Systeme de succes (28) -- FAIT
 
-Voir `todo/Success_System.md` pour les details complets.
+Voir `done/Success_System.md` pour les details complets.
 
-### Categories prevues
-- Progression (5 succes)
-- Combat (8 succes)
-- Arena (5 succes)
-- Challenge (3 succes)
+### Categories implementees
+- Progression (9 succes)
+- Combat (11 succes)
+- Challenge (4 succes)
 - Farm (3 succes)
+
+### Recompenses
+- Titres deblocables (Novice, Parfait, Survivant, Champion, etc.)
+- Icônes (Feu, Glace, Boss)
+- Skins de carte / hero
 
 ---
 
@@ -131,36 +137,63 @@ Voir `DLC_Plan.md` pour les details.
 
 ---
 
-## Bloc F -- Bonus passifs (Mode Aventure) -- IDEE FUTURE
+## Bloc F -- Bonus passifs (Mode Aventure) -- PLANIFIE (prioritaire)
 
-Inspires de Balatro. Le joueur choisit un bonus tous les 5 rounds pour personnaliser sa run.
+Voir `todo/Passive_Bonuses.md` pour les details complets.
+
+Inspire de Balatro / Slay the Spire / Hades. Le joueur choisit un bonus passif tous les 5 rounds pour personnaliser sa run et creer des synergies uniques.
 
 ### Principe
-- Un choix de 2-3 bonus proposes tous les 5 rounds (rounds 5, 10, 15...)
-- Les bonus sont cumulables
-- Persistants pour toute la duree de la run
+- Un choix de **3 bonus proposes aleatoirement** tous les 5 rounds (rounds 5, 10, 15...)
+- Les bonus sont cumulables et persistent pour toute la duree de la run
 - Visibles dans l'interface (icones a cote du portrait hero)
+- ~15 bonus repartis en 3 raretees : Commun, Rare, Epique
 
 ### Liste des bonus proposes
 
 | Bonus | Effet | Rareté |
 |-------|-------|--------|
-| Main +1 | +1 carte piochée par tour | Commun |
-| Mana +1 | Commence chaque vague avec +1 mana max | Commun |
-| Bouclier de depart | Gagne 2 bouclier au debut de chaque vague | Commun |
-| Soin de vague | Soin 1 PV au debut de chaque vague | Commun |
-| PV Max +2 | +2 PV max permanents | Commun |
-| Dessin +1 | Pioche 2 cartes par tour au lieu d'1 | Rare |
-| Degats +1 | Tous les sorts font +1 degat | Rare |
-| Lifesteal 1 | Soin 1 a chaque sort lance | Rare |
-| Mana reduit | Tous les sorts coutent 1 de moins (min 1) | Rare |
-| Bouclier permanent | +1 bouclier permanent (ne se retire pas) | Rare |
-| Echo | Le premier sort de chaque vague est lance 2 fois | Epique |
+| Main de Fer | +1 carte piochée par tour | Commun |
+| Font de Mana | Commence chaque vague avec +1 mana max | Commun |
+| Armure de Givre | Gagne 2 bouclier au debut de chaque vague | Commun |
+| Soin Doux | Soin 1 PV au debut de chaque vague | Commun |
+| Vitalite | +2 PV max permanents | Commun |
+| Afflux | Pioche 2 cartes par tour au lieu d'1 | Rare |
+| Brasier | Tous les sorts font +1 degat | Rare |
+| Vampirisme | Soin 1 PV a chaque sort lance | Rare |
+| Economie | Tous les sorts coutent 1 de moins (min 1) | Rare |
+| Coquille | +1 bouclier permanent (ne se retire pas entre tours) | Rare |
+| Eclipse | 20% chance qu'un sort lance soit duplique | Rare |
+| Ronces | 1 degat a l'attaquant quand tu reçois un coup | Rare |
+| Barriere | +5 PV max | Rare |
+| Alchimiste | Les reactions elementaires font +1 degat | Rare |
+| Echo Arcanique | Le premier sort de chaque combat est lance 2 fois | Epique |
+| Vague de Vie | Soin 1 PV par ennemi tue | Epique |
 
 ### Notes techniques
-- Stockage : tableau `runBonuses[]` dans l'etat de la run (localStorage)
+- Stockage : tableau `runBonuses[]` dans l'etat de la run (localStorage / AdventureStateManager)
 - Application : verifier les bonus a chaque debut de tour/vague
-- UI : afficher les icones des bonus actifs dans le header
+- UI : overlay de choix entre 3 bonus + icones des bonus actifs dans le header
+
+---
+
+## Bloc H -- Upgrades deblocables et artefacts (Arena) -- PLANIFIE
+
+Voir `todo/Upgrades_Artifacts.md` pour les details complets.
+
+### Upgrades deblocables
+- Pool d'upgrades de base limite (+1 degats, -1 mana, +1 bouclier, etc.)
+- Les upgrades avancees sont verrouillees au debut (+1 hit, +1 pioche, effet brulure, etc.)
+- Deverrouillage via succes / X runs gagnees avec une classe
+- Ajoutees au pool permanent pour toutes les futures runs
+
+### Artefacts (Hades 2 style)
+- Equiper 1-2 artefacts avant chaque run arene
+- Chaque artefact modifie les poids du pool d'upgrades
+- Ex: artefact "Braise Runique" > upgrades feu 2x plus frequentes
+- Ex: artefact "Cristal de Mana" > upgrades mana reduction 2x plus frequentes
+- Ex: artefact "Fragment Runique" > upgrades de la classe du heros plus frequentes
+- Artefacts deblocables via progression / succes
 
 ---
 
