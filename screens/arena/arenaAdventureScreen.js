@@ -1215,6 +1215,9 @@ class ArenaAdventureScreen extends BaseScreen {
         if (alive.length === 0) {
             this.gameState = 'won';
             this.element.querySelector('#end-turn-btn').disabled = true;
+            if (window.AchievementManager && this.currentTurn <= 2) {
+                AchievementManager.setCombatStat('hasWonIn2TurnsOrLess', true);
+            }
             setTimeout(() => this.onRoundVictory(), 500);
         }
     }
