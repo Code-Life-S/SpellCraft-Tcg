@@ -39,5 +39,5 @@
 .achievement-category-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 12px;
 }
