@@ -317,6 +317,7 @@ class ArenaAdventureScreen extends BaseScreen {
         const handSize = ArenaStateManager.getHandSize(round);
         this.arenaDeck = this.buildShuffledDeck();
         this.playerHand = this.drawCards(handSize);
+        this._checkHandAchievements();
 
         this.spawnEnemies(round);
         this.updateUI();
@@ -347,6 +348,7 @@ class ArenaAdventureScreen extends BaseScreen {
                     _this.isPlayerTurn = true;
                     _this.renderPlayerHand();
                     _this.updateUI();
+                    _this._checkHandAchievements();
                     _this.addToHistory('Mulligan complete - Round ' + _this.arenaState.currentRound + ' begins!', true);
                 }
             });
@@ -372,6 +374,27 @@ class ArenaAdventureScreen extends BaseScreen {
             drawn.push({ ...card, instanceId: card.instanceId });
         }
         return drawn;
+    }
+
+    _checkHandAchievements() {
+        if (!window.AchievementManager) return;
+        if (!AchievementManager.isUnlocked('full_hand')) {
+            var maxSize = AchievementManager.getCombatStat('maxHandSize') || 0;
+            if (this.playerHand.length > maxSize) {
+                AchievementManager.setCombatStat('maxHandSize', this.playerHand.length);
+            }
+        }
+        if (!AchievementManager.isUnlocked('triple_copy')) {
+            var counts = {};
+            for (var i = 0; i < this.playerHand.length; i++) {
+                var cid = this.playerHand[i].id || this.playerHand[i].cardId;
+                counts[cid] = (counts[cid] || 0) + 1;
+                if (counts[cid] >= 3) {
+                    AchievementManager.setCombatStat('hasHad3CopiesOfSameCard', true);
+                    break;
+                }
+            }
+        }
     }
 
     /* ------ ENEMY SYSTEM ------ */
@@ -730,6 +753,7 @@ class ArenaAdventureScreen extends BaseScreen {
                 }
                 this.renderPlayerHand();
                 this.updateUI();
+                this._checkHandAchievements();
                 this.addToHistory('\uD83D\uDD2E Spell counter complete! Draw 1', true);
             }
 
@@ -888,6 +912,7 @@ class ArenaAdventureScreen extends BaseScreen {
                         }
                         this.renderPlayerHand();
                         this.updateUI();
+                        this._checkHandAchievements();
                     }
                 }
 
@@ -906,6 +931,7 @@ class ArenaAdventureScreen extends BaseScreen {
             }
             this.renderPlayerHand();
             this.updateUI();
+            this._checkHandAchievements();
         }
         if (card.manaBoost) {
             this.currentMana = Math.min(this.currentMana + card.manaBoost, 10);
@@ -969,6 +995,9 @@ class ArenaAdventureScreen extends BaseScreen {
                 AchievementManager.incrementStat('totalEnemiesKilled');
                 if (enemy.isBoss) {
                     AchievementManager.incrementStat('totalBossDefeated.' + (enemy.bossId || 'unknown'));
+                    if (this.currentTurn <= 5) {
+                        AchievementManager.setCombatStat('hasKilledBossIn5TurnsOrLess', true);
+                    }
                 }
             }
 
@@ -1410,6 +1439,15 @@ class ArenaAdventureScreen extends BaseScreen {
             // Check if no damage was taken (full HP)
             if (this.arenaState.playerHealth >= this.arenaState.maxHealth) {
                 AchievementManager.setCombatStat('hasWonArenaWithoutDamage', true);
+            }
+
+            // Sans egratignure: win final round without losing HP
+            if (this.arenaState.playerHealth >= this.arenaState.maxHealth) {
+                AchievementManager.setCombatStat('hasWonWithoutDamage', true);
+            }
+            // Survivant: win final round with 1 HP remaining
+            if (this.arenaState.playerHealth === 1) {
+                AchievementManager.setCombatStat('hasWonAt1HP', true);
             }
 
             AchievementManager.resetCombatStats();

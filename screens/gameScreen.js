@@ -1261,6 +1261,9 @@ class GameScreen extends BaseScreen {
                     AchievementManager.incrementStat('totalEnemiesKilled');
                     if (enemy.isBoss) {
                         AchievementManager.incrementStat('totalBossDefeated.' + (enemy.bossId || 'unknown'));
+                        if (this.currentTurn <= 5) {
+                            AchievementManager.setCombatStat('hasKilledBossIn5TurnsOrLess', true);
+                        }
                     }
                 }
 
@@ -1298,9 +1301,22 @@ class GameScreen extends BaseScreen {
 
         // Achievement tracking: max hand size
         if (window.AchievementManager && this.playerHand.length > 0) {
-            var maxSize = AchievementManager.getCombatStat('maxHandSize') || 0;
-            if (this.playerHand.length > maxSize) {
-                AchievementManager.setCombatStat('maxHandSize', this.playerHand.length);
+            if (!AchievementManager.isUnlocked('full_hand')) {
+                var maxSize = AchievementManager.getCombatStat('maxHandSize') || 0;
+                if (this.playerHand.length > maxSize) {
+                    AchievementManager.setCombatStat('maxHandSize', this.playerHand.length);
+                }
+            }
+            if (!AchievementManager.isUnlocked('triple_copy')) {
+                var _counts = {};
+                for (var _i = 0; _i < this.playerHand.length; _i++) {
+                    var _cid = this.playerHand[_i].id || this.playerHand[_i].cardId;
+                    _counts[_cid] = (_counts[_cid] || 0) + 1;
+                    if (_counts[_cid] >= 3) {
+                        AchievementManager.setCombatStat('hasHad3CopiesOfSameCard', true);
+                        break;
+                    }
+                }
             }
         }
     }
@@ -1492,6 +1508,25 @@ class GameScreen extends BaseScreen {
                 // Don't add natural card draw to history - happens every turn
             }
         }
+        if (window.AchievementManager) {
+            if (!AchievementManager.isUnlocked('full_hand')) {
+                var maxSize = AchievementManager.getCombatStat('maxHandSize') || 0;
+                if (this.playerHand.length > maxSize) {
+                    AchievementManager.setCombatStat('maxHandSize', this.playerHand.length);
+                }
+            }
+            if (!AchievementManager.isUnlocked('triple_copy')) {
+                var _counts = {};
+                for (var _i = 0; _i < this.playerHand.length; _i++) {
+                    var _cid = this.playerHand[_i].id || this.playerHand[_i].cardId;
+                    _counts[_cid] = (_counts[_cid] || 0) + 1;
+                    if (_counts[_cid] >= 3) {
+                        AchievementManager.setCombatStat('hasHad3CopiesOfSameCard', true);
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     checkGameEnd() {
@@ -1511,6 +1546,14 @@ class GameScreen extends BaseScreen {
         if (dying.length > 0) return;
 
         if (this.enemies.length === 0) {
+            if (window.AchievementManager) {
+                if (this.playerHealth >= (this.maxHealth || 30)) {
+                    AchievementManager.setCombatStat('hasWonWithoutDamage', true);
+                }
+                if (this.playerHealth === 1) {
+                    AchievementManager.setCombatStat('hasWonAt1HP', true);
+                }
+            }
             // All enemies confirmed dead -> go to next wave
             this._pendingWaveTransition = true;
             setTimeout(() => {
