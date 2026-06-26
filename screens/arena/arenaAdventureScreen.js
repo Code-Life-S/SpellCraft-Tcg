@@ -423,7 +423,9 @@ class ArenaAdventureScreen extends BaseScreen {
                 isBoss: true,
                 bossId: bossTemplate.id,
                 bossMechanics: bossTemplate.bossMechanics,
-                isDying: false
+                isDying: false,
+                resurrected: false,
+                venomStacks: 0
             };
             this.enemies.push(boss);
             return;
@@ -968,10 +970,38 @@ class ArenaAdventureScreen extends BaseScreen {
         this.visualEffects.showDamageNumber(el, damage);
         this.enemyBoard.addDamageEffect(enemyId);
 
+        // Crystal Golem: shield absorbs damage before health reduction
+        if (enemy.isBoss && enemy.bossMechanics && enemy.bossMechanics.type === 'crystal_golem' && enemy.bossMechanics.shield > 0) {
+            var absorbed = Math.min(enemy.bossMechanics.shield, damage);
+            enemy.bossMechanics.shield -= absorbed;
+            damage -= absorbed;
+            if (absorbed > 0) {
+                this.addToHistory('\u{1F9F0} ' + enemy.name + '\'s shield absorbs ' + absorbed + ' damage!', false);
+            }
+            if (damage <= 0) {
+                this.renderEnemies();
+                this.updateUI();
+                return;
+            }
+        }
+
         enemy.health -= damage;
 
         if (typeof checkAndTriggerEnrage === 'function' && checkAndTriggerEnrage(enemy)) {
             this.addToHistory(enemy.art + ' ' + enemy.name + ' is ENRAGED! +2 ATK', false);
+        }
+
+        // Phoenix resurrection
+        if (enemy.health <= 0 && enemy.isBoss && enemy.bossMechanics && enemy.bossMechanics.type === 'ash_phoenix' && !enemy.resurrected) {
+            enemy.resurrected = true;
+            enemy.health = enemy.bossMechanics.resurrectHp;
+            enemy.maxHealth = enemy.bossMechanics.resurrectHp;
+            enemy.attack += enemy.bossMechanics.atkBonus;
+            this.renderEnemies();
+            this.updateUI();
+            this.visualEffects.createSpellImpact(el, 'fire');
+            this.addToHistory('\u{1F525} ' + enemy.name + ' rises from the ashes with ' + enemy.health + ' HP!', false);
+            return;
         }
 
         if (enemy.health <= 0) {
@@ -1129,6 +1159,41 @@ class ArenaAdventureScreen extends BaseScreen {
                 this.updateUI();
                 this.addToHistory(boss.art + ' ' + boss.name + ' rampages! ATK rises to ' + boss.attack, false);
                 break;
+
+            case 'ash_phoenix':
+                if (boss.resurrected) {
+                    this.arenaState.playerHealth -= mech.burnPerTurn;
+                    var heroEl = this.element.querySelector('.hero-portrait');
+                    if (heroEl) this.visualEffects.showDamageNumber(heroEl, mech.burnPerTurn);
+                    this.updateUI();
+                    this.addToHistory('\u{1F525} Phoenix\'s burning aura deals ' + mech.burnPerTurn + ' damage!', false);
+                }
+                break;
+
+            case 'crystal_golem':
+                mech.shield = Math.min(10, (mech.shield || 0) + mech.shieldPerTurn);
+                this.renderEnemies();
+                this.updateUI();
+                this.addToHistory('\u{1F9F0} ' + boss.name + '\'s crystal shield strengthens! (' + mech.shield + ')', false);
+                break;
+
+            case 'mind_specter':
+                if (this.playerHand.length > mech.minHandSize) {
+                    var discardIdx = Math.floor(Math.random() * this.playerHand.length);
+                    var discarded = this.playerHand.splice(discardIdx, 1)[0];
+                    this.renderPlayerHand();
+                    this.updateUI();
+                    this.addToHistory('\u{1F47B} ' + boss.name + ' steals ' + discarded.name + ' from your hand!', false);
+                }
+                break;
+
+            case 'venom_spitter':
+                boss.venomStacks = (boss.venomStacks || 0) + 1;
+                this.arenaState.playerHealth -= boss.venomStacks;
+                this.renderEnemies();
+                this.updateUI();
+                this.addToHistory('\u{1F40D} Venom burns for ' + boss.venomStacks + ' damage!', false);
+                break;
         }
     }
 
@@ -1156,6 +1221,22 @@ class ArenaAdventureScreen extends BaseScreen {
                 }
                 this.renderEnemies();
                 this.addToHistory(boss.art + ' ' + boss.name + ' summons 2 Skeletons!', false);
+                break;
+
+            case 'crystal_golem':
+                if (mech.shield > 0) {
+                    var reflectDmg = Math.min(mech.reflectMax, Math.ceil(mech.shield / 2));
+                    this.arenaState.playerHealth -= reflectDmg;
+                    var heroEl = this.element.querySelector('.hero-portrait');
+                    if (heroEl) this.visualEffects.showDamageNumber(heroEl, reflectDmg);
+                    this.updateUI();
+                    this.addToHistory('\u{1F9F0} Crystal shield reflects ' + reflectDmg + ' damage!', false);
+                }
+                break;
+
+            case 'venom_spitter':
+                boss.venomStacks = (boss.venomStacks || 0) + 1;
+                this.addToHistory('\u{1F40D} Venom intensifies! (' + boss.venomStacks + ' stacks)', false);
                 break;
         }
     }
