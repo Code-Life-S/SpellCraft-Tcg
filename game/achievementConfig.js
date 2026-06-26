@@ -170,15 +170,15 @@ var ACHIEVEMENT_DEFINITIONS = {
     },
     frozen_army: {
         name: 'Armee de glace',
-        description: 'Geler 5 ennemis differents en 1 tour',
-        longDescription: 'Ayez 5 ennemis differents avec le statut Gele a la fin d\'un seul tour.',
+        description: 'Geler 4 ennemis differents en 1 tour',
+        longDescription: 'Ayez 4 ennemis differents avec le statut Gele a la fin d\'un seul tour.',
         icon: '\u2744\uFE0F',
         category: 'combat',
         type: 'counter',
         maxProgress: 5,
         reward: { type: 'icon', value: '\u2744\uFE0F' },
         getProgress: function(stats) { return stats.combatStats.maxEnemiesFrozenInOneTurn || 0; },
-        checkUnlock: function(stats) { return (stats.combatStats.maxEnemiesFrozenInOneTurn || 0) >= 5; }
+        checkUnlock: function(stats) { return (stats.combatStats.maxEnemiesFrozenInOneTurn || 0) >= 4; }
     },
     mana_djuggler: {
         name: 'Brasseur de mana',
